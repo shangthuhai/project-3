@@ -1,0 +1,22 @@
+# SQLite database files
+Backend/smschat.db
+Backend/smschat.db-shm
+Backend/smschat.db-wal
+
+# dotnet build outputs
+Backend/bin/
+Backend/obj/
+
+# Node / React dependencies and builds
+Frontend/node_modules/
+Frontend/dist/
+Frontend/.eslintcache
+Frontend/npm-debug.log*
+Frontend/yarn-debug.log*
+Frontend/yarn-error.log*
+
+# User local environment configuration files
+*.user
+*.userosscache
+*.sln.docstates
+.vs/
