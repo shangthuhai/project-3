@@ -218,6 +218,8 @@ export default function App() {
     e.preventDefault();
     login(loginForm.username, loginForm.password)
       .then(user => {
+        setActiveTab('chats');
+        setSelectedContact(null);
         setLoggedInUser(user);
         triggerAlert('success', `Welcome back, ${user.name}!`);
         setLoginForm({ username: '', password: '' });
@@ -255,10 +257,13 @@ export default function App() {
 
     register(registerForm)
       .then(user => {
-        triggerAlert('success', 'Registration successful! You can now log in.');
+        triggerAlert('success', 'Account created successfully. Opening chat workspace...');
         setAuthMode('login');
-        setLoginForm({ username: registerForm.username, password: '' });
+        setActiveTab('chats');
+        setSelectedContact(null);
+        setLoggedInUser(user);
         setRegisterForm({ username: '', password: '', confirmPassword: '', email: '', mobileNumber: '', name: '' });
+        setCaptchaInput('');
         loadUsersList(); // Update user switcher list
       })
       .catch(err => {
@@ -791,12 +796,7 @@ export default function App() {
                   type="submit" 
                   className="btn btn-primary" 
                   style={{ marginTop: '10px', padding: '12px' }}
-                  disabled={
-                    usernameValidation.available !== true || 
-                    mobileValidation.available !== true || 
-                    !captchaInput || 
-                    registerForm.password !== registerForm.confirmPassword
-                  }
+                  disabled={!registerForm.username || !registerForm.password || !registerForm.confirmPassword || !registerForm.email || !registerForm.mobileNumber || !registerForm.name || !captchaInput || registerForm.password !== registerForm.confirmPassword}
                 >
                   Create Account
                 </button>

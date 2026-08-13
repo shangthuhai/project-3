@@ -3,6 +3,12 @@
 -- Hệ quản trị cơ sở dữ liệu: MySQL / MariaDB
 -- =========================================================================
 
+CREATE DATABASE IF NOT EXISTS online_sms
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_unicode_ci;
+
+USE online_sms;
+
 -- 1. BẢNG USERS (Lưu thông tin đăng nhập và tài khoản cốt lõi)
 CREATE TABLE Users (
     user_id INT PRIMARY KEY AUTO_INCREMENT,
