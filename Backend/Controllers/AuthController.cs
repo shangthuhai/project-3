@@ -75,20 +75,32 @@ namespace Backend.Controllers
             var newUser = new User
             {
                 Username = dto.Username,
-                Password = dto.Password,
+                PasswordHash = dto.Password,
                 Email = dto.Email,
                 MobileNumber = dto.MobileNumber,
-                Name = dto.Name,
-                ProfilePhoto = defaultAvatar,
-                Gender = "Male",
-                WorkStatus = "Employed",
-                MaritalStatus = "Single"
+                CreatedAt = DateTime.UtcNow
             };
 
             _context.Users.Add(newUser);
             await _context.SaveChangesAsync();
 
-            return Ok(newUser);
+            _context.Profiles.Add(new Profile
+            {
+                UserId = newUser.Id,
+                FullName = dto.Name,
+                ProfilePhoto = defaultAvatar,
+                Gender = "Male",
+                WorkStatus = "Employed",
+                MaritalStatus = "Single"
+            });
+
+            await _context.SaveChangesAsync();
+
+            var createdUser = await _context.Users
+                .Include(u => u.Profile)
+                .FirstAsync(u => u.Id == newUser.Id);
+
+            return Ok(ToUserResponse(createdUser));
         }
 
         // POST: api/auth/login
@@ -101,12 +113,42 @@ namespace Backend.Controllers
             }
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == dto.Username.ToLower());
-            if (user == null || user.Password != dto.Password)
+            if (user == null || user.PasswordHash != dto.Password)
             {
                 return Unauthorized(new { message = "Invalid Username or Password." });
             }
 
-            return Ok(user);
+            user = await _context.Users.Include(u => u.Profile).FirstAsync(u => u.Id == user.Id);
+            return Ok(ToUserResponse(user));
+        }
+
+        private static object ToUserResponse(User user)
+        {
+            return new
+            {
+                Id = user.Id,
+                Username = user.Username,
+                Email = user.Email,
+                MobileNumber = user.MobileNumber,
+                CreatedAt = user.CreatedAt,
+                Name = user.Profile?.FullName ?? string.Empty,
+                Gender = user.Profile?.Gender ?? string.Empty,
+                Dob = user.Profile?.Dob,
+                Address = user.Profile?.Address ?? string.Empty,
+                MaritalStatus = user.Profile?.MaritalStatus ?? string.Empty,
+                Hobbies = user.Profile?.Hobbies ?? string.Empty,
+                Likes = user.Profile?.Likes ?? string.Empty,
+                Dislikes = user.Profile?.Dislikes ?? string.Empty,
+                Cuisines = user.Profile?.Cuisines ?? string.Empty,
+                Sports = user.Profile?.Sports ?? string.Empty,
+                ProfilePhoto = user.Profile?.ProfilePhoto ?? string.Empty,
+                Qualification = user.Profile?.Qualification ?? string.Empty,
+                School = user.Profile?.School ?? string.Empty,
+                College = user.Profile?.College ?? string.Empty,
+                WorkStatus = user.Profile?.WorkStatus ?? string.Empty,
+                Organization = user.Profile?.Organization ?? string.Empty,
+                Designation = user.Profile?.Designation ?? string.Empty
+            };
         }
     }
 

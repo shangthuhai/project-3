@@ -38,11 +38,10 @@ namespace Backend.Controllers
             if (contactUser != null)
             {
                 // If they are registered, history is messages sent between userId and contactUser.Id
-                // (or messages sent by userId to contactNumber, or by contactUser to user.MobileNumber)
                 messages = await _context.Messages
-                    .Where(m => 
-                        (m.SenderId == userId && (m.ReceiverNumber == contactNumber || m.ReceiverId == contactUser.Id)) ||
-                        (m.SenderId == contactUser.Id && (m.ReceiverNumber == user.MobileNumber || m.ReceiverId == userId)))
+                    .Where(m =>
+                        (m.SenderId == userId && m.ReceiverNumber == contactNumber) ||
+                        (m.SenderId == contactUser.Id && m.ReceiverNumber == user.MobileNumber))
                     .OrderBy(m => m.SentTime)
                     .ToListAsync();
             }
@@ -69,7 +68,7 @@ namespace Backend.Controllers
             if (contactUser != null)
             {
                 isFriend = await _context.FriendConnections.AnyAsync(fc => 
-                    fc.Status == "Accepted" && 
+                    fc.Status == "accepted" && 
                     ((fc.UserId == userId && fc.FriendUserId == contactUser.Id) || 
                      (fc.UserId == contactUser.Id && fc.FriendUserId == userId)));
             }
@@ -81,7 +80,7 @@ namespace Backend.Controllers
 
             // Count messages sent by this user to this specific non-friend number
             var sentCount = await _context.Messages
-                .CountAsync(m => m.SenderId == userId && m.ReceiverNumber == contactNumber && !m.IsFriendMessage);
+                .CountAsync(m => m.SenderId == userId && m.ReceiverNumber == contactNumber && !m.IsFreeFriendMsg);
 
             int limit = 5;
             int remaining = Math.Max(0, limit - sentCount);
@@ -117,14 +116,11 @@ namespace Backend.Controllers
             // Check if receiver is a registered user
             var receiverUser = await _context.Users.FirstOrDefaultAsync(u => u.MobileNumber == dto.ReceiverNumber);
             bool isFriend = false;
-            int? receiverId = null;
-
             if (receiverUser != null)
             {
-                receiverId = receiverUser.Id;
                 // Check if they are friends
                 isFriend = await _context.FriendConnections.AnyAsync(fc => 
-                    fc.Status == "Accepted" && 
+                    fc.Status == "accepted" && 
                     ((fc.UserId == sender.Id && fc.FriendUserId == receiverUser.Id) || 
                      (fc.UserId == receiverUser.Id && fc.FriendUserId == sender.Id)));
             }
@@ -133,7 +129,7 @@ namespace Backend.Controllers
             {
                 // Non-friend: enforce 5-message limit
                 var sentCount = await _context.Messages
-                    .CountAsync(m => m.SenderId == sender.Id && m.ReceiverNumber == dto.ReceiverNumber && !m.IsFriendMessage);
+                    .CountAsync(m => m.SenderId == sender.Id && m.ReceiverNumber == dto.ReceiverNumber && !m.IsFreeFriendMsg);
 
                 if (sentCount >= 5)
                 {
@@ -145,10 +141,9 @@ namespace Backend.Controllers
             {
                 SenderId = sender.Id,
                 ReceiverNumber = dto.ReceiverNumber,
-                ReceiverId = receiverId,
                 Content = dto.Content,
                 SentTime = DateTime.UtcNow,
-                IsFriendMessage = isFriend
+                IsFreeFriendMsg = isFriend
             };
 
             _context.Messages.Add(message);

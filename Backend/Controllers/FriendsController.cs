@@ -21,11 +21,11 @@ namespace Backend.Controllers
 
         // GET: api/friends?userId=1
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<User>>> GetFriends([FromQuery] int userId)
+        public async Task<ActionResult<IEnumerable<object>>> GetFriends([FromQuery] int userId)
         {
             // Find connections where user is sender or receiver and status is Accepted
             var connections = await _context.FriendConnections
-                .Where(fc => (fc.UserId == userId || fc.FriendUserId == userId) && fc.Status == "Accepted")
+            .Where(fc => (fc.UserId == userId || fc.FriendUserId == userId) && fc.Status == "accepted")
                 .ToListAsync();
 
             var friendIds = connections
@@ -33,7 +33,21 @@ namespace Backend.Controllers
                 .ToList();
 
             var friends = await _context.Users
+                .Include(u => u.Profile)
                 .Where(u => friendIds.Contains(u.Id))
+                .Select(u => new
+                {
+                    Id = u.Id,
+                    Username = u.Username,
+                    Email = u.Email,
+                    MobileNumber = u.MobileNumber,
+                    Name = u.Profile != null ? u.Profile.FullName : string.Empty,
+                    ProfilePhoto = u.Profile != null ? u.Profile.ProfilePhoto : string.Empty,
+                    Gender = u.Profile != null ? u.Profile.Gender : string.Empty,
+                    WorkStatus = u.Profile != null ? u.Profile.WorkStatus : string.Empty,
+                    Organization = u.Profile != null ? u.Profile.Organization : string.Empty,
+                    Designation = u.Profile != null ? u.Profile.Designation : string.Empty
+                })
                 .ToListAsync();
 
             return friends;
@@ -45,11 +59,12 @@ namespace Backend.Controllers
         {
             // Pending requests where user is the recipient (incoming requests)
             var pendingConnections = await _context.FriendConnections
-                .Where(fc => fc.FriendUserId == userId && fc.Status == "Pending")
+                .Where(fc => fc.FriendUserId == userId && fc.Status == "pending")
                 .ToListAsync();
 
             var senderIds = pendingConnections.Select(fc => fc.UserId).ToList();
             var senders = await _context.Users
+                .Include(u => u.Profile)
                 .Where(u => senderIds.Contains(u.Id))
                 .ToDictionaryAsync(u => u.Id);
 
@@ -59,10 +74,10 @@ namespace Backend.Controllers
                 {
                     ConnectionId = fc.Id,
                     SenderId = fc.UserId,
-                    SenderName = senders[fc.UserId].Name,
+                    SenderName = senders[fc.UserId].Profile?.FullName ?? string.Empty,
                     SenderEmail = senders[fc.UserId].Email,
                     SenderMobile = senders[fc.UserId].MobileNumber,
-                    SenderPhoto = senders[fc.UserId].ProfilePhoto,
+                    SenderPhoto = senders[fc.UserId].Profile?.ProfilePhoto ?? string.Empty,
                     Status = fc.Status
                 });
 
@@ -113,7 +128,7 @@ namespace Backend.Controllers
             {
                 UserId = sender.Id,
                 FriendUserId = recipient.Id,
-                Status = "Pending"
+                Status = "pending"
             };
 
             _context.FriendConnections.Add(newConnection);
@@ -134,7 +149,7 @@ namespace Backend.Controllers
 
             if (dto.Accept)
             {
-                connection.Status = "Accepted";
+                connection.Status = "accepted";
                 await _context.SaveChangesAsync();
                 return Ok(new { message = "Friend request accepted." });
             }

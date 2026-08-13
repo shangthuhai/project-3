@@ -14,13 +14,6 @@ namespace Backend.Controllers
     public class ServicesController : ControllerBase
     {
         private readonly AppDbContext _context;
-        private readonly Dictionary<string, decimal> _prices = new()
-        {
-            { "Joke", 2.99m },
-            { "Current Affairs", 4.99m },
-            { "Sports", 3.99m },
-            { "News", 4.99m }
-        };
 
         public ServicesController(AppDbContext context)
         {
@@ -29,7 +22,7 @@ namespace Backend.Controllers
 
         // GET: api/services?userId=1
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ServiceActivation>>> GetActivatedServices([FromQuery] int userId)
+        public async Task<ActionResult<IEnumerable<object>>> GetActivatedServices([FromQuery] int userId)
         {
             var user = await _context.Users.FindAsync(userId);
             if (user == null)
@@ -37,8 +30,21 @@ namespace Backend.Controllers
                 return NotFound(new { message = "User not found" });
             }
 
-            var activations = await _context.ServiceActivations
+            var activations = await _context.UserServices
+                .Include(s => s.Service)
                 .Where(s => s.UserId == userId)
+                .OrderByDescending(s => s.ActivatedAt)
+                .Select(s => new
+                {
+                    Id = s.Id,
+                    UserId = s.UserId,
+                    ServiceId = s.ServiceId,
+                    ServiceName = s.Service != null ? s.Service.ServiceName : string.Empty,
+                    Description = s.Service != null ? s.Service.Description : string.Empty,
+                    Price = s.Service != null ? s.Service.Price : 0m,
+                    PaymentStatus = s.PaymentStatus,
+                    ActivatedTime = s.ActivatedAt
+                })
                 .ToListAsync();
 
             return activations;
@@ -54,14 +60,15 @@ namespace Backend.Controllers
                 return NotFound(new { message = "User not found." });
             }
 
-            if (!_prices.ContainsKey(dto.ServiceName))
+            var service = await _context.Services.FirstOrDefaultAsync(s => s.ServiceName.ToLower() == dto.ServiceName.ToLower());
+            if (service == null)
             {
                 return BadRequest(new { message = "Invalid service name. Available: Joke, Current Affairs, Sports, News." });
             }
 
             // Check if already activated
-            var alreadyActivated = await _context.ServiceActivations
-                .AnyAsync(s => s.UserId == dto.UserId && s.ServiceName == dto.ServiceName);
+            var alreadyActivated = await _context.UserServices
+                .AnyAsync(s => s.UserId == dto.UserId && s.ServiceId == service.Id);
 
             if (alreadyActivated)
             {
@@ -79,18 +86,32 @@ namespace Backend.Controllers
                 return BadRequest(new { message = "Invalid CVV. Must be a 3-digit number." });
             }
 
-            var activation = new ServiceActivation
+            var activation = new UserService
             {
                 UserId = dto.UserId,
-                ServiceName = dto.ServiceName,
-                Price = _prices[dto.ServiceName],
-                ActivatedTime = DateTime.UtcNow
+                ServiceId = service.Id,
+                PaymentStatus = "paid",
+                ActivatedAt = DateTime.UtcNow
             };
 
-            _context.ServiceActivations.Add(activation);
+            _context.UserServices.Add(activation);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = $"Service '{dto.ServiceName}' activated successfully!", service = activation });
+            return Ok(new
+            {
+                message = $"Service '{service.ServiceName}' activated successfully!",
+                service = new
+                {
+                    activation.Id,
+                    activation.UserId,
+                    activation.ServiceId,
+                    ServiceName = service.ServiceName,
+                    service.Description,
+                    service.Price,
+                    activation.PaymentStatus,
+                    ActivatedTime = activation.ActivatedAt
+                }
+            });
         }
     }
 
