@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Backend.Data;
 using Backend.Models;
@@ -9,6 +10,7 @@ namespace Backend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class UsersController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -18,15 +20,20 @@ namespace Backend.Controllers
             _context = context;
         }
 
+        private int AuthenticatedUserId => 
+            int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var id) ? id : 0;
+
         // GET: api/users
         [HttpGet]
+        [AllowAnonymous] // Allowed anonymously for the landing page demo switcher list
         public async Task<ActionResult<IEnumerable<User>>> GetUsers()
         {
-            return await _context.Users.ToListAsync();
+            return await _context.Users.Include(u => u.Profile).ToListAsync();
         }
 
         // GET: api/users/check-username?username=xyz
         [HttpGet("check-username")]
+        [AllowAnonymous] // Allow checking username availability during registration
         public async Task<IActionResult> CheckUsername([FromQuery] string username)
         {
             if (string.IsNullOrWhiteSpace(username)) return BadRequest(new { message = "Username cannot be empty." });
@@ -36,6 +43,7 @@ namespace Backend.Controllers
 
         // GET: api/users/check-mobile?mobile=0987654321
         [HttpGet("check-mobile")]
+        [AllowAnonymous] // Allow checking SĐT during registration
         public async Task<IActionResult> CheckMobile([FromQuery] string mobile)
         {
             if (string.IsNullOrWhiteSpace(mobile)) return BadRequest(new { message = "Mobile number cannot be empty." });
@@ -47,7 +55,7 @@ namespace Backend.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<User>> GetUser(int id)
         {
-            var user = await _context.Users.FindAsync(id);
+            var user = await _context.Users.Include(u => u.Profile).FirstOrDefaultAsync(u => u.UserId == id);
             if (user == null)
             {
                 return NotFound(new { message = "User not found" });
@@ -59,18 +67,24 @@ namespace Backend.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutUser(int id, User user)
         {
-            if (id != user.Id)
+            if (id != user.UserId)
             {
                 return BadRequest(new { message = "ID mismatch" });
             }
 
-            var dbUser = await _context.Users.FindAsync(id);
+            // Secure validation: Only allow user to update their own profile details
+            if (id != AuthenticatedUserId)
+            {
+                return Forbid();
+            }
+
+            var dbUser = await _context.Users.Include(u => u.Profile).FirstOrDefaultAsync(u => u.UserId == id);
             if (dbUser == null)
             {
                 return NotFound(new { message = "User not found" });
             }
 
-            // Update details
+            // Update details via the flat properties (which forwards to dbUser.Profile)
             dbUser.Name = user.Name;
             dbUser.Gender = user.Gender;
             dbUser.Dob = user.Dob;
@@ -96,7 +110,7 @@ namespace Backend.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!await _context.Users.AnyAsync(e => e.Id == id))
+                if (!await _context.Users.AnyAsync(e => e.UserId == id))
                 {
                     return NotFound();
                 }

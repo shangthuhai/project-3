@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Backend.Data;
 using Backend.Models;
@@ -11,6 +12,7 @@ namespace Backend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class MessagesController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -20,11 +22,17 @@ namespace Backend.Controllers
             _context = context;
         }
 
+        private int AuthenticatedUserId => 
+            int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var id) ? id : 0;
+
         // GET: api/messages/history?userId=1&contactNumber=0912345678
         [HttpGet("history")]
-        public async Task<ActionResult<IEnumerable<Message>>> GetHistory([FromQuery] int userId, [FromQuery] string contactNumber)
+        public async Task<ActionResult<IEnumerable<Message>>> GetHistory([FromQuery] int? userId, [FromQuery] string contactNumber)
         {
-            var user = await _context.Users.FindAsync(userId);
+            // Securely read from JWT claims
+            int actualUserId = AuthenticatedUserId;
+
+            var user = await _context.Users.FindAsync(actualUserId);
             if (user == null)
             {
                 return NotFound(new { message = "User not found" });
@@ -37,21 +45,20 @@ namespace Backend.Controllers
 
             if (contactUser != null)
             {
-                // If they are registered, history is messages sent between userId and contactUser.Id
-                // (or messages sent by userId to contactNumber, or by contactUser to user.MobileNumber)
+                // If they are registered, history is messages sent between actualUserId and contactUser.UserId
                 messages = await _context.Messages
                     .Where(m => 
-                        (m.SenderId == userId && (m.ReceiverNumber == contactNumber || m.ReceiverId == contactUser.Id)) ||
-                        (m.SenderId == contactUser.Id && (m.ReceiverNumber == user.MobileNumber || m.ReceiverId == userId)))
-                    .OrderBy(m => m.SentTime)
+                        (m.SenderId == actualUserId && (m.ReceiverNumber == contactNumber || m.ReceiverId == contactUser.UserId)) ||
+                        (m.SenderId == contactUser.UserId && (m.ReceiverNumber == user.MobileNumber || m.ReceiverId == actualUserId)))
+                    .OrderBy(m => m.SentAt)
                     .ToListAsync();
             }
             else
             {
                 // If not registered, history is just messages sent by this user to this non-registered number
                 messages = await _context.Messages
-                    .Where(m => m.SenderId == userId && m.ReceiverNumber == contactNumber)
-                    .OrderBy(m => m.SentTime)
+                    .Where(m => m.SenderId == actualUserId && m.ReceiverNumber == contactNumber)
+                    .OrderBy(m => m.SentAt)
                     .ToListAsync();
             }
 
@@ -60,18 +67,21 @@ namespace Backend.Controllers
 
         // GET: api/messages/quota?userId=1&contactNumber=0912345678
         [HttpGet("quota")]
-        public async Task<ActionResult<object>> GetQuota([FromQuery] int userId, [FromQuery] string contactNumber)
+        public async Task<ActionResult<object>> GetQuota([FromQuery] int? userId, [FromQuery] string contactNumber)
         {
+            // Securely read from JWT claims
+            int actualUserId = AuthenticatedUserId;
+
             // Check if the contact number belongs to a friend
             var contactUser = await _context.Users.FirstOrDefaultAsync(u => u.MobileNumber == contactNumber);
             bool isFriend = false;
 
             if (contactUser != null)
             {
-                isFriend = await _context.FriendConnections.AnyAsync(fc => 
-                    fc.Status == "Accepted" && 
-                    ((fc.UserId == userId && fc.FriendUserId == contactUser.Id) || 
-                     (fc.UserId == contactUser.Id && fc.FriendUserId == userId)));
+                isFriend = await _context.Friendships.AnyAsync(fc => 
+                    fc.Status == "accepted" && 
+                    ((fc.RequesterId == actualUserId && fc.AddresseeId == contactUser.UserId) || 
+                     (fc.RequesterId == contactUser.UserId && fc.AddresseeId == actualUserId)));
             }
 
             if (isFriend)
@@ -79,12 +89,11 @@ namespace Backend.Controllers
                 return Ok(new { isFriend = true, remaining = -1, limit = -1, sentCount = 0 });
             }
 
-            // Count messages sent by this user to this specific non-friend number
-            var sentCount = await _context.Messages
-                .CountAsync(m => m.SenderId == userId && m.ReceiverNumber == contactNumber && !m.IsFriendMessage);
-
+            // Global Quota check from UserQuotas table
+            var quota = await _context.UserQuotas.FirstOrDefaultAsync(q => q.UserId == actualUserId);
+            int remaining = quota?.FreeMessagesLeft ?? 0;
             int limit = 5;
-            int remaining = Math.Max(0, limit - sentCount);
+            int sentCount = limit - remaining;
 
             return Ok(new { isFriend = false, remaining, limit, sentCount });
         }
@@ -93,7 +102,10 @@ namespace Backend.Controllers
         [HttpPost]
         public async Task<ActionResult<Message>> SendMessage([FromBody] SendMessageDto dto)
         {
-            var sender = await _context.Users.FindAsync(dto.SenderId);
+            // Securely read sender from JWT claims instead of body parameters
+            int senderId = AuthenticatedUserId;
+
+            var sender = await _context.Users.FindAsync(senderId);
             if (sender == null)
             {
                 return NotFound(new { message = "Sender user not found." });
@@ -121,37 +133,50 @@ namespace Backend.Controllers
 
             if (receiverUser != null)
             {
-                receiverId = receiverUser.Id;
+                receiverId = receiverUser.UserId;
                 // Check if they are friends
-                isFriend = await _context.FriendConnections.AnyAsync(fc => 
-                    fc.Status == "Accepted" && 
-                    ((fc.UserId == sender.Id && fc.FriendUserId == receiverUser.Id) || 
-                     (fc.UserId == receiverUser.Id && fc.FriendUserId == sender.Id)));
+                isFriend = await _context.Friendships.AnyAsync(fc => 
+                    fc.Status == "accepted" && 
+                    ((fc.RequesterId == sender.UserId && fc.AddresseeId == receiverUser.UserId) || 
+                     (fc.RequesterId == receiverUser.UserId && fc.AddresseeId == sender.UserId)));
             }
 
             if (!isFriend)
             {
-                // Non-friend: enforce 5-message limit
-                var sentCount = await _context.Messages
-                    .CountAsync(m => m.SenderId == sender.Id && m.ReceiverNumber == dto.ReceiverNumber && !m.IsFriendMessage);
-
-                if (sentCount >= 5)
+                // Enforce global quota limit
+                var quota = await _context.UserQuotas.FirstOrDefaultAsync(q => q.UserId == sender.UserId);
+                if (quota == null || quota.FreeMessagesLeft <= 0)
                 {
-                    return BadRequest(new { message = "You have reached the limit of 5 free messages for this number. Add them as a friend for unlimited free messaging." });
+                    return BadRequest(new { message = "You have reached your limit of 5 free messages for non-friends. Add them as a friend for unlimited free messaging." });
                 }
+
+                // Decrement free messages left
+                quota.FreeMessagesLeft--;
+                quota.UpdatedAt = DateTime.UtcNow;
             }
 
             var message = new Message
             {
-                SenderId = sender.Id,
+                SenderId = sender.UserId,
                 ReceiverNumber = dto.ReceiverNumber,
                 ReceiverId = receiverId,
                 Content = dto.Content,
-                SentTime = DateTime.UtcNow,
-                IsFriendMessage = isFriend
+                SentAt = DateTime.UtcNow,
+                IsFreeFriendMsg = isFriend
             };
 
             _context.Messages.Add(message);
+            await _context.SaveChangesAsync(); // Generates message_id
+
+            // Record log in SMS_Logs table
+            var log = new SMSLog
+            {
+                MessageId = message.MessageId,
+                GatewayStatusCode = "200_OK",
+                DeliveryStatus = "delivered",
+                UpdatedAt = DateTime.UtcNow
+            };
+            _context.SMSLogs.Add(log);
             await _context.SaveChangesAsync();
 
             return Ok(message);
@@ -160,7 +185,6 @@ namespace Backend.Controllers
 
     public class SendMessageDto
     {
-        public int SenderId { get; set; }
         public string ReceiverNumber { get; set; } = string.Empty;
         public string Content { get; set; } = string.Empty;
     }

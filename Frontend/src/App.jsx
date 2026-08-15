@@ -77,6 +77,21 @@ export default function App() {
   useEffect(() => {
     generateCaptcha();
     loadUsersList();
+
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      setLoggedInUser(JSON.parse(savedUser));
+    }
+  }, []);
+
+  // Listen to unauthorized event
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      setLoggedInUser(null);
+      triggerAlert('error', 'Please log in to access this page.');
+    };
+    window.addEventListener('unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('unauthorized', handleUnauthorized);
   }, []);
 
   // Generate Captcha whenever switching auth mode
@@ -218,6 +233,7 @@ export default function App() {
     e.preventDefault();
     login(loginForm.username, loginForm.password)
       .then(user => {
+        localStorage.setItem('user', JSON.stringify(user));
         setLoggedInUser(user);
         triggerAlert('success', `Welcome back, ${user.name}!`);
         setLoginForm({ username: '', password: '' });
@@ -269,6 +285,7 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('user');
     setLoggedInUser(null);
     triggerAlert('success', 'You have been logged out.');
   };
@@ -278,8 +295,15 @@ export default function App() {
     const userId = parseInt(e.target.value);
     const selected = users.find(u => u.id === userId);
     if (selected) {
-      setLoggedInUser(selected);
-      triggerAlert('success', `Switched context to ${selected.name}`);
+      login(selected.username, "password123")
+        .then(user => {
+          localStorage.setItem('user', JSON.stringify(user));
+          setLoggedInUser(user);
+          triggerAlert('success', `Switched context to ${user.name}`);
+        })
+        .catch(() => {
+          triggerAlert('error', `Failed to switch context to ${selected.name}`);
+        });
     }
   };
 
@@ -622,7 +646,17 @@ export default function App() {
                 <span className="user-switcher-label">Demo Quick Log In</span>
                 <select className="user-select" defaultValue="" onChange={(e) => {
                   const select = users.find(u => u.id === parseInt(e.target.value));
-                  if (select) setLoggedInUser(select);
+                  if (select) {
+                    login(select.username, "password123")
+                      .then(user => {
+                        localStorage.setItem('user', JSON.stringify(user));
+                        setLoggedInUser(user);
+                        triggerAlert('success', `Welcome back, ${user.name}!`);
+                      })
+                      .catch(() => {
+                        triggerAlert('error', `Failed to log in as ${select.name}`);
+                      });
+                  }
                 }}>
                   <option value="" disabled>Select pre-seeded account...</option>
                   {users.map(u => (
