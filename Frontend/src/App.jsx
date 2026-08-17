@@ -1067,8 +1067,9 @@ export default function App() {
                   />
                   {usernameValidation.message && (
                     <span className={`validation-info ${usernameValidation.available === true ? 'success' : usernameValidation.available === false ? 'error' : 'checking'}`}>
-                      {usernameValidation.available === true ? '✓ ' : usernameValidation.available === false ? '✗ ' : ''}
-                      {usernameValidation.message}
+                      {usernameValidation.available === true && <span style={{ marginRight: '4px' }}>✓</span>}
+                      {usernameValidation.available === false && <span style={{ marginRight: '4px' }}>✗</span>}
+                      <span>{usernameValidation.message}</span>
                     </span>
                   )}
                 </div>
@@ -1108,8 +1109,9 @@ export default function App() {
                   />
                   {mobileValidation.message && (
                     <span className={`validation-info ${mobileValidation.available === true ? 'success' : mobileValidation.available === false ? 'error' : 'checking'}`}>
-                      {mobileValidation.available === true ? '✓ ' : mobileValidation.available === false ? '✗ ' : ''}
-                      {mobileValidation.message}
+                      {mobileValidation.available === true && <span style={{ marginRight: '4px' }}>✓</span>}
+                      {mobileValidation.available === false && <span style={{ marginRight: '4px' }}>✗</span>}
+                      <span>{mobileValidation.message}</span>
                     </span>
                   )}
                 </div>
