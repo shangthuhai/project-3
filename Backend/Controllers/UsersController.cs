@@ -119,5 +119,94 @@ namespace Backend.Controllers
 
             return Ok(dbUser);
         }
+
+        // POST: api/users/2fa/toggle
+        [HttpPost("2fa/toggle")]
+        public async Task<IActionResult> Toggle2Fa([FromBody] ToggleSettingDto dto)
+        {
+            int userId = AuthenticatedUserId;
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return NotFound(new { message = "User not found." });
+
+            user.TwoFactorEnabled = dto.Enabled;
+            await _context.SaveChangesAsync();
+            return Ok(new { message = $"Two-factor authentication has been {(dto.Enabled ? "enabled" : "disabled")}." });
+        }
+
+        // POST: api/users/privacy/toggle
+        [HttpPost("privacy/toggle")]
+        public async Task<IActionResult> TogglePrivacy([FromBody] ToggleSettingDto dto)
+        {
+            int userId = AuthenticatedUserId;
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return NotFound(new { message = "User not found." });
+
+            user.OnlyReceiveFromFriends = dto.Enabled;
+            await _context.SaveChangesAsync();
+            return Ok(new { message = $"Privacy filter (Only friends) has been {(dto.Enabled ? "enabled" : "disabled")}." });
+        }
+
+        // GET: api/users/blocklist
+        [HttpGet("blocklist")]
+        public async Task<ActionResult<IEnumerable<Blocklist>>> GetBlocklist()
+        {
+            int userId = AuthenticatedUserId;
+            var blocklist = await _context.Blocklists
+                .Where(b => b.UserId == userId)
+                .ToListAsync();
+            return Ok(blocklist);
+        }
+
+        // POST: api/users/blocklist
+        [HttpPost("blocklist")]
+        public async Task<IActionResult> BlockNumber([FromBody] BlockNumberDto dto)
+        {
+            int userId = AuthenticatedUserId;
+            if (string.IsNullOrWhiteSpace(dto.Number) || dto.Number.Length != 10)
+            {
+                return BadRequest(new { message = "Invalid mobile number. Must be exactly 10 digits." });
+            }
+
+            // Check if already blocked
+            bool exists = await _context.Blocklists.AnyAsync(b => b.UserId == userId && b.BlockedNumber == dto.Number);
+            if (exists) return BadRequest(new { message = "Number is already blocked." });
+
+            var block = new Blocklist
+            {
+                UserId = userId,
+                BlockedNumber = dto.Number
+            };
+
+            _context.Blocklists.Add(block);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = $"Blocked number {dto.Number} successfully.", block });
+        }
+
+        // DELETE: api/users/blocklist/{id}
+        [HttpDelete("blocklist/{id}")]
+        public async Task<IActionResult> UnblockNumber(int id)
+        {
+            int userId = AuthenticatedUserId;
+            var block = await _context.Blocklists.FindAsync(id);
+            if (block == null) return NotFound(new { message = "Blocked number entry not found." });
+
+            if (block.UserId != userId) return Forbid();
+
+            _context.Blocklists.Remove(block);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Number unblocked successfully." });
+        }
+    }
+
+    public class ToggleSettingDto
+    {
+        public bool Enabled { get; set; }
+    }
+
+    public class BlockNumberDto
+    {
+        public string Number { get; set; } = string.Empty;
     }
 }

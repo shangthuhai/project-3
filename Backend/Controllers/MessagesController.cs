@@ -134,12 +134,28 @@ namespace Backend.Controllers
             if (receiverUser != null)
             {
                 receiverId = receiverUser.UserId;
+                
+                // 1. Check if blocked
+                bool isBlocked = await _context.Blocklists.AnyAsync(b => b.UserId == receiverUser.UserId && b.BlockedNumber == sender.MobileNumber);
+                if (isBlocked)
+                {
+                    return BadRequest(new { message = "You have been blocked by this user." });
+                }
+
                 // Check if they are friends
                 isFriend = await _context.Friendships.AnyAsync(fc => 
                     fc.Status == "accepted" && 
                     ((fc.RequesterId == sender.UserId && fc.AddresseeId == receiverUser.UserId) || 
                      (fc.RequesterId == receiverUser.UserId && fc.AddresseeId == sender.UserId)));
+
+                // 2. Check if privacy setting allows only friends
+                if (receiverUser.OnlyReceiveFromFriends && !isFriend)
+                {
+                    return BadRequest(new { message = "This user only accepts messages from friends." });
+                }
             }
+
+            bool isScheduled = dto.ScheduledAt.HasValue && dto.ScheduledAt.Value > DateTime.UtcNow;
 
             if (!isFriend)
             {
@@ -150,7 +166,7 @@ namespace Backend.Controllers
                     return BadRequest(new { message = "You have reached your limit of 5 free messages for non-friends. Add them as a friend for unlimited free messaging." });
                 }
 
-                // Decrement free messages left
+                // Decrement free messages left (scheduled messages also occupy quota)
                 quota.FreeMessagesLeft--;
                 quota.UpdatedAt = DateTime.UtcNow;
             }
@@ -162,7 +178,8 @@ namespace Backend.Controllers
                 ReceiverId = receiverId,
                 Content = dto.Content,
                 SentAt = DateTime.UtcNow,
-                IsFreeFriendMsg = isFriend
+                IsFreeFriendMsg = isFriend,
+                ScheduledAt = isScheduled ? dto.ScheduledAt : null
             };
 
             _context.Messages.Add(message);
@@ -173,7 +190,7 @@ namespace Backend.Controllers
             {
                 MessageId = message.MessageId,
                 GatewayStatusCode = "200_OK",
-                DeliveryStatus = "delivered",
+                DeliveryStatus = isScheduled ? "pending" : "delivered",
                 UpdatedAt = DateTime.UtcNow
             };
             _context.SMSLogs.Add(log);
@@ -181,11 +198,143 @@ namespace Backend.Controllers
 
             return Ok(message);
         }
+
+        // POST: api/messages/bulk
+        [HttpPost("bulk")]
+        public async Task<IActionResult> SendBulkMessage([FromBody] BulkMessageDto dto)
+        {
+            int senderId = AuthenticatedUserId;
+            var sender = await _context.Users.FindAsync(senderId);
+            if (sender == null) return NotFound(new { message = "Sender user not found." });
+
+            var group = await _context.ContactGroups.FindAsync(dto.GroupId);
+            if (group == null) return NotFound(new { message = "Group not found." });
+            if (group.UserId != senderId) return Forbid();
+
+            if (string.IsNullOrEmpty(dto.Content)) return BadRequest(new { message = "Content cannot be empty." });
+            if (dto.Content.Length > 120) return BadRequest(new { message = "Content must not exceed 120 characters." });
+
+            var members = await _context.ContactGroupMembers
+                .Include(m => m.Contact)
+                .Where(m => m.GroupId == dto.GroupId)
+                .ToListAsync();
+
+            if (members.Count == 0)
+            {
+                return BadRequest(new { message = "The selected group is empty." });
+            }
+
+            int sentCount = 0;
+            int failedCount = 0;
+            var details = new List<string>();
+
+            bool isScheduled = dto.ScheduledAt.HasValue && dto.ScheduledAt.Value > DateTime.UtcNow;
+
+            foreach (var member in members)
+            {
+                if (member.Contact == null) continue;
+                string number = member.Contact.ContactNumber;
+
+                // Check receiver details
+                var receiverUser = await _context.Users.FirstOrDefaultAsync(u => u.MobileNumber == number);
+                bool isFriend = false;
+                int? receiverId = null;
+
+                if (receiverUser != null)
+                {
+                    receiverId = receiverUser.UserId;
+
+                    // 1. Blocklist check
+                    bool isBlocked = await _context.Blocklists.AnyAsync(b => b.UserId == receiverUser.UserId && b.BlockedNumber == sender.MobileNumber);
+                    if (isBlocked)
+                    {
+                        failedCount++;
+                        details.Add($"{number}: Blocked by receiver");
+                        continue;
+                    }
+
+                    // Friendship check
+                    isFriend = await _context.Friendships.AnyAsync(fc => 
+                        fc.Status == "accepted" && 
+                        ((fc.RequesterId == sender.UserId && fc.AddresseeId == receiverUser.UserId) || 
+                         (fc.RequesterId == receiverUser.UserId && fc.AddresseeId == sender.UserId)));
+
+                    // 2. Friends privacy check
+                    if (receiverUser.OnlyReceiveFromFriends && !isFriend)
+                    {
+                        failedCount++;
+                        details.Add($"{number}: Privacy settings restrict stranger messages");
+                        continue;
+                    }
+                }
+
+                // 3. Quota check
+                if (!isFriend)
+                {
+                    var quota = await _context.UserQuotas.FirstOrDefaultAsync(q => q.UserId == sender.UserId);
+                    if (quota == null || quota.FreeMessagesLeft <= 0)
+                    {
+                        failedCount++;
+                        details.Add($"{number}: Out of free message quota");
+                        continue;
+                    }
+
+                    quota.FreeMessagesLeft--;
+                    quota.UpdatedAt = DateTime.UtcNow;
+                }
+
+                // Create message
+                var message = new Message
+                {
+                    SenderId = sender.UserId,
+                    ReceiverNumber = number,
+                    ReceiverId = receiverId,
+                    Content = dto.Content,
+                    SentAt = DateTime.UtcNow,
+                    IsFreeFriendMsg = isFriend,
+                    ScheduledAt = isScheduled ? dto.ScheduledAt : null
+                };
+
+                _context.Messages.Add(message);
+                await _context.SaveChangesAsync();
+
+                // Add log
+                var log = new SMSLog
+                {
+                    MessageId = message.MessageId,
+                    GatewayStatusCode = "200_OK",
+                    DeliveryStatus = isScheduled ? "pending" : "delivered",
+                    UpdatedAt = DateTime.UtcNow
+                };
+                _context.SMSLogs.Add(log);
+                await _context.SaveChangesAsync();
+
+                sentCount++;
+                details.Add($"{number}: Successfully {(isScheduled ? "scheduled" : "sent")}");
+            }
+
+            return Ok(new
+            {
+                message = $"Processed group send. Sent: {sentCount}, Failed: {failedCount}.",
+                total = members.Count,
+                sent = sentCount,
+                failed = failedCount,
+                details
+            });
+        }
     }
 
     public class SendMessageDto
     {
         public string ReceiverNumber { get; set; } = string.Empty;
         public string Content { get; set; } = string.Empty;
+        public DateTime? ScheduledAt { get; set; }
+    }
+
+    public class BulkMessageDto
+    {
+        public int GroupId { get; set; }
+        public string Content { get; set; } = string.Empty;
+        public DateTime? ScheduledAt { get; set; }
     }
 }

@@ -18,7 +18,25 @@ import {
   login,
   register,
   checkUsername,
-  checkMobile
+  checkMobile,
+  verify2Fa,
+  toggle2Fa,
+  togglePrivacy,
+  getBlocklist,
+  blockNumber,
+  unblockNumber,
+  getTemplates,
+  createTemplate,
+  deleteTemplate,
+  getGroups,
+  createGroup,
+  deleteGroup,
+  getGroupMembers,
+  addGroupMember,
+  removeGroupMember,
+  sendBulkMessage,
+  getAnalyticsStats,
+  requestPaymentOtp
 } from './api';
 
 export default function App() {
@@ -72,6 +90,40 @@ export default function App() {
   
   // Refs
   const messagesEndRef = useRef(null);
+
+  // 2FA Auth & Payments
+  const [requires2Fa, setRequires2Fa] = useState(false);
+  const [twoFaUsername, setTwoFaUsername] = useState('');
+  const [otpInput, setOtpInput] = useState('');
+  const [showPaymentOtpField, setShowPaymentOtpField] = useState(false);
+  const [paymentOtpCode, setPaymentOtpCode] = useState('');
+
+  // Scheduled SMS
+  const [scheduleDate, setScheduleDate] = useState('');
+  const [showScheduler, setShowScheduler] = useState(false);
+
+  // SMS Templates
+  const [templates, setTemplates] = useState([]);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [templateForm, setTemplateForm] = useState({ title: '', body: '' });
+
+  // Groups & Bulk SMS
+  const [groups, setGroups] = useState([]);
+  const [selectedGroup, setSelectedGroup] = useState(null);
+  const [groupMembers, setGroupMembers] = useState([]);
+  const [groupForm, setGroupForm] = useState({ name: '' });
+  const [newGroupMemberId, setNewGroupMemberId] = useState('');
+  const [bulkContent, setBulkContent] = useState('');
+  const [bulkScheduleDate, setBulkScheduleDate] = useState('');
+  const [bulkResultsLog, setBulkResultsLog] = useState(null);
+
+  // Analytics Stats
+  const [analyticsStats, setAnalyticsStats] = useState(null);
+
+  // Privacy & Blocklist
+  const [blocklist, setBlocklist] = useState([]);
+  const [blockNumberInput, setBlockNumberInput] = useState('');
+  const [privacySettings, setPrivacySettings] = useState({ twoFactorEnabled: false, onlyReceiveFromFriends: false });
 
   // Initialize Captcha and load switcher users
   useEffect(() => {
@@ -209,6 +261,16 @@ export default function App() {
       .then(data => setActivatedServices(data.map(s => s.serviceName)))
       .catch(() => {});
     setProfileForm(loggedInUser);
+    
+    // Load new entities
+    loadTemplates();
+    loadGroups();
+    loadBlocklist();
+    loadAnalyticsStats();
+    setPrivacySettings({
+      twoFactorEnabled: loggedInUser.twoFactorEnabled,
+      onlyReceiveFromFriends: loggedInUser.onlyReceiveFromFriends
+    });
   };
 
   const loadChatDetails = () => {
@@ -232,15 +294,209 @@ export default function App() {
   const handleLoginSubmit = (e) => {
     e.preventDefault();
     login(loginForm.username, loginForm.password)
-      .then(user => {
-        localStorage.setItem('user', JSON.stringify(user));
-        setLoggedInUser(user);
-        triggerAlert('success', `Welcome back, ${user.name}!`);
-        setLoginForm({ username: '', password: '' });
+      .then(res => {
+        if (res.requires2Fa) {
+          setRequires2Fa(true);
+          setTwoFaUsername(res.username);
+          triggerAlert('success', `Mã xác thực OTP đã được gửi giả lập tới email: ${res.email}. Vui lòng kiểm tra Console/Terminal backend để lấy mã.`);
+        } else {
+          localStorage.setItem('user', JSON.stringify(res));
+          setLoggedInUser(res);
+          triggerAlert('success', `Welcome back, ${res.name}!`);
+          setLoginForm({ username: '', password: '' });
+        }
       })
       .catch(err => {
         const errorMsg = err.response?.data?.message || 'Login failed.';
         triggerAlert('error', errorMsg);
+      });
+  };
+
+  const handle2FaVerifySubmit = (e) => {
+    e.preventDefault();
+    verify2Fa(twoFaUsername, otpInput)
+      .then(user => {
+        localStorage.setItem('user', JSON.stringify(user));
+        setLoggedInUser(user);
+        setRequires2Fa(false);
+        setOtpInput('');
+        triggerAlert('success', `Logged in successfully as ${user.name}!`);
+      })
+      .catch(err => {
+        const errorMsg = err.response?.data?.message || 'Invalid or expired OTP.';
+        triggerAlert('error', errorMsg);
+      });
+  };
+
+  // Helper Methods for Templates, Groups, Privacy, and Blocklist
+  const loadTemplates = () => {
+    getTemplates()
+      .then(setTemplates)
+      .catch(() => {});
+  };
+
+  const handleCreateTemplate = (e) => {
+    e.preventDefault();
+    if (!templateForm.title.trim() || !templateForm.body.trim()) return;
+    createTemplate(templateForm.title, templateForm.body)
+      .then(newTpl => {
+        setTemplates([...templates, newTpl]);
+        setTemplateForm({ title: '', body: '' });
+        triggerAlert('success', 'Custom template created successfully.');
+      })
+      .catch(() => triggerAlert('error', 'Failed to create template.'));
+  };
+
+  const handleDeleteTemplate = (id) => {
+    if (!window.confirm('Delete this template?')) return;
+    deleteTemplate(id)
+      .then(() => {
+        setTemplates(templates.filter(t => t.id !== id));
+        triggerAlert('success', 'Template deleted.');
+      })
+      .catch(() => triggerAlert('error', 'Failed to delete template.'));
+  };
+
+  const loadGroups = () => {
+    getGroups()
+      .then(setGroups)
+      .catch(() => {});
+  };
+
+  const handleCreateGroup = (e) => {
+    e.preventDefault();
+    if (!groupForm.name.trim()) return;
+    createGroup(groupForm.name)
+      .then(newGrp => {
+        setGroups([...groups, newGrp]);
+        setGroupForm({ name: '' });
+        triggerAlert('success', 'Contact group created.');
+      })
+      .catch(() => triggerAlert('error', 'Failed to create group.'));
+  };
+
+  const handleDeleteGroup = (id, name) => {
+    if (!window.confirm(`Delete group "${name}"? This removes members but doesn't delete contacts.`)) return;
+    deleteGroup(id)
+      .then(() => {
+        setGroups(groups.filter(g => g.id !== id));
+        if (selectedGroup?.id === id) {
+          setSelectedGroup(null);
+          setGroupMembers([]);
+        }
+        triggerAlert('success', 'Group deleted.');
+      })
+      .catch(() => triggerAlert('error', 'Failed to delete group.'));
+  };
+
+  const loadGroupMembers = (groupId) => {
+    getGroupMembers(groupId)
+      .then(setGroupMembers)
+      .catch(() => {});
+  };
+
+  const handleAddGroupMember = (e) => {
+    e.preventDefault();
+    if (!selectedGroup || !newGroupMemberId) return;
+    addGroupMember(selectedGroup.id, parseInt(newGroupMemberId))
+      .then(res => {
+        setGroupMembers([...groupMembers, res.contact]);
+        setNewGroupMemberId('');
+        triggerAlert('success', res.message);
+      })
+      .catch(err => triggerAlert('error', err.response?.data?.message || 'Failed to add member.'));
+  };
+
+  const handleRemoveGroupMember = (contactId) => {
+    if (!selectedGroup) return;
+    removeGroupMember(selectedGroup.id, contactId)
+      .then(() => {
+        setGroupMembers(groupMembers.filter(m => m.id !== contactId));
+        triggerAlert('success', 'Member removed from group.');
+      })
+      .catch(() => triggerAlert('error', 'Failed to remove member.'));
+  };
+
+  const loadBlocklist = () => {
+    getBlocklist()
+      .then(setBlocklist)
+      .catch(() => {});
+  };
+
+  const handleBlockNumber = (e) => {
+    e.preventDefault();
+    if (blockNumberInput.length !== 10) {
+      triggerAlert('error', 'Phone number must be exactly 10 digits.');
+      return;
+    }
+    blockNumber(blockNumberInput)
+      .then(res => {
+        setBlocklist([...blocklist, res.block]);
+        setBlockNumberInput('');
+        triggerAlert('success', res.message);
+      })
+      .catch(err => triggerAlert('error', err.response?.data?.message || 'Failed to block number.'));
+  };
+
+  const handleUnblockNumber = (id) => {
+    unblockNumber(id)
+      .then(res => {
+        setBlocklist(blocklist.filter(b => b.id !== id));
+        triggerAlert('success', res.message);
+      })
+      .catch(() => triggerAlert('error', 'Failed to unblock number.'));
+  };
+
+  const handleToggle2FaSetting = (enabled) => {
+    toggle2Fa(enabled)
+      .then(res => {
+        setPrivacySettings(prev => ({ ...prev, twoFactorEnabled: enabled }));
+        setLoggedInUser(prev => ({ ...prev, twoFactorEnabled: enabled }));
+        const u = JSON.parse(localStorage.getItem('user') || '{}');
+        u.twoFactorEnabled = enabled;
+        localStorage.setItem('user', JSON.stringify(u));
+        triggerAlert('success', res.message);
+      })
+      .catch(() => triggerAlert('error', 'Failed to update 2FA setting.'));
+  };
+
+  const handleTogglePrivacySetting = (enabled) => {
+    togglePrivacy(enabled)
+      .then(res => {
+        setPrivacySettings(prev => ({ ...prev, onlyReceiveFromFriends: enabled }));
+        setLoggedInUser(prev => ({ ...prev, onlyReceiveFromFriends: enabled }));
+        const u = JSON.parse(localStorage.getItem('user') || '{}');
+        u.onlyReceiveFromFriends = enabled;
+        localStorage.setItem('user', JSON.stringify(u));
+        triggerAlert('success', res.message);
+      })
+      .catch(() => triggerAlert('error', 'Failed to update privacy setting.'));
+  };
+
+  const loadAnalyticsStats = () => {
+    getAnalyticsStats()
+      .then(setAnalyticsStats)
+      .catch(() => {});
+  };
+
+  const handleSendBulkMessage = (e) => {
+    e.preventDefault();
+    if (!selectedGroup || !bulkContent.trim()) return;
+
+    setBulkResultsLog('Sending bulk messages, please wait...');
+
+    sendBulkMessage(selectedGroup.id, bulkContent.trim(), bulkScheduleDate || null)
+      .then(res => {
+        setBulkContent('');
+        setBulkScheduleDate('');
+        let logStr = `Bulk Send Finished:\n` + res.details.join('\n');
+        setBulkResultsLog(logStr);
+        loadAnalyticsStats();
+        triggerAlert('success', res.message);
+      })
+      .catch(err => {
+        setBulkResultsLog(null);
+        triggerAlert('error', err.response?.data?.message || 'Failed to send bulk messages.');
       });
   };
 
@@ -374,11 +630,14 @@ export default function App() {
     e.preventDefault();
     if (!newMessage.trim() || newMessage.length > 120) return;
 
-    sendMessage(loggedInUser.id, selectedContact.contactNumber, newMessage.trim())
+    sendMessage(loggedInUser.id, selectedContact.contactNumber, newMessage.trim(), scheduleDate || null)
       .then(msg => {
         setChatMessages([...chatMessages, msg]);
         setNewMessage('');
+        setScheduleDate('');
+        setShowScheduler(false);
         getQuota(loggedInUser.id, selectedContact.contactNumber).then(setRemainingQuota);
+        loadAnalyticsStats();
       })
       .catch(err => {
         const errorMsg = err.response?.data?.message || 'Failed to send message.';
@@ -398,6 +657,8 @@ export default function App() {
   const handlePaymentCheckoutClick = () => {
     if (selectedServices.length === 0) return;
     setPaymentForm({ cardNumber: '', expiryDate: '', cvv: '' });
+    setShowPaymentOtpField(false);
+    setPaymentOtpCode('');
     setShowPaymentModal(true);
   };
 
@@ -405,9 +666,23 @@ export default function App() {
   const handlePaymentSubmit = (e) => {
     e.preventDefault();
     
+    // If 2FA is enabled, and OTP is not showing yet, request OTP
+    if (loggedInUser.twoFactorEnabled && !showPaymentOtpField) {
+      requestPaymentOtp()
+        .then(() => {
+          setShowPaymentOtpField(true);
+          setPaymentOtpCode('');
+          triggerAlert('success', 'Bảo mật 2FA đang bật. Mã xác thực giao dịch OTP đã được gửi giả lập tới email của bạn. Vui lòng xem Console backend để lấy mã.');
+        })
+        .catch(err => {
+          triggerAlert('error', err.response?.data?.message || 'Failed to request payment OTP.');
+        });
+      return;
+    }
+
     // Trigger sequential activation API calls for each selected service
     const promises = selectedServices.map(serviceName => 
-      activateService(loggedInUser.id, serviceName, paymentForm.cardNumber, paymentForm.expiryDate, paymentForm.cvv)
+      activateService(loggedInUser.id, serviceName, paymentForm.cardNumber, paymentForm.expiryDate, paymentForm.cvv, paymentOtpCode)
     );
 
     Promise.all(promises)
@@ -415,6 +690,9 @@ export default function App() {
         setActivatedServices([...activatedServices, ...selectedServices]);
         setSelectedServices([]);
         setShowPaymentModal(false);
+        setShowPaymentOtpField(false);
+        setPaymentOtpCode('');
+        loadAnalyticsStats();
         triggerAlert('success', 'Selected premium services activated successfully!');
       })
       .catch(err => {
@@ -683,7 +961,41 @@ export default function App() {
             </button>
           </div>
 
-          {authMode === 'login' ? (
+          {requires2Fa ? (
+            /* 2FA CODE FORM */
+            <div className="auth-card">
+              <h2>Xác thực 2 lớp (2FA)</h2>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '15px' }}>
+                Vui lòng nhập mã OTP 6 số đã được gửi tới email của bạn.
+              </p>
+              <form onSubmit={handle2FaVerifySubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                <div className="form-group">
+                  <label>Mã OTP</label>
+                  <input 
+                    type="text" 
+                    placeholder="Nhập 6 số (e.g. 123456)" 
+                    value={otpInput}
+                    onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, '').substring(0, 6))}
+                    maxLength={6}
+                    required
+                  />
+                </div>
+                <button type="submit" className="btn btn-primary" style={{ padding: '12px' }}>
+                  Xác minh & Đăng nhập
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  onClick={() => {
+                    setRequires2Fa(false);
+                    setOtpInput('');
+                  }}
+                >
+                  Quay lại đăng nhập
+                </button>
+              </form>
+            </div>
+          ) : authMode === 'login' ? (
             /* LOGIN CARD */
             <div className="auth-card">
               <h2>Account Login</h2>
@@ -873,8 +1185,8 @@ export default function App() {
         </div>
 
         {/* Tab Buttons */}
-        <div className="sidebar-tabs">
-          <button className={`tab-btn ${activeTab === 'chats' ? 'active' : ''}`} onClick={() => setActiveTab('chats')}>
+        <div className="sidebar-tabs" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px', padding: '8px' }}>
+          <button className={`tab-btn ${activeTab === 'chats' ? 'active' : ''}`} onClick={() => { setActiveTab('chats'); setSelectedContact(null); }}>
             Chats
           </button>
           <button className={`tab-btn ${activeTab === 'contacts' ? 'active' : ''}`} onClick={() => setActiveTab('contacts')}>
@@ -886,6 +1198,18 @@ export default function App() {
           <button className={`tab-btn ${activeTab === 'services' ? 'active' : ''}`} onClick={() => setActiveTab('services')}>
             Services
           </button>
+          <button className={`tab-btn ${activeTab === 'templates' ? 'active' : ''}`} onClick={() => { setActiveTab('templates'); loadTemplates(); }}>
+            Templates
+          </button>
+          <button className={`tab-btn ${activeTab === 'groups' ? 'active' : ''}`} onClick={() => { setActiveTab('groups'); loadGroups(); setSelectedGroup(null); setGroupMembers([]); setBulkResultsLog(null); }}>
+            Groups
+          </button>
+          <button className={`tab-btn ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => { setActiveTab('analytics'); loadAnalyticsStats(); }}>
+            Stats
+          </button>
+          <button className={`tab-btn ${activeTab === 'security' ? 'active' : ''}`} onClick={() => { setActiveTab('security'); loadBlocklist(); }}>
+            Security
+          </button>
           <button className={`tab-btn ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>
             Profile
           </button>
@@ -893,7 +1217,7 @@ export default function App() {
 
         <div className="sidebar-list-container">
           {renderSidebarList()}
-          {['requests', 'services', 'profile'].includes(activeTab) && (
+          {['requests', 'services', 'profile', 'templates', 'groups', 'analytics', 'security'].includes(activeTab) && (
             <div className="empty-list-message" style={{ opacity: 0.7 }}>
               Content is open in the main panel.
             </div>
@@ -955,11 +1279,17 @@ export default function App() {
                   const isSentByMe = msg.senderId === loggedInUser.id;
                   const date = new Date(msg.sentTime);
                   const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  const isPending = msg.scheduledAt && new Date(msg.scheduledAt) > new Date();
                   return (
                     <div key={msg.id} className={`message-bubble-row ${isSentByMe ? 'sent' : 'received'}`}>
                       <div className="message-bubble">
                         <span className="message-text">{msg.content}</span>
-                        <span className="message-time">{formattedTime}</span>
+                        <span className="message-time">
+                          {formattedTime}
+                          {isPending && (
+                            <span className="msg-scheduled-badge">⏰ Hẹn giờ: {new Date(msg.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          )}
+                        </span>
                       </div>
                     </div>
                   );
@@ -968,7 +1298,79 @@ export default function App() {
               <div ref={messagesEndRef} />
             </div>
 
-            <form className="chat-input-area" onSubmit={handleSendMessageSubmit}>
+            <form className="chat-input-area" onSubmit={handleSendMessageSubmit} style={{ position: 'relative' }}>
+              {/* Composer Toolbar */}
+              <div className="composer-tools-row">
+                <button 
+                  type="button" 
+                  className={`composer-tool-btn ${showScheduler ? 'active' : ''}`}
+                  onClick={() => setShowScheduler(!showScheduler)}
+                >
+                  ⏰ Hẹn giờ {scheduleDate && '✓'}
+                </button>
+                <button 
+                  type="button" 
+                  className={`composer-tool-btn ${showTemplatePicker ? 'active' : ''}`}
+                  onClick={() => setShowTemplatePicker(!showTemplatePicker)}
+                >
+                  📄 Mẫu tin nhắn
+                </button>
+                {scheduleDate && (
+                  <span style={{ fontSize: '0.75rem', color: '#fbbf24', marginLeft: 'auto' }}>
+                    Hẹn giờ: {new Date(scheduleDate).toLocaleString()}
+                  </span>
+                )}
+              </div>
+
+              {/* Scheduler Popover */}
+              {showScheduler && (
+                <div className="scheduler-popover">
+                  <label style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>Chọn Ngày/Giờ Gửi:</label>
+                  <input 
+                    type="datetime-local" 
+                    value={scheduleDate}
+                    onChange={(e) => setScheduleDate(e.target.value)}
+                    min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
+                  />
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                    <button type="button" className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: '0.72rem' }} onClick={() => { setScheduleDate(''); setShowScheduler(false); }}>
+                      Xóa
+                    </button>
+                    <button type="button" className="btn btn-primary" style={{ padding: '2px 8px', fontSize: '0.72rem' }} onClick={() => setShowScheduler(false)}>
+                      Xác nhận
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Template Picker Popover */}
+              {showTemplatePicker && (
+                <div className="template-quick-picker">
+                  <div style={{ padding: '10px', fontWeight: 'bold', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>Chọn tin nhắn mẫu</span>
+                    <button type="button" style={{ background: 'none', border: 'none', color: '#ff5555', cursor: 'pointer' }} onClick={() => setShowTemplatePicker(false)}>✕</button>
+                  </div>
+                  {templates.length === 0 ? (
+                    <div style={{ padding: '15px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>Không có mẫu tin nhắn.</div>
+                  ) : (
+                    templates.map(tpl => (
+                      <div 
+                        key={tpl.id} 
+                        className="template-picker-item"
+                        onClick={() => {
+                          let text = tpl.body.replace('{Name}', selectedContact.name);
+                          setNewMessage(text.substring(0, 120));
+                          setShowTemplatePicker(false);
+                        }}
+                      >
+                        <h5>{tpl.title}</h5>
+                        <p>{tpl.body}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
               <div className="chat-input-row">
                 <div className="chat-textarea-container">
                   <textarea 
@@ -1347,6 +1749,410 @@ export default function App() {
             </form>
           </div>
         )}
+
+        {/* Templates Tab content */}
+        {activeTab === 'templates' && (
+          <div className="view-panel">
+            <div className="view-header">
+              <h1>Quản lý Tin nhắn mẫu</h1>
+              <p>Tạo và quản lý các câu chúc, mẫu tin nhắn công việc hoặc lời nhắc tự động.</p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '25px' }}>
+              <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', padding: '20px', height: 'fit-content' }}>
+                <h3 style={{ marginBottom: '15px', color: 'var(--color-primary)' }}>Tạo mẫu mới</h3>
+                <form onSubmit={handleCreateTemplate} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                  <div className="form-group">
+                    <label>Tiêu đề mẫu</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. Lời chúc Sinh nhật" 
+                      value={templateForm.title}
+                      onChange={(e) => setTemplateForm({ ...templateForm, title: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Nội dung tin nhắn</label>
+                    <textarea 
+                      placeholder="Sử dụng {Name} để tự điền tên người nhận." 
+                      value={templateForm.body}
+                      onChange={(e) => setTemplateForm({ ...templateForm, body: e.target.value.substring(0, 120) })}
+                      rows={4}
+                      required
+                    />
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      Hạn mức: {templateForm.body.length}/120 ký tự.
+                    </span>
+                  </div>
+                  <button type="submit" className="btn btn-primary">Lưu mẫu tin</button>
+                </form>
+              </div>
+
+              <div className="templates-grid">
+                {templates.length === 0 ? (
+                  <div className="empty-list-message" style={{ gridColumn: '1/-1' }}>
+                    Chưa có tin nhắn mẫu nào. Hãy tạo một mẫu ở form bên trái!
+                  </div>
+                ) : (
+                  templates.map(tpl => (
+                    <div key={tpl.id} className="template-card">
+                      <div className="template-card-header">
+                        <span className="template-card-title">{tpl.title}</span>
+                        <span className={`template-badge ${tpl.userId ? 'custom' : 'system'}`}>
+                          {tpl.userId ? 'Custom' : 'System'}
+                        </span>
+                      </div>
+                      <div className="template-card-body">
+                        {tpl.body}
+                      </div>
+                      <div className="template-card-actions">
+                        {tpl.userId && (
+                          <button 
+                            className="btn-icon-danger"
+                            onClick={() => handleDeleteTemplate(tpl.id)}
+                            title="Xóa mẫu tin"
+                          >
+                            🗑
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Groups Tab content */}
+        {activeTab === 'groups' && (
+          <div className="view-panel">
+            <div className="view-header">
+              <h1>Gửi tin nhắn hàng loạt theo nhóm</h1>
+              <p>Tạo danh mục nhóm danh bạ và gửi tin nhắn hàng loạt chỉ với 1 click.</p>
+            </div>
+
+            <div className="groups-container">
+              <div className="groups-sidebar">
+                <h3 style={{ fontSize: '1rem', fontWeight: 'bold' }}>Danh sách nhóm</h3>
+                <form onSubmit={handleCreateGroup} style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
+                  <input 
+                    type="text" 
+                    placeholder="Tên nhóm mới"
+                    value={groupForm.name}
+                    onChange={(e) => setGroupForm({ name: e.target.value })}
+                    style={{ flex: 1, background: 'var(--bg-app)', border: '1px solid var(--border-light)', color: 'var(--text-main)', padding: '6px 10px', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', outline: 'none' }}
+                    required
+                  />
+                  <button type="submit" className="btn btn-primary" style={{ padding: '6px 10px', fontSize: '0.8rem' }}>+</button>
+                </form>
+
+                <div className="groups-list">
+                  {groups.length === 0 ? (
+                    <div style={{ padding: '15px', fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center' }}>Chưa có nhóm nào.</div>
+                  ) : (
+                    groups.map(g => (
+                      <div 
+                        key={g.id} 
+                        className={`group-list-item ${selectedGroup?.id === g.id ? 'active' : ''}`}
+                        onClick={() => {
+                          setSelectedGroup(g);
+                          loadGroupMembers(g.id);
+                          setBulkResultsLog(null);
+                        }}
+                      >
+                        <span className="group-list-name">👥 {g.name}</span>
+                        <button 
+                          style={{ background: 'none', border: 'none', color: '#ff5555', cursor: 'pointer', fontSize: '0.8rem' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteGroup(g.id, g.name);
+                          }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="group-details-pane">
+                {selectedGroup ? (
+                  <>
+                    <div className="group-pane-header">
+                      <h3 className="group-pane-title">Chi tiết nhóm: {selectedGroup.name}</h3>
+                      <form onSubmit={handleAddGroupMember} style={{ display: 'flex', gap: '8px' }}>
+                        <select 
+                          value={newGroupMemberId} 
+                          onChange={(e) => setNewGroupMemberId(e.target.value)}
+                          style={{ background: 'var(--bg-app)', border: '1px solid var(--border-light)', color: 'var(--text-main)', padding: '6px 10px', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', outline: 'none' }}
+                          required
+                        >
+                          <option value="">-- Thêm liên hệ vào nhóm --</option>
+                          {contacts.map(c => {
+                            const inGroup = groupMembers.some(m => m.id === c.id);
+                            if (inGroup) return null;
+                            return (
+                              <option key={c.id} value={c.id}>{c.firstName} {c.lastName} ({c.contactNumber})</option>
+                            );
+                          })}
+                        </select>
+                        <button type="submit" className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>Thêm</button>
+                      </form>
+                    </div>
+
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                      <h4 style={{ fontSize: '0.9rem', marginBottom: '10px' }}>Thành viên nhóm ({groupMembers.length})</h4>
+                      {groupMembers.length === 0 ? (
+                        <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                          Nhóm chưa có thành viên. Hãy chọn liên hệ từ danh sách trên để thêm!
+                        </div>
+                      ) : (
+                        <div className="group-members-grid">
+                          {groupMembers.map(m => (
+                            <div key={m.id} className="group-member-card">
+                              <div className="group-member-info">
+                                <h5>{m.firstName} {m.lastName}</h5>
+                                <p>{m.contactNumber}</p>
+                              </div>
+                              <button 
+                                className="btn-icon-danger"
+                                onClick={() => handleRemoveGroupMember(m.id)}
+                                title="Xóa khỏi nhóm"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {groupMembers.length > 0 && (
+                      <div className="group-bulk-box">
+                        <h4 style={{ fontSize: '0.9rem', marginBottom: '10px', color: 'var(--color-primary)' }}>Soạn tin nhắn hàng loạt</h4>
+                        <form onSubmit={handleSendBulkMessage} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          <textarea 
+                            placeholder="Nhập nội dung gửi cho cả nhóm..."
+                            value={bulkContent}
+                            onChange={(e) => setBulkContent(e.target.value.substring(0, 120))}
+                            rows={2}
+                            required
+                          />
+                          
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <label style={{ fontSize: '0.78rem' }}>Hẹn giờ gửi (Tùy chọn):</label>
+                              <input 
+                                type="datetime-local" 
+                                value={bulkScheduleDate}
+                                onChange={(e) => setBulkScheduleDate(e.target.value)}
+                                style={{ background: 'var(--bg-app)', border: '1px solid var(--border-light)', color: 'var(--text-main)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.78rem' }}
+                                min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
+                              />
+                            </div>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                              Đã viết: {bulkContent.length}/120
+                            </span>
+                            <button type="submit" className="btn btn-primary" style={{ marginLeft: 'auto', padding: '8px 20px' }}>
+                              Gửi hàng loạt 🚀
+                            </button>
+                          </div>
+                        </form>
+
+                        {bulkResultsLog && (
+                          <div className="bulk-results-log">
+                            {bulkResultsLog}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    <div style={{ fontSize: '3rem', marginBottom: '15px' }}>👥</div>
+                    <h3>Chưa chọn nhóm</h3>
+                    <p>Hãy chọn một nhóm ở menu bên trái để quản lý thành viên hoặc gửi tin nhắn nhóm.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Analytics Tab content */}
+        {activeTab === 'analytics' && analyticsStats && (
+          <div className="view-panel">
+            <div className="view-header">
+              <h1>Thống kê & Báo cáo trạng thái</h1>
+              <p>Theo dõi hiệu suất gửi tin nhắn, tỷ lệ thành công và kiểm soát hạn mức quota của bạn.</p>
+            </div>
+
+            <div className="analytics-grid">
+              <div className="analytics-card">
+                <div className="analytics-card-icon sent">💬</div>
+                <div className="analytics-card-content">
+                  <h4>Tổng tin nhắn gửi</h4>
+                  <p>{analyticsStats.totalSent}</p>
+                </div>
+              </div>
+              <div className="analytics-card">
+                <div className="analytics-card-icon success">✓</div>
+                <div className="analytics-card-content">
+                  <h4>Gửi Thành công</h4>
+                  <p>{analyticsStats.deliveredCount}</p>
+                </div>
+              </div>
+              <div className="analytics-card">
+                <div className="analytics-card-icon failed">✗</div>
+                <div className="analytics-card-content">
+                  <h4>Gửi thất bại</h4>
+                  <p>{analyticsStats.failedCount}</p>
+                </div>
+              </div>
+              <div className="analytics-card">
+                <div className="analytics-card-icon pending">⏰</div>
+                <div className="analytics-card-content">
+                  <h4>Chờ gửi (Hẹn giờ)</h4>
+                  <p>{analyticsStats.pendingCount}</p>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '25px' }}>
+              <div className="analytics-chart-panel">
+                <h3 className="analytics-chart-title">Lưu lượng gửi tin nhắn (7 ngày qua)</h3>
+                
+                <div className="custom-chart-container">
+                  {analyticsStats.dailyStats.map((item, idx) => {
+                    const maxVal = Math.max(...analyticsStats.dailyStats.map(d => d.count), 1);
+                    const heightPercent = Math.min((item.count / maxVal) * 100, 100);
+                    const shortDate = item.date.substring(5);
+                    
+                    return (
+                      <div key={idx} className="chart-bar-column">
+                        <div 
+                          className="chart-bar-body" 
+                          style={{ height: `${heightPercent}%` }}
+                        >
+                          <div className="chart-bar-tooltip">{item.count} SMS</div>
+                        </div>
+                        <div className="chart-axis-label">{shortDate}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="quota-gauge-card">
+                <div className="quota-gauge-header">
+                  <span>Hạn mức gửi tin miễn phí còn lại (Người lạ)</span>
+                  <span style={{ fontWeight: 'bold' }}>{analyticsStats.freeLeft} / 5 tin</span>
+                </div>
+                <div className="quota-gauge-progress-bg">
+                  <div 
+                    className={`quota-gauge-progress-fill ${analyticsStats.freeLeft <= 1 ? 'danger' : analyticsStats.freeLeft <= 3 ? 'warning' : ''}`}
+                    style={{ width: `${(analyticsStats.freeLeft / 5) * 100}%` }}
+                  />
+                </div>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
+                  * Hạn mức 5 tin nhắn miễn phí áp dụng khi gửi tin tới mỗi số điện thoại người lạ (chưa nằm trong danh sách bạn bè). Thêm họ làm bạn bè để được nhắn tin miễn phí vô hạn!
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Security & Privacy Settings Tab */}
+        {activeTab === 'security' && (
+          <div className="view-panel">
+            <div className="view-header">
+              <h1>Cài đặt riêng tư & Bảo mật tài khoản</h1>
+              <p>Cấu hình xác thực 2 lớp, tùy chọn chặn người lạ và quản lý danh sách đen.</p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '25px' }}>
+              <div>
+                <h3 className="settings-section-title">Bảo mật tài khoản</h3>
+                
+                <div className="privacy-toggle-card">
+                  <div className="privacy-toggle-info">
+                    <h4>Xác thực 2 lớp qua Email (2FA)</h4>
+                    <p>Yêu cầu nhập mã OTP gửi về Email khi đăng nhập tài khoản hoặc mua dịch vụ VAS.</p>
+                  </div>
+                  <div>
+                    <input 
+                      type="checkbox" 
+                      className="checklist-checkbox" 
+                      checked={privacySettings.twoFactorEnabled}
+                      onChange={(e) => handleToggle2FaSetting(e.target.checked)}
+                      style={{ width: '22px', height: '22px' }}
+                    />
+                  </div>
+                </div>
+
+                <h3 className="settings-section-title">Cài đặt Quyền riêng tư</h3>
+                
+                <div className="privacy-toggle-card">
+                  <div className="privacy-toggle-info">
+                    <h4>Chỉ nhận SMS từ Bạn bè</h4>
+                    <p>Từ chối nhận tin nhắn từ những số lạ (người lạ không thể gửi 5 tin nhắn miễn phí cho bạn).</p>
+                  </div>
+                  <div>
+                    <input 
+                      type="checkbox" 
+                      className="checklist-checkbox" 
+                      checked={privacySettings.onlyReceiveFromFriends}
+                      onChange={(e) => handleTogglePrivacySetting(e.target.checked)}
+                      style={{ width: '22px', height: '22px' }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="blocklist-container">
+                <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '15px', color: 'var(--color-primary)' }}>
+                  Danh sách chặn (Blocklist)
+                </h3>
+                
+                <form onSubmit={handleBlockNumber} className="blocklist-input-group">
+                  <input 
+                    type="text" 
+                    placeholder="Số điện thoại cần chặn (10 số)" 
+                    value={blockNumberInput}
+                    onChange={(e) => setBlockNumberInput(e.target.value.replace(/\D/g, '').substring(0, 10))}
+                    maxLength={10}
+                    required
+                  />
+                  <button type="submit" className="btn btn-danger" style={{ padding: '8px 16px', fontSize: '0.82rem' }}>Block</button>
+                </form>
+
+                <div className="block-items-list">
+                  {blocklist.length === 0 ? (
+                    <div style={{ padding: '15px', fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>Danh sách chặn trống.</div>
+                  ) : (
+                    blocklist.map(b => (
+                      <div key={b.id} className="block-item">
+                        <div>
+                          <div className="block-item-number">🚫 {b.blockedNumber}</div>
+                        </div>
+                        <button 
+                          className="btn-icon-danger"
+                          onClick={() => handleUnblockNumber(b.id)}
+                          style={{ fontSize: '0.78rem' }}
+                        >
+                          Hủy chặn
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Add Contact Modal Dialog */}
@@ -1444,6 +2250,23 @@ export default function App() {
               <div style={{ fontSize: '1rem', fontWeight: 'bold', textAlign: 'center', color: 'var(--color-primary-hover)' }}>
                 Billed Amount: ${getTotalSelectedPrice()}
               </div>
+
+              {showPaymentOtpField && (
+                <div className="form-group" style={{ background: 'rgba(245, 158, 11, 0.08)', padding: '12px', borderRadius: '4px', border: '1px dashed rgba(245, 158, 11, 0.3)' }}>
+                  <label style={{ color: '#fbbf24', fontWeight: 'bold' }}>Nhập mã OTP Xác thực thanh toán</label>
+                  <input 
+                    type="text" 
+                    placeholder="Nhập mã OTP 6 số" 
+                    value={paymentOtpCode}
+                    onChange={(e) => setPaymentOtpCode(e.target.value.replace(/\D/g, '').substring(0, 6))}
+                    maxLength={6}
+                    required 
+                  />
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
+                    * Vui lòng kiểm tra Console backend để lấy mã OTP giao dịch.
+                  </span>
+                </div>
+              )}
 
               <div className="form-group">
                 <label>Credit Card Number</label>

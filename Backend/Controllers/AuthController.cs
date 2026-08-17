@@ -168,11 +168,66 @@ namespace Backend.Controllers
                 return BadRequest(new { message = "This account is currently inactive. Please contact support." });
             }
 
+            // Check if 2FA is enabled
+            if (user.TwoFactorEnabled)
+            {
+                string code = Random.Shared.Next(100000, 999999).ToString();
+                user.TwoFactorCode = code;
+                user.TwoFactorExpiry = DateTime.UtcNow.AddMinutes(5);
+                await _context.SaveChangesAsync();
+
+                // Console output for simulation/retrieval
+                Console.WriteLine($"[2FA OTP] Generated login code for user '{user.Username}': {code} (Sent to {user.Email})");
+
+                return Ok(new { requires2Fa = true, username = user.Username, email = user.Email });
+            }
+
             // Generate JWT Token
             user.Token = GenerateJwtToken(user);
 
             return Ok(user);
         }
+
+        // POST: api/auth/verify-2fa
+        [HttpPost("verify-2fa")]
+        public async Task<IActionResult> Verify2Fa([FromBody] Verify2FaDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.Code))
+            {
+                return BadRequest(new { message = "Username and OTP code are required." });
+            }
+
+            var user = await _context.Users
+                .Include(u => u.Profile)
+                .Include(u => u.Quota)
+                .FirstOrDefaultAsync(u => u.Username.ToLower() == dto.Username.ToLower());
+
+            if (user == null)
+            {
+                return NotFound(new { message = "User not found." });
+            }
+
+            if (user.TwoFactorCode != dto.Code || user.TwoFactorExpiry == null || user.TwoFactorExpiry < DateTime.UtcNow)
+            {
+                return BadRequest(new { message = "Invalid or expired OTP code." });
+            }
+
+            // Reset OTP fields
+            user.TwoFactorCode = null;
+            user.TwoFactorExpiry = null;
+            await _context.SaveChangesAsync();
+
+            // Generate JWT Token
+            user.Token = GenerateJwtToken(user);
+
+            return Ok(user);
+        }
+    }
+
+    public class Verify2FaDto
+    {
+        public string Username { get; set; } = string.Empty;
+        public string Code { get; set; } = string.Empty;
     }
 
     public class RegisterDto

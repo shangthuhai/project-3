@@ -41,6 +41,23 @@ namespace Backend.Models
         [JsonPropertyName("isActive")]
         public bool IsActive { get; set; } = true;
 
+        [Column("two_factor_enabled")]
+        [JsonPropertyName("twoFactorEnabled")]
+        public bool TwoFactorEnabled { get; set; } = false;
+
+        [MaxLength(6)]
+        [Column("two_factor_code")]
+        [JsonPropertyName("twoFactorCode")]
+        public string? TwoFactorCode { get; set; }
+
+        [Column("two_factor_expiry")]
+        [JsonPropertyName("twoFactorExpiry")]
+        public DateTime? TwoFactorExpiry { get; set; }
+
+        [Column("only_friends_sms")]
+        [JsonPropertyName("onlyReceiveFromFriends")]
+        public bool OnlyReceiveFromFriends { get; set; } = false;
+
         [Column("created_at")]
         [JsonPropertyName("createdAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

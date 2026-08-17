@@ -10,6 +10,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite("Data Source=smschat.db"));
 
+// Register background scheduled message processor
+builder.Services.AddHostedService<Backend.Services.SMSBackgroundService>();
+
 // Configure JWT Authentication
 builder.Services.AddAuthentication(options =>
 {

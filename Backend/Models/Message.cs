@@ -37,6 +37,10 @@ namespace Backend.Models
         [JsonPropertyName("isFreeFriendMsg")]
         public bool IsFreeFriendMsg { get; set; } = false;
 
+        [Column("scheduled_at")]
+        [JsonPropertyName("scheduledAt")]
+        public DateTime? ScheduledAt { get; set; }
+
         [Column("sent_at")]
         [JsonPropertyName("sentTime")]
         public DateTime SentAt { get; set; } = DateTime.UtcNow;

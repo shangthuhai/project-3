@@ -54,6 +54,24 @@ namespace Backend.Controllers
             return activations;
         }
 
+        // POST: api/services/request-otp
+        [HttpPost("request-otp")]
+        public async Task<IActionResult> RequestOtp()
+        {
+            int userId = AuthenticatedUserId;
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return NotFound(new { message = "User not found." });
+
+            string code = Random.Shared.Next(100000, 999999).ToString();
+            user.TwoFactorCode = code;
+            user.TwoFactorExpiry = DateTime.UtcNow.AddMinutes(5);
+            await _context.SaveChangesAsync();
+
+            Console.WriteLine($"[2FA OTP] Generated VAS payment code for user '{user.Username}': {code} (Sent to {user.Email})");
+
+            return Ok(new { message = "OTP has been sent to your email.", email = user.Email });
+        }
+
         // POST: api/services/activate
         [HttpPost("activate")]
         public async Task<IActionResult> ActivateService([FromBody] ActivateServiceDto dto)
@@ -65,6 +83,25 @@ namespace Backend.Controllers
             if (user == null)
             {
                 return NotFound(new { message = "User not found." });
+            }
+
+            // Check 2FA security
+            if (user.TwoFactorEnabled)
+            {
+                if (string.IsNullOrWhiteSpace(dto.OtpCode))
+                {
+                    return BadRequest(new { requiresOtp = true, message = "OTP code is required to complete this VAS payment." });
+                }
+
+                if (user.TwoFactorCode != dto.OtpCode || user.TwoFactorExpiry == null || user.TwoFactorExpiry < DateTime.UtcNow)
+                {
+                    return BadRequest(new { message = "Invalid or expired OTP code." });
+                }
+
+                // Clear OTP after successful check
+                user.TwoFactorCode = null;
+                user.TwoFactorExpiry = null;
+                await _context.SaveChangesAsync();
             }
 
             // Get service from the database Services table
@@ -139,5 +176,6 @@ namespace Backend.Controllers
         public string CardNumber { get; set; } = string.Empty;
         public string ExpiryDate { get; set; } = string.Empty;
         public string Cvv { get; set; } = string.Empty;
+        public string? OtpCode { get; set; }
     }
 }

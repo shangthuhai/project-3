@@ -21,6 +21,10 @@ namespace Backend.Data
         public DbSet<Service> Services { get; set; } = null!;
         public DbSet<UserService> UserServices { get; set; } = null!;
         public DbSet<Transaction> Transactions { get; set; } = null!;
+        public DbSet<ContactGroup> ContactGroups { get; set; } = null!;
+        public DbSet<ContactGroupMember> ContactGroupMembers { get; set; } = null!;
+        public DbSet<SMSTemplate> SMSTemplates { get; set; } = null!;
+        public DbSet<Blocklist> Blocklists { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -235,6 +239,14 @@ namespace Backend.Data
                 new SMSLog { LogId = 3, MessageId = 3, GatewayStatusCode = "200_OK", DeliveryStatus = "delivered", UpdatedAt = DateTime.Parse("2026-08-14T12:05:00Z") },
                 new SMSLog { LogId = 4, MessageId = 4, GatewayStatusCode = "200_OK", DeliveryStatus = "delivered", UpdatedAt = DateTime.Parse("2026-08-14T11:00:00Z") },
                 new SMSLog { LogId = 5, MessageId = 5, GatewayStatusCode = "200_OK", DeliveryStatus = "delivered", UpdatedAt = DateTime.Parse("2026-08-14T12:20:00Z") }
+            );
+
+            // 12. Seed SMS Templates
+            modelBuilder.Entity<SMSTemplate>().HasData(
+                new SMSTemplate { TemplateId = 1, UserId = null, Title = "Chúc mừng Sinh nhật", Body = "Chúc mừng sinh nhật {Name}! Chúc bạn tuổi mới ngập tràn niềm vui, sức khỏe và luôn thành công trong cuộc sống." },
+                new SMSTemplate { TemplateId = 2, UserId = null, Title = "Nhắc lịch hẹn", Body = "Xin chào {Name}, đây là tin nhắn nhắc bạn về lịch hẹn của chúng ta vào lúc 15h chiều nay. Hẹn gặp lại bạn nhé!" },
+                new SMSTemplate { TemplateId = 3, UserId = null, Title = "Nhắc thanh toán", Body = "Kính chào quý khách {Name}, vui lòng hoàn thành thanh toán hóa đơn cước dịch vụ tháng này trước ngày 20. Trân trọng cảm ơn!" },
+                new SMSTemplate { TemplateId = 4, UserId = null, Title = "Tin nhắn công việc nhanh", Body = "Hi {Name}, mình đã nhận được tài liệu bạn gửi. Mình sẽ phản hồi lại cho bạn sớm nhất có thể. Cảm ơn nhé!" }
             );
         }
     }
