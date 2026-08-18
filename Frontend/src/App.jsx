@@ -551,7 +551,7 @@ export default function App() {
     const userId = parseInt(e.target.value);
     const selected = users.find(u => u.id === userId);
     if (selected) {
-      login(selected.username, "password123")
+      login(selected.username, selected.password)
         .then(user => {
           localStorage.setItem('user', JSON.stringify(user));
           setLoggedInUser(user);
@@ -925,7 +925,7 @@ export default function App() {
                 <select className="user-select" defaultValue="" onChange={(e) => {
                   const select = users.find(u => u.id === parseInt(e.target.value));
                   if (select) {
-                    login(select.username, "password123")
+                    login(select.username, select.password)
                       .then(user => {
                         localStorage.setItem('user', JSON.stringify(user));
                         setLoggedInUser(user);
