@@ -85,6 +85,10 @@ export const sendMessage = (senderId, receiverNumber, content, scheduledAt) =>
 export const sendBulkMessage = (groupId, content, scheduledAt) => 
   api.post('/messages/bulk', { groupId, content, scheduledAt }).then(res => res.data);
 
+// AI Assistant API
+export const generateAiSms = (prompt, tone) => 
+  api.post('/ai/generate', { prompt, tone }).then(res => res.data);
+
 // Analytics API
 export const getAnalyticsStats = () => api.get('/analytics/dashboard').then(res => res.data);
 

@@ -13,6 +13,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Register background scheduled message processor
 builder.Services.AddHostedService<Backend.Services.SMSBackgroundService>();
 
+// Register AI Service
+builder.Services.AddHttpClient<Backend.Services.IAiService, Backend.Services.AiService>();
+
 // Configure JWT Authentication
 builder.Services.AddAuthentication(options =>
 {

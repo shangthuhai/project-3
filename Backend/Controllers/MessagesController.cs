@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Backend.Data;
 using Backend.Models;
+using Backend.Services;
 using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -16,10 +17,12 @@ namespace Backend.Controllers
     public class MessagesController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IAiService _aiService;
 
-        public MessagesController(AppDbContext context)
+        public MessagesController(AppDbContext context, IAiService aiService)
         {
             _context = context;
+            _aiService = aiService;
         }
 
         private int AuthenticatedUserId => 
@@ -126,6 +129,74 @@ namespace Backend.Controllers
                 return BadRequest(new { message = "Message content must not exceed 120 characters." });
             }
 
+            // AI Content Moderation Check
+            bool isSafe = await _aiService.ModerateContentAsync(dto.Content);
+            if (!isSafe)
+            {
+                return BadRequest(new { message = "Nội dung tin nhắn vi phạm tiêu chuẩn cộng đồng và không thể gửi đi" });
+            }
+
+            // Intercept message sent to AI Chatbot
+            if (dto.ReceiverNumber == "9999999999")
+            {
+                var userMessage = new Message
+                {
+                    SenderId = sender.UserId,
+                    ReceiverNumber = dto.ReceiverNumber,
+                    ReceiverId = 999,
+                    Content = dto.Content,
+                    SentAt = DateTime.UtcNow,
+                    IsFreeFriendMsg = true
+                };
+                _context.Messages.Add(userMessage);
+                await _context.SaveChangesAsync();
+
+                var userLog = new SMSLog
+                {
+                    MessageId = userMessage.MessageId,
+                    GatewayStatusCode = "200_OK",
+                    DeliveryStatus = "delivered",
+                    UpdatedAt = DateTime.UtcNow
+                };
+                _context.SMSLogs.Add(userLog);
+                await _context.SaveChangesAsync();
+
+                // Fetch conversation history
+                var history = await _context.Messages
+                    .Where(m => (m.SenderId == sender.UserId && m.ReceiverNumber == "9999999999") ||
+                                (m.SenderId == 999 && m.ReceiverId == sender.UserId))
+                    .OrderBy(m => m.SentAt)
+                    .Take(10)
+                    .ToListAsync();
+
+                // Call AI Chat
+                string aiReply = await _aiService.ChatWithAiAsync(dto.Content, history);
+
+                var aiMessage = new Message
+                {
+                    SenderId = 999,
+                    ReceiverNumber = sender.MobileNumber,
+                    ReceiverId = sender.UserId,
+                    Content = aiReply,
+                    SentAt = DateTime.UtcNow.AddSeconds(1),
+                    IsFreeFriendMsg = true
+                };
+                _context.Messages.Add(aiMessage);
+                await _context.SaveChangesAsync();
+
+                var aiLog = new SMSLog
+                {
+                    MessageId = aiMessage.MessageId,
+                    GatewayStatusCode = "200_OK",
+                    DeliveryStatus = "delivered",
+                    UpdatedAt = DateTime.UtcNow
+                };
+                _context.SMSLogs.Add(aiLog);
+                await _context.SaveChangesAsync();
+
+                return Ok(userMessage);
+            }
+
             // Check if receiver is a registered user
             var receiverUser = await _context.Users.FirstOrDefaultAsync(u => u.MobileNumber == dto.ReceiverNumber);
             bool isFriend = false;
@@ -213,6 +284,13 @@ namespace Backend.Controllers
 
             if (string.IsNullOrEmpty(dto.Content)) return BadRequest(new { message = "Content cannot be empty." });
             if (dto.Content.Length > 120) return BadRequest(new { message = "Content must not exceed 120 characters." });
+
+            // AI Content Moderation Check
+            bool isSafe = await _aiService.ModerateContentAsync(dto.Content);
+            if (!isSafe)
+            {
+                return BadRequest(new { message = "Nội dung tin nhắn vi phạm tiêu chuẩn cộng đồng và không thể gửi đi" });
+            }
 
             var members = await _context.ContactGroupMembers
                 .Include(m => m.Contact)

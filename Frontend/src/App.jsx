@@ -36,7 +36,8 @@ import {
   removeGroupMember,
   sendBulkMessage,
   getAnalyticsStats,
-  requestPaymentOtp
+  requestPaymentOtp,
+  generateAiSms
 } from './api';
 
 export default function App() {
@@ -90,6 +91,22 @@ export default function App() {
   
   // Refs
   const messagesEndRef = useRef(null);
+
+  // AI Assistant States
+  const [showAiAssistant, setShowAiAssistant] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiTone, setAiTone] = useState('polite');
+  const [generatingAi, setGeneratingAi] = useState(false);
+
+  // AI Floating Chat Bubble States
+  const [aiPosition, setAiPosition] = useState({ x: window.innerWidth - 80, y: window.innerHeight - 150 });
+  const [isAiBubbleOpen, setIsAiBubbleOpen] = useState(false);
+  const [aiMessages, setAiMessages] = useState([]);
+  const [aiNewMessage, setAiNewMessage] = useState('');
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  
+  const aiDragRef = useRef({ isDragging: false, startX: 0, startY: 0, posX: 0, posY: 0 });
+  const aiMessagesEndRef = useRef(null);
 
   // 2FA Auth & Payments
   const [requires2Fa, setRequires2Fa] = useState(false);
@@ -215,6 +232,10 @@ export default function App() {
   useEffect(() => {
     if (!loggedInUser || !selectedContact) return;
 
+    // Reset AI popover state when switching chats
+    setShowAiAssistant(false);
+    setAiPrompt('');
+
     loadChatDetails();
     
     const interval = setInterval(() => {
@@ -232,8 +253,95 @@ export default function App() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Poll AI Chat Messages if AI Chat Widget is open
+  useEffect(() => {
+    if (!loggedInUser || !isAiBubbleOpen) return;
+
+    getChatHistory(loggedInUser.id, '9999999999')
+      .then(setAiMessages)
+      .catch(() => {});
+
+    const interval = setInterval(() => {
+      getChatHistory(loggedInUser.id, '9999999999')
+        .then(setAiMessages)
+        .catch(() => {});
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [loggedInUser, isAiBubbleOpen]);
+
+  useEffect(() => {
+    aiMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [aiMessages]);
+
+  const handleAiSendMessage = (e) => {
+    e.preventDefault();
+    if (!aiNewMessage.trim() || isAiLoading) return;
+
+    const messageText = aiNewMessage.trim();
+    setAiNewMessage('');
+    setIsAiLoading(true);
+
+    sendMessage(loggedInUser.id, '9999999999', messageText)
+      .then((sentMsg) => {
+        setAiMessages(prev => [...prev, sentMsg]);
+        getChatHistory(loggedInUser.id, '9999999999')
+          .then(msgs => {
+            setAiMessages(msgs);
+            setIsAiLoading(false);
+          })
+          .catch(() => setIsAiLoading(false));
+      })
+      .catch((err) => {
+        const errorMsg = err.response?.data?.message || 'Failed to send message to AI';
+        triggerAlert('error', errorMsg);
+        setIsAiLoading(false);
+      });
+  };
+
+  const handleAiBubbleMouseDown = (e) => {
+    if (e.button !== 0) return;
+    aiDragRef.current.isDragging = false;
+    aiDragRef.current.startX = e.clientX;
+    aiDragRef.current.startY = e.clientY;
+    aiDragRef.current.posX = aiPosition.x;
+    aiDragRef.current.posY = aiPosition.y;
+    
+    document.addEventListener('mousemove', handleAiBubbleMouseMove);
+    document.addEventListener('mouseup', handleAiBubbleMouseUp);
+  };
+
+  const handleAiBubbleMouseMove = (e) => {
+    const dx = e.clientX - aiDragRef.current.startX;
+    const dy = e.clientY - aiDragRef.current.startY;
+    
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+      aiDragRef.current.isDragging = true;
+    }
+    
+    let newX = aiDragRef.current.posX + dx;
+    let newY = aiDragRef.current.posY + dy;
+    
+    newX = Math.max(10, Math.min(window.innerWidth - 70, newX));
+    newY = Math.max(10, Math.min(window.innerHeight - 70, newY));
+    
+    setAiPosition({ x: newX, y: newY });
+  };
+
+  const handleAiBubbleMouseUp = (e) => {
+    document.removeEventListener('mousemove', handleAiBubbleMouseMove);
+    document.removeEventListener('mouseup', handleAiBubbleMouseUp);
+    
+    if (!aiDragRef.current.isDragging) {
+      setIsAiBubbleOpen(prev => !prev);
+    }
+  };
+
   const triggerAlert = (type, message) => {
-    setAlert({ type, message });
+    const messageString = typeof message === 'object' && message !== null
+      ? (message.message || JSON.stringify(message))
+      : String(message || '');
+    setAlert({ type, message: messageString });
     setTimeout(() => setAlert(null), 5000);
   };
 
@@ -625,6 +733,27 @@ export default function App() {
       .catch(() => triggerAlert('error', 'Failed to respond to request.'));
   };
 
+  // AI Assistant Generation Action
+  const handleGenerateAiMessage = (e) => {
+    e.preventDefault();
+    if (!aiPrompt.trim()) return;
+
+    setGeneratingAi(true);
+    generateAiSms(aiPrompt.trim(), aiTone)
+      .then(res => {
+        setNewMessage(res.content);
+        setAiPrompt('');
+        setShowAiAssistant(false);
+      })
+      .catch(err => {
+        const errorMsg = err.response?.data?.message || 'Không thể tạo tin nhắn bằng AI.';
+        triggerAlert('error', errorMsg);
+      })
+      .finally(() => {
+        setGeneratingAi(false);
+      });
+  };
+
   // Message Sending Action
   const handleSendMessageSubmit = (e) => {
     e.preventDefault();
@@ -636,7 +765,9 @@ export default function App() {
         setNewMessage('');
         setScheduleDate('');
         setShowScheduler(false);
-        getQuota(loggedInUser.id, selectedContact.contactNumber).then(setRemainingQuota);
+        getQuota(loggedInUser.id, selectedContact.contactNumber)
+          .then(setRemainingQuota)
+          .catch(() => {});
         loadAnalyticsStats();
       })
       .catch(err => {
@@ -759,6 +890,7 @@ export default function App() {
 
       // Add Friends
       friends.forEach(f => {
+        if (f.mobileNumber === '9999999999') return;
         chatItems.push({
           id: f.id,
           name: f.name,
@@ -771,6 +903,7 @@ export default function App() {
 
       // Add Contacts (Not friends)
       contacts.forEach(c => {
+        if (c.contactNumber === '9999999999') return;
         const alreadyAdded = chatItems.some(i => i.contactNumber === c.contactNumber);
         if (!alreadyAdded) {
           chatItems.push({
@@ -822,6 +955,7 @@ export default function App() {
             <div className="empty-list-message">Your contact list is empty.</div>
           ) : (
             contacts.map(c => {
+              if (c.contactNumber === '9999999999') return null;
               const isFriend = friends.some(f => f.mobileNumber === c.contactNumber);
               return (
                 <div key={c.id} className="sidebar-list-item">
@@ -875,7 +1009,7 @@ export default function App() {
       <div className="landing-page">
         {/* Alerts Banner */}
         {alert && (
-          <div style={{ position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, width: '90%', maxWidth: '500px' }}>
+          <div key="landing-alert-banner" style={{ position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, width: '90%', maxWidth: '500px' }}>
             <div className={`custom-alert ${alert.type}`}>
               {alert.type === 'success' ? '✓' : '⚠'} {alert.message}
             </div>
@@ -1231,7 +1365,7 @@ export default function App() {
       <div className="main-workspace">
         {/* Global Notification Banner */}
         {alert && (
-          <div style={{ position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, width: '90%', maxWidth: '500px' }}>
+          <div key="workspace-alert-banner" style={{ position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, width: '90%', maxWidth: '500px' }}>
             <div className={`custom-alert ${alert.type}`}>
               {alert.type === 'success' ? '✓' : '⚠'} {alert.message}
             </div>
@@ -1306,16 +1440,35 @@ export default function App() {
                 <button 
                   type="button" 
                   className={`composer-tool-btn ${showScheduler ? 'active' : ''}`}
-                  onClick={() => setShowScheduler(!showScheduler)}
+                  onClick={() => {
+                    setShowScheduler(!showScheduler);
+                    setShowTemplatePicker(false);
+                    setShowAiAssistant(false);
+                  }}
                 >
                   ⏰ Hẹn giờ {scheduleDate && '✓'}
                 </button>
                 <button 
                   type="button" 
                   className={`composer-tool-btn ${showTemplatePicker ? 'active' : ''}`}
-                  onClick={() => setShowTemplatePicker(!showTemplatePicker)}
+                  onClick={() => {
+                    setShowTemplatePicker(!showTemplatePicker);
+                    setShowScheduler(false);
+                    setShowAiAssistant(false);
+                  }}
                 >
                   📄 Mẫu tin nhắn
+                </button>
+                <button 
+                  type="button" 
+                  className={`composer-tool-btn ${showAiAssistant ? 'active' : ''}`}
+                  onClick={() => {
+                    setShowAiAssistant(!showAiAssistant);
+                    setShowScheduler(false);
+                    setShowTemplatePicker(false);
+                  }}
+                >
+                  ✨ Trợ lý AI
                 </button>
                 {scheduleDate && (
                   <span style={{ fontSize: '0.75rem', color: '#fbbf24', marginLeft: 'auto' }}>
@@ -1370,6 +1523,56 @@ export default function App() {
                       </div>
                     ))
                   )}
+                </div>
+              )}
+
+              {/* AI Assistant Popover */}
+              {showAiAssistant && (
+                <div className="ai-assistant-popover">
+                  <div style={{ padding: '4px 0px 8px 0px', fontWeight: 'bold', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-main)' }}>✨ Trợ lý SMS AI</span>
+                    <button type="button" style={{ background: 'none', border: 'none', color: '#ff5555', cursor: 'pointer', fontSize: '1rem' }} onClick={() => setShowAiAssistant(false)}>✕</button>
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+                    <label style={{ fontSize: '0.72rem', fontWeight: 'bold', color: 'var(--text-muted)', textAlign: 'left', display: 'block' }}>Ý tưởng tin nhắn:</label>
+                    <textarea 
+                      placeholder="VD: nhắc nợ bạn tiền ăn trưa lịch sự..."
+                      value={aiPrompt}
+                      onChange={(e) => setAiPrompt(e.target.value)}
+                      disabled={generatingAi}
+                      style={{ width: '100%', boxSizing: 'border-box' }}
+                    />
+
+                    <label style={{ fontSize: '0.72rem', fontWeight: 'bold', color: 'var(--text-muted)', textAlign: 'left', display: 'block' }}>Văn phong:</label>
+                    <select 
+                      value={aiTone}
+                      onChange={(e) => setAiTone(e.target.value)}
+                      disabled={generatingAi}
+                      style={{ width: '100%' }}
+                    >
+                      <option value="polite">Lịch sự</option>
+                      <option value="formal">Trang trọng</option>
+                      <option value="funny">Hài hước</option>
+                      <option value="intimate">Thân mật</option>
+                    </select>
+
+                    <button 
+                      type="button" 
+                      className="btn btn-primary" 
+                      style={{ padding: '6px', fontSize: '0.8rem', marginTop: '4px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', width: '100%' }}
+                      onClick={handleGenerateAiMessage}
+                      disabled={generatingAi || !aiPrompt.trim()}
+                    >
+                      {generatingAi ? (
+                        <>
+                          <span className="spinner-small"></span> Đang tạo...
+                        </>
+                      ) : (
+                        'Tạo tin nhắn'
+                      )}
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -2327,6 +2530,61 @@ export default function App() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* AI Floating Chatbot Widget */}
+      <div 
+        className="ai-floating-bubble"
+        style={{ left: `${aiPosition.x}px`, top: `${aiPosition.y}px` }}
+        onMouseDown={handleAiBubbleMouseDown}
+      >
+        🤖
+      </div>
+
+      {isAiBubbleOpen && (
+        <div className="ai-mini-chat-window">
+          <div className="ai-mini-chat-header">
+            <h3>🤖 Trợ lý AI Chatbot</h3>
+            <button className="ai-mini-chat-close-btn" onClick={() => setIsAiBubbleOpen(false)}>×</button>
+          </div>
+          
+          <div className="ai-mini-chat-messages">
+            {aiMessages.length === 0 ? (
+              <div style={{ color: '#94a3b8', fontSize: '0.82rem', textAlign: 'center', marginTop: '20px' }}>
+                Hỏi mình bất cứ điều gì nhé! 💬
+              </div>
+            ) : (
+              aiMessages.map((msg, index) => {
+                const isBot = msg.senderId === 999;
+                return (
+                  <div key={index} className={`ai-mini-msg ${isBot ? 'bot' : 'user'}`}>
+                    {msg.content}
+                  </div>
+                );
+              })
+            )}
+            {isAiLoading && (
+              <div className="ai-mini-chat-loading">
+                <div className="spinner-small"></div>
+                <span>Trợ lý AI đang soạn câu trả lời...</span>
+              </div>
+            )}
+            <div ref={aiMessagesEndRef} />
+          </div>
+
+          <form className="ai-mini-chat-input-area" onSubmit={handleAiSendMessage}>
+            <input 
+              type="text" 
+              placeholder="Nhập câu hỏi..." 
+              value={aiNewMessage}
+              onChange={(e) => setAiNewMessage(e.target.value)}
+              disabled={isAiLoading}
+            />
+            <button type="submit" className="ai-mini-chat-send-btn" disabled={!aiNewMessage.trim() || isAiLoading}>
+              ➡️
+            </button>
+          </form>
         </div>
       )}
     </div>

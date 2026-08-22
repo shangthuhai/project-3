@@ -100,7 +100,8 @@ namespace Backend.Data
             modelBuilder.Entity<User>().HasData(
                 new User { UserId = 1, Username = "alice", PasswordHash = "password123", MobileNumber = "0987654321", Email = "alice@example.com", IsActive = true, CreatedAt = DateTime.Parse("2026-08-14T00:00:00Z") },
                 new User { UserId = 2, Username = "bob", PasswordHash = "password123", MobileNumber = "0912345678", Email = "bob@example.com", IsActive = true, CreatedAt = DateTime.Parse("2026-08-14T00:00:00Z") },
-                new User { UserId = 3, Username = "charlie", PasswordHash = "password123", MobileNumber = "0901234567", Email = "charlie@example.com", IsActive = true, CreatedAt = DateTime.Parse("2026-08-14T00:00:00Z") }
+                new User { UserId = 3, Username = "charlie", PasswordHash = "password123", MobileNumber = "0901234567", Email = "charlie@example.com", IsActive = true, CreatedAt = DateTime.Parse("2026-08-14T00:00:00Z") },
+                new User { UserId = 999, Username = "ai_assistant", PasswordHash = "system_ai_password_not_used", MobileNumber = "9999999999", Email = "ai@smschat.com", IsActive = true, CreatedAt = DateTime.Parse("2026-08-14T00:00:00Z") }
             );
 
             // 2. Seed Admins
@@ -175,6 +176,28 @@ namespace Backend.Data
                     Organization = "RMIT",
                     Designation = "IT Student",
                     ProfilePhoto = "data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><rect width=\"100\" height=\"100\" fill=\"%23f59e0b\"/><text x=\"50%\" y=\"50%\" font-family=\"sans-serif\" font-weight=\"bold\" font-size=\"40\" fill=\"white\" text-anchor=\"middle\" dominant-baseline=\"central\">CD</text></svg>"
+                },
+                new Profile
+                {
+                    ProfileId = 999,
+                    UserId = 999,
+                    FullName = "🤖 Trợ lý AI (Chatbot)",
+                    Gender = "Robot",
+                    Dob = new DateTime(2026, 1, 1),
+                    Address = "Cloud",
+                    MaritalStatus = "Single",
+                    Hobbies = "Answering questions, helping users",
+                    Likes = "Tokens, Prompts",
+                    Dislikes = "Toxic inputs",
+                    Cuisines = "Data",
+                    Sports = "Mental gym",
+                    Qualification = "PhD in Artificial Intelligence",
+                    School = "Internet",
+                    College = "Supercomputer",
+                    WorkStatus = "Self-Employed",
+                    Organization = "Groq Inc",
+                    Designation = "Virtual Assistant",
+                    ProfilePhoto = "data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><rect width=\"100\" height=\"100\" fill=\"%23ec4899\"/><text x=\"50%\" y=\"50%\" font-family=\"sans-serif\" font-weight=\"bold\" font-size=\"40\" fill=\"white\" text-anchor=\"middle\" dominant-baseline=\"central\">AI</text></svg>"
                 }
             );
 
@@ -182,7 +205,8 @@ namespace Backend.Data
             modelBuilder.Entity<UserQuota>().HasData(
                 new UserQuota { QuotaId = 1, UserId = 1, FreeMessagesLeft = 3, UpdatedAt = DateTime.Parse("2026-08-14T00:00:00Z") },
                 new UserQuota { QuotaId = 2, UserId = 2, FreeMessagesLeft = 5, UpdatedAt = DateTime.Parse("2026-08-14T00:00:00Z") },
-                new UserQuota { QuotaId = 3, UserId = 3, FreeMessagesLeft = 5, UpdatedAt = DateTime.Parse("2026-08-14T00:00:00Z") }
+                new UserQuota { QuotaId = 3, UserId = 3, FreeMessagesLeft = 5, UpdatedAt = DateTime.Parse("2026-08-14T00:00:00Z") },
+                new UserQuota { QuotaId = 999, UserId = 999, FreeMessagesLeft = 999999, UpdatedAt = DateTime.Parse("2026-08-14T00:00:00Z") }
             );
 
             // 5. Seed Contacts
@@ -191,14 +215,20 @@ namespace Backend.Data
                 new Contact { ContactId = 2, UserId = 1, FirstName = "Charlie", LastName = "Davis", ContactNumber = "0901234567" },
                 new Contact { ContactId = 3, UserId = 1, FirstName = "David", LastName = "Miller", ContactNumber = "0944444444" },
                 new Contact { ContactId = 4, UserId = 2, FirstName = "Alice", LastName = "Vance", ContactNumber = "0987654321" },
-                new Contact { ContactId = 5, UserId = 2, FirstName = "Emma", LastName = "Watson", ContactNumber = "0955555555" }
+                new Contact { ContactId = 5, UserId = 2, FirstName = "Emma", LastName = "Watson", ContactNumber = "0955555555" },
+                new Contact { ContactId = 6, UserId = 1, FirstName = "🤖 Trợ lý", LastName = "AI (Chatbot)", ContactNumber = "9999999999" },
+                new Contact { ContactId = 7, UserId = 2, FirstName = "🤖 Trợ lý", LastName = "AI (Chatbot)", ContactNumber = "9999999999" },
+                new Contact { ContactId = 8, UserId = 3, FirstName = "🤖 Trợ lý", LastName = "AI (Chatbot)", ContactNumber = "9999999999" }
             );
 
             // 6. Seed Friendships
             modelBuilder.Entity<Friendship>().HasData(
                 new Friendship { FriendshipId = 1, RequesterId = 1, AddresseeId = 2, Status = "accepted", CreatedAt = DateTime.Parse("2026-08-14T00:00:00Z") },
                 new Friendship { FriendshipId = 2, RequesterId = 3, AddresseeId = 2, Status = "pending", CreatedAt = DateTime.Parse("2026-08-14T00:00:00Z") },
-                new Friendship { FriendshipId = 3, RequesterId = 1, AddresseeId = 3, Status = "pending", CreatedAt = DateTime.Parse("2026-08-14T00:00:00Z") }
+                new Friendship { FriendshipId = 3, RequesterId = 1, AddresseeId = 3, Status = "pending", CreatedAt = DateTime.Parse("2026-08-14T00:00:00Z") },
+                new Friendship { FriendshipId = 4, RequesterId = 1, AddresseeId = 999, Status = "accepted", CreatedAt = DateTime.Parse("2026-08-14T00:00:00Z") },
+                new Friendship { FriendshipId = 5, RequesterId = 2, AddresseeId = 999, Status = "accepted", CreatedAt = DateTime.Parse("2026-08-14T00:00:00Z") },
+                new Friendship { FriendshipId = 6, RequesterId = 3, AddresseeId = 999, Status = "accepted", CreatedAt = DateTime.Parse("2026-08-14T00:00:00Z") }
             );
 
             // 7. Seed Services
