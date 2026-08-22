@@ -612,7 +612,7 @@ export default function App() {
     e.preventDefault();
     
     // Captcha Validation
-    if (captchaInput !== captchaCode) {
+    if (captchaInput.toLowerCase() !== captchaCode.toLowerCase()) {
       triggerAlert('error', 'Verification code is incorrect.');
       generateCaptcha();
       return;
