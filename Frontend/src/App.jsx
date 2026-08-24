@@ -101,6 +101,7 @@ export default function App() {
   
   // Refs
   const messagesEndRef = useRef(null);
+  const textareaRef = useRef(null);
 
   // AI Assistant States
   const [showAiAssistant, setShowAiAssistant] = useState(false);
@@ -419,6 +420,14 @@ export default function App() {
   useEffect(() => {
     scrollToBottom();
   }, [chatMessages]);
+
+  // Auto-resize chat textarea to fit content
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [newMessage, selectedContact]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -2428,6 +2437,7 @@ export default function App() {
               <div className="chat-input-row">
                 <div className="chat-textarea-container">
                   <textarea 
+                    ref={textareaRef}
                     className="chat-textarea" 
                     placeholder={
                       remainingQuota?.remaining === 0 && !remainingQuota?.isFriend 
