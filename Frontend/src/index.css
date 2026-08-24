@@ -2309,5 +2309,28 @@ body {
   cursor: not-allowed;
 }
 
+/* ==================== ADMIN PANEL EXTRA STYLES ==================== */
+.admin-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: #fff !important;
+}
+.admin-nav-btn.active:hover {
+  background: rgba(36, 129, 204, 0.18) !important;
+}
+.table-row-hover:hover {
+  background: rgba(255, 255, 255, 0.02) !important;
+}
+.admin-stat-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(36, 129, 204, 0.3) !important;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4) !important;
+}
+.admin-stat-card {
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.admin-logout-btn:hover {
+  background: rgba(239, 68, 68, 0.2) !important;
+}
+
 
 

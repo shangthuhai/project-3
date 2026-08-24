@@ -40,5 +40,13 @@ namespace Backend.Models
         [Column("created_at")]
         [JsonPropertyName("createdAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        [NotMapped]
+        [JsonPropertyName("token")]
+        public string? Token { get; set; }
+
+        [NotMapped]
+        [JsonPropertyName("isAdmin")]
+        public bool IsAdmin => true;
     }
 }

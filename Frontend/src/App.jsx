@@ -37,7 +37,16 @@ import {
   sendBulkMessage,
   getAnalyticsStats,
   requestPaymentOtp,
-  generateAiSms
+  generateAiSms,
+  loginAdmin,
+  getAdminStats,
+  getAdminUsers,
+  updateUserStatus,
+  updateUserQuota,
+  getAdminTransactions,
+  getAdminSmsLogs,
+  createAdminTemplate,
+  deleteAdminTemplate
 } from './api';
 
 export default function App() {
@@ -142,6 +151,100 @@ export default function App() {
   const [blockNumberInput, setBlockNumberInput] = useState('');
   const [privacySettings, setPrivacySettings] = useState({ twoFactorEnabled: false, onlyReceiveFromFriends: false });
 
+  // Admin State Hooks & Handlers
+  const [adminTab, setAdminTab] = useState('overview'); // overview, users, logs, transactions, templates
+  const [adminStats, setAdminStats] = useState(null);
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [adminTransactions, setAdminTransactions] = useState([]);
+  const [adminSmsLogs, setAdminSmsLogs] = useState([]);
+  const [adminTemplates, setAdminTemplates] = useState([]);
+  const [showQuotaModal, setShowQuotaModal] = useState(false);
+  const [selectedUserForQuota, setSelectedUserForQuota] = useState(null);
+  const [newQuotaValue, setNewQuotaValue] = useState(5);
+  const [adminTemplateForm, setAdminTemplateForm] = useState({ title: '', body: '' });
+
+  const loadAdminDashboardData = () => {
+    if (!loggedInUser || !loggedInUser.isAdmin) return;
+    
+    if (adminTab === 'overview') {
+      getAdminStats().then(setAdminStats).catch(() => triggerAlert('error', 'Cannot load dashboard stats.'));
+    } else if (adminTab === 'users') {
+      getAdminUsers().then(setAdminUsers).catch(() => triggerAlert('error', 'Cannot load users.'));
+    } else if (adminTab === 'logs') {
+      getAdminSmsLogs().then(setAdminSmsLogs).catch(() => triggerAlert('error', 'Cannot load SMS logs.'));
+    } else if (adminTab === 'transactions') {
+      getAdminTransactions().then(setAdminTransactions).catch(() => triggerAlert('error', 'Cannot load transactions.'));
+    } else if (adminTab === 'templates') {
+      getTemplates().then(setAdminTemplates).catch(() => triggerAlert('error', 'Cannot load templates.'));
+    }
+  };
+
+  useEffect(() => {
+    if (loggedInUser && loggedInUser.isAdmin) {
+      loadAdminDashboardData();
+    }
+  }, [adminTab]);
+
+  const handleToggleUserStatus = (id, currentActive) => {
+    const newActive = !currentActive;
+    updateUserStatus(id, newActive)
+      .then(res => {
+        triggerAlert('success', res.message);
+        getAdminUsers().then(setAdminUsers);
+        if (adminTab === 'overview') {
+          getAdminStats().then(setAdminStats);
+        }
+      })
+      .catch(err => {
+        const errorMsg = err.response?.data?.message || 'Failed to update user status.';
+        triggerAlert('error', errorMsg);
+      });
+  };
+
+  const handleSaveQuota = () => {
+    if (!selectedUserForQuota) return;
+    updateUserQuota(selectedUserForQuota.id, newQuotaValue)
+      .then(res => {
+        triggerAlert('success', res.message);
+        setShowQuotaModal(false);
+        setSelectedUserForQuota(null);
+        getAdminUsers().then(setAdminUsers);
+      })
+      .catch(err => {
+        const errorMsg = err.response?.data?.message || 'Failed to update quota.';
+        triggerAlert('error', errorMsg);
+      });
+  };
+
+  const handleCreateSystemTemplate = (e) => {
+    e.preventDefault();
+    if (!adminTemplateForm.title.trim() || !adminTemplateForm.body.trim()) return;
+
+    createAdminTemplate(adminTemplateForm.title.trim(), adminTemplateForm.body.trim())
+      .then(() => {
+        triggerAlert('success', 'System template created successfully!');
+        setAdminTemplateForm({ title: '', body: '' });
+        getTemplates().then(setAdminTemplates);
+      })
+      .catch(err => {
+        const errorMsg = err.response?.data?.message || 'Failed to create system template.';
+        triggerAlert('error', errorMsg);
+      });
+  };
+
+  const handleDeleteSystemTemplate = (id) => {
+    if (!window.confirm("Are you sure you want to delete this system template?")) return;
+    deleteAdminTemplate(id)
+      .then(res => {
+        triggerAlert('success', res.message || 'Template deleted successfully.');
+        getTemplates().then(setAdminTemplates);
+      })
+      .catch(err => {
+        const errorMsg = err.response?.data?.message || 'Failed to delete system template.';
+        triggerAlert('error', errorMsg);
+      });
+  };
+
   // Initialize Captcha and load switcher users
   useEffect(() => {
     generateCaptcha();
@@ -218,6 +321,11 @@ export default function App() {
   // Load backend private details when loggedInUser becomes available
   useEffect(() => {
     if (!loggedInUser) return;
+    
+    if (loggedInUser.isAdmin) {
+      loadAdminDashboardData();
+      return;
+    }
     
     // Fetch private dashboard state
     refreshDashboardData();
@@ -398,9 +506,9 @@ export default function App() {
       .catch(() => {});
   };
 
-  // Auth Submissions
   const handleLoginSubmit = (e) => {
     e.preventDefault();
+
     login(loginForm.username, loginForm.password)
       .then(res => {
         if (res.requires2Fa) {
@@ -408,9 +516,14 @@ export default function App() {
           setTwoFaUsername(res.username);
           triggerAlert('success', `Mã xác thực OTP đã được gửi giả lập tới email: ${res.email}. Vui lòng kiểm tra Console/Terminal backend để lấy mã.`);
         } else {
-          localStorage.setItem('user', JSON.stringify(res));
-          setLoggedInUser(res);
-          triggerAlert('success', `Welcome back, ${res.name}!`);
+          // Standardize name for both regular users and admins
+          const userPayload = {
+            ...res,
+            name: res.name || res.fullName || res.username
+          };
+          localStorage.setItem('user', JSON.stringify(userPayload));
+          setLoggedInUser(userPayload);
+          triggerAlert('success', `Welcome back, ${userPayload.name}!`);
           setLoginForm({ username: '', password: '' });
         }
       })
@@ -1290,7 +1403,504 @@ export default function App() {
     );
   }
 
+  // ==================== ADMIN PORTAL RENDERING FUNCTIONS ====================
+  const renderAdminOverview = () => {
+    if (!adminStats) return <div className="admin-loading" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>📊 Loading system analytics...</div>;
+    
+    return (
+      <div className="admin-tab-content">
+        <div className="admin-header" style={{ marginBottom: '30px' }}>
+          <h2 style={{ fontSize: '1.8rem', fontWeight: '600', color: '#fff', marginBottom: '6px' }}>System Dashboard Overview</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>Monitor real-time system stats, registered users, gateways, and platform revenue.</p>
+        </div>
+
+        {/* Metric Cards Grid */}
+        <div className="admin-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '30px' }}>
+          <div className="admin-stat-card" style={{ background: 'var(--bg-sidebar)', padding: '24px', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', gap: '20px', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+            <div className="stat-icon" style={{ width: '56px', height: '56px', borderRadius: '12px', background: 'rgba(36, 129, 204, 0.15)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>👥</div>
+            <div className="stat-details" style={{ display: 'flex', flexDirection: 'column' }}>
+              <span className="stat-value" style={{ fontSize: '1.75rem', fontWeight: '700', color: '#fff', lineHeight: '1.2' }}>{adminStats.totalUsers}</span>
+              <span className="stat-label" style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>Registered Users</span>
+            </div>
+          </div>
+
+          <div className="admin-stat-card" style={{ background: 'var(--bg-sidebar)', padding: '24px', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', gap: '20px', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+            <div className="stat-icon" style={{ width: '56px', height: '56px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--color-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>💬</div>
+            <div className="stat-details" style={{ display: 'flex', flexDirection: 'column' }}>
+              <span className="stat-value" style={{ fontSize: '1.75rem', fontWeight: '700', color: '#fff', lineHeight: '1.2' }}>{adminStats.totalMessages}</span>
+              <span className="stat-label" style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>SMS Sent (Standard)</span>
+            </div>
+          </div>
+
+          <div className="admin-stat-card" style={{ background: 'var(--bg-sidebar)', padding: '24px', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', gap: '20px', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+            <div className="stat-icon" style={{ width: '56px', height: '56px', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.15)', color: 'var(--color-warning)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>💰</div>
+            <div className="stat-details" style={{ display: 'flex', flexDirection: 'column' }}>
+              <span className="stat-value" style={{ fontSize: '1.75rem', fontWeight: '700', color: '#fff', lineHeight: '1.2' }}>${adminStats.totalRevenue.toFixed(2)}</span>
+              <span className="stat-label" style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>Gross Revenue</span>
+            </div>
+          </div>
+
+          <div className="admin-stat-card" style={{ background: 'var(--bg-sidebar)', padding: '24px', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', gap: '20px', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+            <div className="stat-icon" style={{ width: '56px', height: '56px', borderRadius: '12px', background: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>🔔</div>
+            <div className="stat-details" style={{ display: 'flex', flexDirection: 'column' }}>
+              <span className="stat-value" style={{ fontSize: '1.75rem', fontWeight: '700', color: '#fff', lineHeight: '1.2' }}>{adminStats.activeServicesCount}</span>
+              <span className="stat-label" style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>Paid Subscriptions</span>
+            </div>
+          </div>
+
+          <div className="admin-stat-card" style={{ background: 'var(--bg-sidebar)', padding: '24px', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', gap: '20px', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+            <div className="stat-icon" style={{ width: '56px', height: '56px', borderRadius: '12px', background: 'rgba(236, 72, 153, 0.15)', color: '#ec4899', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>🤖</div>
+            <div className="stat-details" style={{ display: 'flex', flexDirection: 'column' }}>
+              <span className="stat-value" style={{ fontSize: '1.75rem', fontWeight: '700', color: '#fff', lineHeight: '1.2' }}>{adminStats.aiInteractionsCount}</span>
+              <span className="stat-label" style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>AI Assist Count</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Message Status breakdown & Chart area */}
+        <div className="admin-charts-section" style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', marginBottom: '30px' }}>
+          <div className="admin-chart-card" style={{ flex: '1', minWidth: '300px', background: 'var(--bg-sidebar)', padding: '24px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '20px', color: '#fff' }}>SMS Gateway Delivery Ratios</h3>
+            <div className="delivery-status-bars" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="status-bar-item">
+                <div className="status-header" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', marginBottom: '6px', color: 'var(--text-main)' }}>
+                  <span>Delivered / Sent</span>
+                  <strong>{adminStats.deliveredCount} ({((adminStats.deliveredCount / (adminStats.totalMessages || 1)) * 100).toFixed(0)}%)</strong>
+                </div>
+                <div className="status-progress-track" style={{ height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div className="status-progress-bar success" style={{ height: '100%', background: 'var(--color-accent)', width: `${(adminStats.deliveredCount / (adminStats.totalMessages || 1)) * 100}%` }}></div>
+                </div>
+              </div>
+              
+              <div className="status-bar-item">
+                <div className="status-header" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', marginBottom: '6px', color: 'var(--text-main)' }}>
+                  <span>Queued / Pending</span>
+                  <strong>{adminStats.pendingCount} ({((adminStats.pendingCount / (adminStats.totalMessages || 1)) * 100).toFixed(0)}%)</strong>
+                </div>
+                <div className="status-progress-track" style={{ height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div className="status-progress-bar warning" style={{ height: '100%', background: 'var(--color-warning)', width: `${(adminStats.pendingCount / (adminStats.totalMessages || 1)) * 100}%` }}></div>
+                </div>
+              </div>
+
+              <div className="status-bar-item">
+                <div className="status-header" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', marginBottom: '6px', color: 'var(--text-main)' }}>
+                  <span>Failed / Flagged</span>
+                  <strong>{adminStats.failedCount} ({((adminStats.failedCount / (adminStats.totalMessages || 1)) * 100).toFixed(0)}%)</strong>
+                </div>
+                <div className="status-progress-track" style={{ height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div className="status-progress-bar danger" style={{ height: '100%', background: 'var(--color-danger)', width: `${(adminStats.failedCount / (adminStats.totalMessages || 1)) * 100}%` }}></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="admin-chart-card flex-2" style={{ flex: '2', minWidth: '400px', background: 'var(--bg-sidebar)', padding: '24px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '20px', color: '#fff' }}>Sms Traffic Load (Last 7 Days)</h3>
+            <div className="admin-bar-chart" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', height: '180px', paddingTop: '20px', paddingBottom: '10px' }}>
+              {adminStats.dailyStats && adminStats.dailyStats.map((day, idx) => {
+                const maxVal = Math.max(...adminStats.dailyStats.map(d => d.count), 1);
+                const heightPct = (day.count / maxVal) * 100;
+                const dateObj = new Date(day.date);
+                const dayLabel = dateObj.getDate() + '/' + (dateObj.getMonth() + 1);
+                
+                return (
+                  <div className="chart-bar-col" key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: '1', height: '100%' }}>
+                    <div className="chart-bar-val" style={{ fontSize: '0.78rem', color: 'var(--color-primary)', fontWeight: '600', marginBottom: '6px' }}>{day.count}</div>
+                    <div className="chart-bar-pillar-container" style={{ width: '24px', flex: '1', display: 'flex', alignItems: 'flex-end', background: 'rgba(255,255,255,0.02)', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div className="chart-bar-pillar" style={{ width: '100%', background: 'linear-gradient(to top, var(--color-primary), var(--color-primary-hover))', height: `${heightPct}%`, borderRadius: '4px', transition: 'height 0.5s ease', boxShadow: '0 0 10px rgba(36, 129, 204, 0.3)' }}></div>
+                    </div>
+                    <div className="chart-bar-label" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '8px' }}>{dayLabel}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderAdminUsers = () => {
+    return (
+      <div className="admin-tab-content">
+        <div className="admin-header" style={{ marginBottom: '25px' }}>
+          <h2 style={{ fontSize: '1.8rem', fontWeight: '600', color: '#fff', marginBottom: '6px' }}>User Accounts Management</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>Block/unlock user accounts, verify verification records, and configure free message quotas.</p>
+        </div>
+
+        <div className="admin-table-container" style={{ background: 'var(--bg-sidebar)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', overflowX: 'auto' }}>
+          <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border-light)', background: 'rgba(255,255,255,0.02)' }}>
+                <th style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase' }}>Avatar</th>
+                <th style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase' }}>Username</th>
+                <th style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase' }}>Full Name</th>
+                <th style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase' }}>Mobile</th>
+                <th style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase' }}>Email</th>
+                <th style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase' }}>SMS Quota Left</th>
+                <th style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase' }}>Status</th>
+                <th style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {adminUsers.map(user => {
+                const quotaVal = user.quota?.freeMessagesLeft !== undefined ? user.quota.freeMessagesLeft : 5;
+                return (
+                  <tr key={user.id} style={{ borderBottom: '1px solid var(--border-light)', transition: 'var(--transition-fast)' }} className="table-row-hover">
+                    <td style={{ padding: '12px 20px' }}>
+                      <img src={user.profilePhoto} alt={user.name} style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover' }} />
+                    </td>
+                    <td style={{ padding: '12px 20px', color: '#fff' }}><strong>{user.username}</strong></td>
+                    <td style={{ padding: '12px 20px', color: 'var(--text-main)' }}>{user.name || 'N/A'}</td>
+                    <td style={{ padding: '12px 20px', color: 'var(--text-main)' }}><code>{user.mobileNumber}</code></td>
+                    <td style={{ padding: '12px 20px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>{user.email}</td>
+                    <td style={{ padding: '12px 20px' }}>
+                      <span className="admin-badge-quota" style={{ background: 'rgba(36, 129, 204, 0.15)', color: 'var(--color-primary)', padding: '4px 10px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '600' }}>{quotaVal} SMS</span>
+                    </td>
+                    <td style={{ padding: '12px 20px' }}>
+                      <span className={`status-tag ${user.isActive ? 'active' : 'inactive'}`} style={{ display: 'inline-block', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '600', background: user.isActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)', color: user.isActive ? 'var(--color-accent)' : 'var(--color-danger)' }}>
+                        {user.isActive ? 'ACTIVE' : 'LOCKED'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px 20px' }}>
+                      <div className="admin-actions-cell" style={{ display: 'flex', gap: '8px' }}>
+                        <button 
+                          className="btn btn-secondary" 
+                          onClick={() => {
+                            setSelectedUserForQuota(user);
+                            setNewQuotaValue(quotaVal);
+                            setShowQuotaModal(true);
+                          }}
+                          style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#1a2432', border: '1px solid rgba(255,255,255,0.06)' }}
+                        >
+                          ⚙️ Quota
+                        </button>
+                        <button 
+                          className={`btn ${user.isActive ? 'btn-danger' : 'btn-accent'}`} 
+                          onClick={() => handleToggleUserStatus(user.id, user.isActive)}
+                          style={{ padding: '6px 12px', fontSize: '0.78rem', minWidth: '75px', background: user.isActive ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)', border: '1px solid ' + (user.isActive ? 'var(--color-danger)' : 'var(--color-accent)'), color: user.isActive ? 'var(--color-danger)' : 'var(--color-accent)' }}
+                        >
+                          {user.isActive ? '🔒 Lock' : '🔓 Unlock'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  const renderAdminSmsLogs = () => {
+    return (
+      <div className="admin-tab-content">
+        <div className="admin-header" style={{ marginBottom: '25px' }}>
+          <h2 style={{ fontSize: '1.8rem', fontWeight: '600', color: '#fff', marginBottom: '6px' }}>System SMS Delivery Logs</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>Comprehensive database audit trail for all outbound text messages and gateway delivery status codes.</p>
+        </div>
+
+        <div className="admin-table-container" style={{ background: 'var(--bg-sidebar)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', overflowX: 'auto' }}>
+          <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '950px' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border-light)', background: 'rgba(255,255,255,0.02)' }}>
+                <th style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>Log ID</th>
+                <th style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>Sender</th>
+                <th style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>Receiver No.</th>
+                <th style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600', width: '30%' }}>Message Content</th>
+                <th style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>Sent Time</th>
+                <th style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>Type</th>
+                <th style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>Gateway Code</th>
+                <th style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {adminSmsLogs.map(log => {
+                const statusClass = log.deliveryStatus === 'delivered' || log.deliveryStatus === 'sent' ? 'success' : log.deliveryStatus === 'failed' ? 'danger' : 'warning';
+                const statusBg = log.deliveryStatus === 'delivered' || log.deliveryStatus === 'sent' ? 'rgba(16, 185, 129, 0.15)' : log.deliveryStatus === 'failed' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(245, 158, 11, 0.15)';
+                const statusColor = log.deliveryStatus === 'delivered' || log.deliveryStatus === 'sent' ? 'var(--color-accent)' : log.deliveryStatus === 'failed' ? 'var(--color-danger)' : 'var(--color-warning)';
+                return (
+                  <tr key={log.logId} style={{ borderBottom: '1px solid var(--border-light)' }} className="table-row-hover">
+                    <td style={{ padding: '12px 20px', color: 'var(--text-muted)', fontSize: '0.88rem' }}>#{log.logId}</td>
+                    <td style={{ padding: '12px 20px' }}>
+                      <div className="sender-cell" style={{ display: 'flex', flexDirection: 'column' }}>
+                        <strong style={{ color: '#fff' }}>{log.senderUsername}</strong>
+                        <span className="sender-cell-name" style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{log.senderName}</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: '12px 20px', color: 'var(--text-main)' }}><code>{log.receiverNumber}</code></td>
+                    <td style={{ padding: '12px 20px', color: 'var(--text-main)', fontSize: '0.88rem', wordBreak: 'break-word', maxBreakWidth: '300px' }} title={log.content}>{log.content}</td>
+                    <td style={{ padding: '12px 20px', color: 'var(--text-muted)', fontSize: '0.88rem' }}>{new Date(log.sentTime).toLocaleString('vi-VN')}</td>
+                    <td style={{ padding: '12px 20px' }}>
+                      <span className={`type-tag ${log.isFreeFriendMsg ? 'friend' : 'non-friend'}`} style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '500', background: log.isFreeFriendMsg ? 'rgba(36, 129, 204, 0.12)' : 'rgba(255,255,255,0.05)', color: log.isFreeFriendMsg ? 'var(--color-primary)' : 'var(--text-muted)' }}>
+                        {log.isFreeFriendMsg ? 'Friend' : 'Normal'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px 20px' }}><code style={{ color: '#8b5cf6', background: 'rgba(139, 92, 246, 0.08)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.82rem' }}>{log.gatewayStatusCode}</code></td>
+                    <td style={{ padding: '12px 20px' }}>
+                      <span className={`delivery-tag ${statusClass}`} style={{ display: 'inline-block', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '700', background: statusBg, color: statusColor }}>
+                        {log.deliveryStatus.toUpperCase()}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  const renderAdminTransactions = () => {
+    return (
+      <div className="admin-tab-content">
+        <div className="admin-header" style={{ marginBottom: '25px' }}>
+          <h2 style={{ fontSize: '1.8rem', fontWeight: '600', color: '#fff', marginBottom: '6px' }}>Payment & Subscription Ledger</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>Monitor payment transactions generated from subscribers activating premium Value-Added Services (VAS).</p>
+        </div>
+
+        <div className="admin-table-container" style={{ background: 'var(--bg-sidebar)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', overflowX: 'auto' }}>
+          <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '900px' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border-light)', background: 'rgba(255,255,255,0.02)' }}>
+                <th style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>Transaction ID</th>
+                <th style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>Username</th>
+                <th style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>User Full Name</th>
+                <th style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>Service Subscribed</th>
+                <th style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>Price</th>
+                <th style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>Card Details</th>
+                <th style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>Status</th>
+                <th style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>Transaction Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {adminTransactions.map(t => {
+                return (
+                  <tr key={t.transactionId} style={{ borderBottom: '1px solid var(--border-light)' }} className="table-row-hover">
+                    <td style={{ padding: '12px 20px', color: 'var(--text-muted)' }}>#{t.transactionId}</td>
+                    <td style={{ padding: '12px 20px', color: '#fff' }}><strong>{t.username}</strong></td>
+                    <td style={{ padding: '12px 20px', color: 'var(--text-main)' }}>{t.userFullName}</td>
+                    <td style={{ padding: '12px 20px' }}>
+                      <span className="service-tag" style={{ background: 'rgba(139, 92, 246, 0.12)', color: '#a78bfa', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '500' }}>{t.serviceName}</span>
+                    </td>
+                    <td style={{ padding: '12px 20px', color: 'var(--color-accent)', fontSize: '0.95rem', fontWeight: '700' }}>${t.amount.toFixed(2)}</td>
+                    <td style={{ padding: '12px 20px', color: 'var(--text-muted)', fontSize: '0.88rem' }}>💳 **** **** **** {t.cardLast4}</td>
+                    <td style={{ padding: '12px 20px' }}>
+                      <span className="status-tag active" style={{ display: 'inline-block', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '600', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--color-accent)' }}>SUCCESS</span>
+                    </td>
+                    <td style={{ padding: '12px 20px', color: 'var(--text-muted)', fontSize: '0.88rem' }}>{new Date(t.createdAt).toLocaleString('vi-VN')}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  const renderAdminTemplates = () => {
+    const systemTemplates = adminTemplates.filter(t => t.userId === null);
+
+    return (
+      <div className="admin-tab-content">
+        <div className="admin-header" style={{ marginBottom: '25px' }}>
+          <h2 style={{ fontSize: '1.8rem', fontWeight: '600', color: '#fff', marginBottom: '6px' }}>System-Wide SMS Templates</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>Define default, structured templates for all platform users to quickly choose from when drafting SMS messages.</p>
+        </div>
+
+        {/* Add template form */}
+        <div className="admin-template-create-card" style={{ background: 'var(--bg-sidebar)', padding: '24px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', marginBottom: '30px' }}>
+          <h3 style={{ fontSize: '1.1rem', fontWeight: '600', color: '#fff', marginBottom: '16px' }}>Create New System Template</h3>
+          <form onSubmit={handleCreateSystemTemplate} className="admin-template-form" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>Template Title</label>
+              <input 
+                type="text" 
+                placeholder="e.g. Happy New Year Greeting"
+                value={adminTemplateForm.title}
+                onChange={(e) => setAdminTemplateForm({ ...adminTemplateForm, title: e.target.value })}
+                style={{ background: '#182533', border: '1px solid var(--border-light)', padding: '10px 12px', borderRadius: '8px', color: '#fff' }}
+                required
+              />
+            </div>
+            <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>Template Body (supports {`{Name}`} auto-replacements)</label>
+              <textarea 
+                rows="3" 
+                placeholder="e.g. Wishing you a wonderful birthday, {Name}! Hope your day is filled with joy."
+                value={adminTemplateForm.body}
+                onChange={(e) => setAdminTemplateForm({ ...adminTemplateForm, body: e.target.value })}
+                style={{ background: '#182533', border: '1px solid var(--border-light)', padding: '10px 12px', borderRadius: '8px', color: '#fff', resize: 'vertical' }}
+                required
+              />
+            </div>
+            <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start', padding: '10px 24px', fontSize: '0.88rem' }}>
+              Create Template
+            </button>
+          </form>
+        </div>
+
+        {/* Templates List Table */}
+        <div className="admin-table-container" style={{ background: 'var(--bg-sidebar)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', overflowX: 'auto' }}>
+          <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '700px' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border-light)', background: 'rgba(255,255,255,0.02)' }}>
+                <th style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600', width: '15%' }}>Template ID</th>
+                <th style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600', width: '25%' }}>Title</th>
+                <th style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600', width: '45%' }}>Template Content (Body)</th>
+                <th style={{ padding: '16px 20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600', width: '15%' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {systemTemplates.map(t => {
+                return (
+                  <tr key={t.id} style={{ borderBottom: '1px solid var(--border-light)' }} className="table-row-hover">
+                    <td style={{ padding: '12px 20px', color: 'var(--text-muted)' }}>#{t.id}</td>
+                    <td style={{ padding: '12px 20px', color: '#fff' }}><strong>{t.title}</strong></td>
+                    <td style={{ padding: '12px 20px', color: 'var(--text-main)', fontSize: '0.88rem' }}>{t.body}</td>
+                    <td style={{ padding: '12px 20px' }}>
+                      <button 
+                        className="btn btn-danger" 
+                        onClick={() => handleDeleteSystemTemplate(t.id)}
+                        style={{ padding: '6px 12px', fontSize: '0.78rem', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid var(--color-danger)', color: 'var(--color-danger)' }}
+                      >
+                        🗑️ Delete
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  const renderAdminDashboard = () => {
+    return (
+      <div className="admin-container" style={{ display: 'flex', width: '100vw', height: '100vh', background: 'var(--bg-app)', color: 'var(--text-main)', overflow: 'hidden' }}>
+        {/* Admin Alerts Banner */}
+        {alert && (
+          <div className="admin-alert-overlay" style={{ position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 9999, width: '90%', maxWidth: '500px' }}>
+            <div className={`custom-alert ${alert.type}`}>
+              {alert.type === 'success' ? '✓' : '⚠'} {alert.message}
+            </div>
+          </div>
+        )}
+
+        {/* Sidebar */}
+        <div className="admin-sidebar" style={{ width: '280px', minWidth: '280px', background: 'var(--bg-sidebar)', borderRight: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', height: '100%', zIndex: 100 }}>
+          <div className="admin-sidebar-header" style={{ padding: '24px 20px', borderBottom: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div className="admin-logo" style={{ fontSize: '2rem' }}>🛡️</div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <h3 style={{ color: '#fff', fontSize: '1.05rem', fontWeight: '600' }}>Admin Workspace</h3>
+              <span className="admin-role-badge" style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: '600', marginTop: '2px' }}>System Administrator</span>
+            </div>
+          </div>
+
+          <div className="admin-sidebar-nav" style={{ flex: '1', padding: '20px 10px', display: 'flex', flexDirection: 'column', gap: '6px', overflowY: 'auto' }}>
+            <button 
+              className={`admin-nav-btn ${adminTab === 'overview' ? 'active' : ''}`} 
+              onClick={() => setAdminTab('overview')}
+              style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'overview' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'overview' ? '#fff' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '500', textAlign: 'left', transition: 'var(--transition-fast)' }}
+            >
+              📊 Dashboard
+            </button>
+            <button 
+              className={`admin-nav-btn ${adminTab === 'users' ? 'active' : ''}`} 
+              onClick={() => setAdminTab('users')}
+              style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'users' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'users' ? '#fff' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '500', textAlign: 'left', transition: 'var(--transition-fast)' }}
+            >
+              👥 User Accounts
+            </button>
+            <button 
+              className={`admin-nav-btn ${adminTab === 'logs' ? 'active' : ''}`} 
+              onClick={() => setAdminTab('logs')}
+              style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'logs' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'logs' ? '#fff' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '500', textAlign: 'left', transition: 'var(--transition-fast)' }}
+            >
+              📜 SMS Logs
+            </button>
+            <button 
+              className={`admin-nav-btn ${adminTab === 'transactions' ? 'active' : ''}`} 
+              onClick={() => setAdminTab('transactions')}
+              style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'transactions' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'transactions' ? '#fff' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '500', textAlign: 'left', transition: 'var(--transition-fast)' }}
+            >
+              💳 Transactions
+            </button>
+            <button 
+              className={`admin-nav-btn ${adminTab === 'templates' ? 'active' : ''}`} 
+              onClick={() => setAdminTab('templates')}
+              style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'templates' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'templates' ? '#fff' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '500', textAlign: 'left', transition: 'var(--transition-fast)' }}
+            >
+              📋 System Templates
+            </button>
+          </div>
+
+          <div className="admin-sidebar-footer" style={{ padding: '20px', borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="admin-info" style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '0.88rem', fontWeight: '600', color: '#fff' }}>{loggedInUser.fullName}</span>
+              <span className="admin-subtext" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>{loggedInUser.email}</span>
+            </div>
+            <button 
+              className="admin-logout-btn" 
+              onClick={handleLogout}
+              style={{ width: '100%', padding: '10px', border: '1px solid var(--color-danger)', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-danger)', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer', transition: 'var(--transition-fast)' }}
+            >
+              Log Out
+            </button>
+          </div>
+        </div>
+
+        {/* Content Area */}
+        <div className="admin-content" style={{ flex: '1', padding: '30px 40px', overflowY: 'auto', background: 'var(--bg-app)' }}>
+          {adminTab === 'overview' && renderAdminOverview()}
+          {adminTab === 'users' && renderAdminUsers()}
+          {adminTab === 'logs' && renderAdminSmsLogs()}
+          {adminTab === 'transactions' && renderAdminTransactions()}
+          {adminTab === 'templates' && renderAdminTemplates()}
+        </div>
+
+        {/* Modal for User Quota editing */}
+        {showQuotaModal && selectedUserForQuota && (
+          <div className="admin-modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="admin-modal" style={{ background: 'var(--bg-sidebar)', padding: '30px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', width: '90%', maxWidth: '400px', boxShadow: 'var(--shadow-lg)' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#fff', marginBottom: '10px' }}>Edit User Quota</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: '20px' }}>Adjust SMS limit for user <strong>{selectedUserForQuota.username}</strong></p>
+              <div className="form-group" style={{ margin: '20px 0', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>Free SMS Messages Left</label>
+                <input 
+                  type="number" 
+                  min="0"
+                  value={newQuotaValue} 
+                  onChange={(e) => setNewQuotaValue(parseInt(e.target.value) || 0)} 
+                  style={{ width: '100%', padding: '10px', background: '#182533', border: '1px solid var(--border-light)', color: '#fff', borderRadius: '8px' }}
+                />
+              </div>
+              <div className="admin-modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button className="btn btn-secondary" onClick={() => { setShowQuotaModal(false); setSelectedUserForQuota(null); }} style={{ padding: '8px 16px', background: '#1a2432', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  Cancel
+                </button>
+                <button className="btn btn-primary" onClick={handleSaveQuota} style={{ padding: '8px 16px' }}>
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // Private Authenticated Views
+  if (loggedInUser.isAdmin) {
+    return renderAdminDashboard();
+  }
+
   return (
     <div className="app-container">
       {/* Sidebar Navigation */}

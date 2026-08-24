@@ -98,4 +98,32 @@ export const requestPaymentOtp = () => api.post('/services/request-otp').then(re
 export const activateService = (userId, serviceName, cardNumber, expiryDate, cvv, otpCode) => 
   api.post('/services/activate', { userId, serviceName, cardNumber, expiryDate, cvv, otpCode }).then(res => res.data);
 
+// Admin API
+export const loginAdmin = (username, password) => 
+  api.post('/auth/admin/login', { username, password }).then(res => res.data);
+
+export const getAdminStats = () => 
+  api.get('/admin/dashboard/stats').then(res => res.data);
+
+export const getAdminUsers = () => 
+  api.get('/admin/users').then(res => res.data);
+
+export const updateUserStatus = (id, isActive) => 
+  api.put(`/admin/users/${id}/status`, { isActive }).then(res => res.data);
+
+export const updateUserQuota = (id, freeMessagesLeft) => 
+  api.put(`/admin/users/${id}/quota`, { freeMessagesLeft }).then(res => res.data);
+
+export const getAdminTransactions = () => 
+  api.get('/admin/transactions').then(res => res.data);
+
+export const getAdminSmsLogs = () => 
+  api.get('/admin/sms-logs').then(res => res.data);
+
+export const createAdminTemplate = (title, body) => 
+  api.post('/admin/templates', { title, body }).then(res => res.data);
+
+export const deleteAdminTemplate = (id) => 
+  api.delete(`/admin/templates/${id}`).then(res => res.data);
+
 export default api;

@@ -153,39 +153,61 @@ namespace Backend.Controllers
                 return BadRequest(new { message = "Username and Password are required." });
             }
 
+            // 1. Check if user is a standard User
             var user = await _context.Users
                 .Include(u => u.Profile)
                 .Include(u => u.Quota)
                 .FirstOrDefaultAsync(u => u.Username.ToLower() == dto.Username.ToLower());
 
-            if (user == null || user.PasswordHash != dto.Password)
+            if (user != null)
             {
-                return Unauthorized(new { message = "Invalid Username or Password." });
+                if (user.PasswordHash != dto.Password)
+                {
+                    return Unauthorized(new { message = "Invalid Username or Password." });
+                }
+
+                if (!user.IsActive)
+                {
+                    return BadRequest(new { message = "This account is currently inactive. Please contact support." });
+                }
+
+                // Check if 2FA is enabled
+                if (user.TwoFactorEnabled)
+                {
+                    string code = Random.Shared.Next(100000, 999999).ToString();
+                    user.TwoFactorCode = code;
+                    user.TwoFactorExpiry = DateTime.UtcNow.AddMinutes(5);
+                    await _context.SaveChangesAsync();
+
+                    // Console output for simulation/retrieval
+                    Console.WriteLine($"[2FA OTP] Generated login code for user '{user.Username}': {code} (Sent to {user.Email})");
+
+                    return Ok(new { requires2Fa = true, username = user.Username, email = user.Email });
+                }
+
+                // Generate JWT Token
+                user.Token = GenerateJwtToken(user);
+
+                return Ok(user);
             }
 
-            if (!user.IsActive)
+            // 2. Check if user is an Admin
+            var admin = await _context.Admins
+                .FirstOrDefaultAsync(a => a.Username.ToLower() == dto.Username.ToLower());
+
+            if (admin != null)
             {
-                return BadRequest(new { message = "This account is currently inactive. Please contact support." });
+                if (admin.PasswordHash != dto.Password)
+                {
+                    return Unauthorized(new { message = "Invalid Username or Password." });
+                }
+
+                admin.Token = GenerateJwtTokenForAdmin(admin);
+
+                return Ok(admin);
             }
 
-            // Check if 2FA is enabled
-            if (user.TwoFactorEnabled)
-            {
-                string code = Random.Shared.Next(100000, 999999).ToString();
-                user.TwoFactorCode = code;
-                user.TwoFactorExpiry = DateTime.UtcNow.AddMinutes(5);
-                await _context.SaveChangesAsync();
-
-                // Console output for simulation/retrieval
-                Console.WriteLine($"[2FA OTP] Generated login code for user '{user.Username}': {code} (Sent to {user.Email})");
-
-                return Ok(new { requires2Fa = true, username = user.Username, email = user.Email });
-            }
-
-            // Generate JWT Token
-            user.Token = GenerateJwtToken(user);
-
-            return Ok(user);
+            return Unauthorized(new { message = "Invalid Username or Password." });
         }
 
         // POST: api/auth/verify-2fa
@@ -221,6 +243,49 @@ namespace Backend.Controllers
             user.Token = GenerateJwtToken(user);
 
             return Ok(user);
+        }
+
+        private string GenerateJwtTokenForAdmin(Admin admin)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.UTF8.GetBytes("SuperSecretSecureKey123456789012345");
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new[] 
+                { 
+                    new Claim(ClaimTypes.NameIdentifier, admin.AdminId.ToString()),
+                    new Claim(ClaimTypes.Name, admin.Username),
+                    new Claim(ClaimTypes.Role, "Admin")
+                }),
+                Expires = DateTime.UtcNow.AddDays(7),
+                Issuer = "smschat",
+                Audience = "smschat",
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
+        }
+
+        // POST: api/auth/admin/login
+        [HttpPost("admin/login")]
+        public async Task<IActionResult> AdminLogin([FromBody] LoginDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.Password))
+            {
+                return BadRequest(new { message = "Username and Password are required." });
+            }
+
+            var admin = await _context.Admins
+                .FirstOrDefaultAsync(a => a.Username.ToLower() == dto.Username.ToLower());
+
+            if (admin == null || admin.PasswordHash != dto.Password)
+            {
+                return Unauthorized(new { message = "Invalid Admin Username or Password." });
+            }
+
+            admin.Token = GenerateJwtTokenForAdmin(admin);
+
+            return Ok(admin);
         }
     }
 
