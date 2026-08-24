@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Backend.Data;
 using Backend.Models;
+using Backend.Services;
 using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -16,10 +17,12 @@ namespace Backend.Controllers
     public class AdminController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IAiService _aiService;
 
-        public AdminController(AppDbContext context)
+        public AdminController(AppDbContext context, IAiService aiService)
         {
             _context = context;
+            _aiService = aiService;
         }
 
         // GET: api/admin/dashboard/stats
@@ -231,6 +234,69 @@ namespace Backend.Controllers
 
             return Ok(new { message = "System template deleted successfully." });
         }
+
+        // POST: api/admin/ai-chat
+        [HttpPost("ai-chat")]
+        public async Task<IActionResult> AdminAiChat([FromBody] AdminAiChatRequestDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Message))
+            {
+                return BadRequest(new { message = "Message cannot be empty." });
+            }
+
+            // 1. Gather live system metrics for context
+            int totalUsers = await _context.Users.CountAsync(u => u.UserId != 999);
+            int totalMessages = await _context.Messages.CountAsync(m => m.SenderId != 999);
+            decimal totalRevenue = await _context.Transactions
+                .Where(t => t.TransactionStatus == "success")
+                .SumAsync(t => t.Amount);
+            int activeServicesCount = await _context.UserServices
+                .CountAsync(us => us.PaymentStatus == "paid");
+            int aiInteractionsCount = await _context.Messages
+                .CountAsync(m => m.SenderId == 999 || m.ReceiverId == 999);
+
+            var logs = await _context.SMSLogs.ToListAsync();
+            int deliveredCount = logs.Count(l => l.DeliveryStatus == "delivered" || l.DeliveryStatus == "sent");
+            int failedCount = logs.Count(l => l.DeliveryStatus == "failed");
+            int pendingCount = logs.Count(l => l.DeliveryStatus == "pending");
+
+            // Get system templates title listing
+            var templates = await _context.SMSTemplates
+                .Where(t => t.UserId == null)
+                .Select(t => t.Title)
+                .ToListAsync();
+            string templatesList = string.Join(", ", templates);
+
+            // 2. Format a system instruction loaded with live stats
+            string systemInstruction = 
+                "Bạn là Admin Copilot, một Trợ lý AI thông minh tích hợp trong trang quản trị của hệ thống Online SMS Hub. " +
+                "Nhiệm vụ của bạn là giải đáp thắc mắc, phân tích dữ liệu hệ thống, và hỗ trợ soạn thảo mẫu tin nhắn SMS chuyên nghiệp. " +
+                "Hãy phản hồi bằng tiếng Việt trôi chảy, chuyên nghiệp, hỗ trợ giải trình chi tiết (không giới hạn 120 ký tự như người dùng).\n\n" +
+                "LƯU Ý CỰC KỲ QUAN TRỌNG: TUYỆT ĐỐI KHÔNG ĐƯỢC sử dụng định dạng Markdown (như dấu sao kép **, bảng biểu |...|, tiêu đề #, v.v.). Hãy viết câu trả lời hoàn toàn bằng văn bản thuần túy (plain text), sử dụng dấu xuống dòng tự nhiên và các ký tự unicode thân thiện (như biểu tượng cảm xúc hoặc dấu gạch đầu dòng •) để định dạng và trình bày thông tin dễ nhìn.\n\n" +
+                "DƯỚI ĐÂY LÀ THÔNG SỐ HỆ THỐNG THỜI GIAN THỰC ĐỂ BẠN TRẢ LỜI CÂU HỎI:\n" +
+                $"- Tổng số người dùng đăng ký: {totalUsers} người dùng.\n" +
+                $"- Tổng số tin nhắn đã gửi (standard): {totalMessages} tin nhắn.\n" +
+                $"- Doanh thu lũy kế: ${totalRevenue:F2} USD.\n" +
+                $"- Số lượng đăng ký gói cước premium đang hoạt động: {activeServicesCount} gói cước.\n" +
+                $"- Lượng tương tác với chatbot AI của người dùng: {aiInteractionsCount} cuộc hội thoại.\n" +
+                $"- Số tin nhắn gửi thành công (Delivered): {deliveredCount} SMS.\n" +
+                $"- Số tin nhắn đang chờ (Pending): {pendingCount} SMS.\n" +
+                $"- Số tin nhắn gửi thất bại (Failed): {failedCount} SMS.\n" +
+                $"- Danh sách các mẫu tin nhắn hệ thống hiện có: {templatesList}.\n\n" +
+                "Hãy tự tin trả lời chính xác các số liệu này khi quản trị viên hỏi. " +
+                "Nếu quản trị viên nhờ soạn mẫu tin nhắn mới (Ví dụ: thông báo bảo trì, tin nhắn chúc mừng, đòi nợ), hãy soạn nội dung SMS thật tối ưu, ngắn gọn, súc tích (thường dưới 120-160 ký tự cho phù hợp tiêu chuẩn SMS) và khuyên họ thêm vào phần Mẫu Hệ Thống.";
+
+            // 3. Call AI Service
+            string aiResponse = await _aiService.ChatWithAdminAsync(dto.Message, dto.History ?? new List<AdminChatMessage>(), systemInstruction);
+
+            return Ok(new { content = aiResponse });
+        }
+    }
+
+    public class AdminAiChatRequestDto
+    {
+        public string Message { get; set; } = string.Empty;
+        public List<AdminChatMessage>? History { get; set; }
     }
 
     public class UpdateUserStatusDto

@@ -126,4 +126,7 @@ export const createAdminTemplate = (title, body) =>
 export const deleteAdminTemplate = (id) => 
   api.delete(`/admin/templates/${id}`).then(res => res.data);
 
+export const chatWithAdminAi = (message, history) => 
+  api.post('/admin/ai-chat', { message, history }).then(res => res.data);
+
 export default api;

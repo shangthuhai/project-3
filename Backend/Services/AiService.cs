@@ -16,6 +16,16 @@ namespace Backend.Services
         Task<string> GenerateSmsAsync(string prompt, string tone);
         Task<bool> ModerateContentAsync(string content);
         Task<string> ChatWithAiAsync(string userMessage, List<Message> history);
+        Task<string> ChatWithAdminAsync(string userMessage, List<AdminChatMessage> history, string systemInstruction);
+    }
+
+    public class AdminChatMessage
+    {
+        [System.Text.Json.Serialization.JsonPropertyName("role")]
+        public string Role { get; set; } = string.Empty; // user, assistant
+
+        [System.Text.Json.Serialization.JsonPropertyName("content")]
+        public string Content { get; set; } = string.Empty;
     }
 
     public class AiService : IAiService
@@ -300,6 +310,82 @@ namespace Backend.Services
             {
                 _logger.LogError(ex, "Exception while calling AI Chat API");
                 return "Lỗi hệ thống không thể xử lý câu trả lời.";
+            }
+        }
+
+        public async Task<string> ChatWithAdminAsync(string userMessage, List<AdminChatMessage> history, string systemInstruction)
+        {
+            if (string.IsNullOrWhiteSpace(_apiKey))
+            {
+                return "Lỗi: API Key chưa được cấu hình.";
+            }
+
+            string baseUrl = string.IsNullOrWhiteSpace(_baseUrl) ? "https://api.openai.com/v1" : _baseUrl;
+
+            var messagesList = new List<object>();
+            messagesList.Add(new { 
+                role = "system", 
+                content = systemInstruction 
+            });
+
+            foreach (var msg in history)
+            {
+                messagesList.Add(new { 
+                    role = msg.Role, 
+                    content = msg.Content 
+                });
+            }
+
+            messagesList.Add(new { role = "user", content = userMessage });
+
+            var requestBody = new
+            {
+                model = _model,
+                messages = messagesList.ToArray(),
+                max_tokens = 600,
+                temperature = 0.7
+            };
+
+            try
+            {
+                string jsonPayload = JsonSerializer.Serialize(requestBody);
+                _logger.LogInformation($"[AI Admin Chat Request]: {jsonPayload}");
+                var requestContent = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
+                
+                string url = $"{baseUrl}/chat/completions";
+                var response = await _httpClient.PostAsync(url, requestContent);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    string errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogError($"AI Admin Chat API error: Status={response.StatusCode}, Body={errorContent}");
+                    return "Xin lỗi, mình đang gặp trục trặc kỹ thuật khi kết nối dịch vụ AI.";
+                }
+
+                string responseString = await response.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(responseString);
+                
+                if (doc.RootElement.TryGetProperty("choices", out var choices) && 
+                    choices.GetArrayLength() > 0)
+                {
+                    var text = choices[0]
+                        .GetProperty("message")
+                        .GetProperty("content")
+                        .GetString();
+
+                    string cleanedText = text ?? string.Empty;
+                    cleanedText = StripThinkingProcess(cleanedText);
+                    return cleanedText.Trim();
+                }
+
+                return "Lỗi: Dịch vụ AI không trả về kết quả.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception while calling AI Admin Chat API");
+                return "Lỗi: Không thể kết nối với AI (Lỗi hệ thống).";
             }
         }
 
