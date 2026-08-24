@@ -139,6 +139,15 @@ namespace Backend.Controllers
             // Intercept message sent to AI Chatbot
             if (dto.ReceiverNumber == "9999999999")
             {
+                // Fetch conversation history
+                var history = await _context.Messages
+                    .Where(m => (m.SenderId == sender.UserId && m.ReceiverNumber == "9999999999") ||
+                                (m.SenderId == 999 && m.ReceiverId == sender.UserId))
+                    .OrderByDescending(m => m.SentAt)
+                    .Take(10)
+                    .ToListAsync();
+                history.Reverse();
+
                 var userMessage = new Message
                 {
                     SenderId = sender.UserId,
@@ -160,14 +169,6 @@ namespace Backend.Controllers
                 };
                 _context.SMSLogs.Add(userLog);
                 await _context.SaveChangesAsync();
-
-                // Fetch conversation history
-                var history = await _context.Messages
-                    .Where(m => (m.SenderId == sender.UserId && m.ReceiverNumber == "9999999999") ||
-                                (m.SenderId == 999 && m.ReceiverId == sender.UserId))
-                    .OrderBy(m => m.SentAt)
-                    .Take(10)
-                    .ToListAsync();
 
                 // Call AI Chat
                 string aiReply = await _aiService.ChatWithAiAsync(dto.Content, history);
