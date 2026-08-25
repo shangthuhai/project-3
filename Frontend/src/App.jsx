@@ -124,6 +124,12 @@ export default function App() {
   const aiDragRef = useRef({ isDragging: false, startX: 0, startY: 0, posX: 0, posY: 0 });
   const aiMessagesEndRef = useRef(null);
 
+  const [aiChatPosition, setAiChatPosition] = useState({
+    x: window.innerWidth - 384,
+    y: window.innerHeight - 576
+  });
+  const aiChatDragRef = useRef({ isDragging: false, startX: 0, startY: 0, posX: 0, posY: 0 });
+
   // 2FA Auth & Payments
   const [requires2Fa, setRequires2Fa] = useState(false);
   const [twoFaUsername, setTwoFaUsername] = useState('');
@@ -179,6 +185,12 @@ export default function App() {
   const [adminChatInput, setAdminChatInput] = useState('');
   const [isAdminChatLoading, setIsAdminChatLoading] = useState(false);
   const adminChatEndRef = useRef(null);
+
+  const [adminAiPosition, setAdminAiPosition] = useState({
+    x: window.innerWidth - 90,
+    y: window.innerHeight - 90
+  });
+  const adminAiDragRef = useRef({ isDragging: false, startX: 0, startY: 0, posX: 0, posY: 0 });
 
   const startResizeAdminChat = (mouseDownEvent) => {
     mouseDownEvent.preventDefault();
@@ -524,6 +536,99 @@ export default function App() {
       setIsAiBubbleOpen(prev => !prev);
     }
   };
+
+  const handleAiChatMouseDown = (e) => {
+    if (e.button !== 0) return;
+    if (e.target.closest('.ai-mini-chat-close-btn')) return;
+
+    aiChatDragRef.current.isDragging = false;
+    aiChatDragRef.current.startX = e.clientX;
+    aiChatDragRef.current.startY = e.clientY;
+    aiChatDragRef.current.posX = aiChatPosition.x;
+    aiChatDragRef.current.posY = aiChatPosition.y;
+
+    document.addEventListener('mousemove', handleAiChatMouseMove);
+    document.addEventListener('mouseup', handleAiChatMouseUp);
+  };
+
+  const handleAiChatMouseMove = (e) => {
+    const dx = e.clientX - aiChatDragRef.current.startX;
+    const dy = e.clientY - aiChatDragRef.current.startY;
+
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+      aiChatDragRef.current.isDragging = true;
+    }
+
+    let newX = aiChatDragRef.current.posX + dx;
+    let newY = aiChatDragRef.current.posY + dy;
+
+    newX = Math.max(10, Math.min(window.innerWidth - 370, newX));
+    newY = Math.max(10, Math.min(window.innerHeight - 490, newY));
+
+    setAiChatPosition({ x: newX, y: newY });
+  };
+
+  const handleAiChatMouseUp = () => {
+    document.removeEventListener('mousemove', handleAiChatMouseMove);
+    document.removeEventListener('mouseup', handleAiChatMouseUp);
+  };
+
+  const handleAdminAiBubbleMouseDown = (e) => {
+    if (e.button !== 0) return;
+    adminAiDragRef.current.isDragging = false;
+    adminAiDragRef.current.startX = e.clientX;
+    adminAiDragRef.current.startY = e.clientY;
+    adminAiDragRef.current.posX = adminAiPosition.x;
+    adminAiDragRef.current.posY = adminAiPosition.y;
+
+    document.addEventListener('mousemove', handleAdminAiBubbleMouseMove);
+    document.addEventListener('mouseup', handleAdminAiBubbleMouseUp);
+  };
+
+  const handleAdminAiBubbleMouseMove = (e) => {
+    const dx = e.clientX - adminAiDragRef.current.startX;
+    const dy = e.clientY - adminAiDragRef.current.startY;
+
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+      adminAiDragRef.current.isDragging = true;
+    }
+
+    let newX = adminAiDragRef.current.posX + dx;
+    let newY = adminAiDragRef.current.posY + dy;
+
+    newX = Math.max(10, Math.min(window.innerWidth - 70, newX));
+    newY = Math.max(10, Math.min(window.innerHeight - 70, newY));
+
+    setAdminAiPosition({ x: newX, y: newY });
+  };
+
+  const handleAdminAiBubbleMouseUp = (e) => {
+    document.removeEventListener('mousemove', handleAdminAiBubbleMouseMove);
+    document.removeEventListener('mouseup', handleAdminAiBubbleMouseUp);
+
+    if (!adminAiDragRef.current.isDragging) {
+      setIsAdminChatOpen(prev => !prev);
+    }
+  };
+
+  useEffect(() => {
+    const handleResize = () => {
+      setAiPosition(prev => ({
+        x: Math.max(10, Math.min(window.innerWidth - 70, prev.x)),
+        y: Math.max(10, Math.min(window.innerHeight - 70, prev.y))
+      }));
+      setAiChatPosition(prev => ({
+        x: Math.max(10, Math.min(window.innerWidth - 370, prev.x)),
+        y: Math.max(10, Math.min(window.innerHeight - 490, prev.y))
+      }));
+      setAdminAiPosition(prev => ({
+        x: Math.max(10, Math.min(window.innerWidth - 70, prev.x)),
+        y: Math.max(10, Math.min(window.innerHeight - 70, prev.y))
+      }));
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const triggerAlert = (type, message) => {
     const messageString = typeof message === 'object' && message !== null
@@ -1993,17 +2098,17 @@ export default function App() {
         {!isAdminChatOpen && (
           <button
             className="admin-ai-fab animate-glow"
-            onClick={() => setIsAdminChatOpen(true)}
+            onMouseDown={handleAdminAiBubbleMouseDown}
             style={{
               position: 'fixed',
-              bottom: '30px',
-              right: '30px',
+              left: `${adminAiPosition.x}px`,
+              top: `${adminAiPosition.y}px`,
               width: '60px',
               height: '60px',
               borderRadius: '50%',
               background: 'linear-gradient(135deg, var(--color-primary), #8b5cf6)',
               border: 'none',
-              cursor: 'pointer',
+              cursor: 'grab',
               boxShadow: '0 0 15px rgba(36, 129, 204, 0.4)',
               display: 'flex',
               alignItems: 'center',
@@ -2011,7 +2116,8 @@ export default function App() {
               zIndex: 9999,
               fontSize: '1.8rem',
               outline: 'none',
-              transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+              userSelect: 'none'
             }}
             title="Open Admin AI Copilot"
           >
@@ -3432,17 +3538,27 @@ export default function App() {
       )}
 
       {/* AI Floating Chatbot Widget */}
-      <div
-        className="ai-floating-bubble"
-        style={{ left: `${aiPosition.x}px`, top: `${aiPosition.y}px` }}
-        onMouseDown={handleAiBubbleMouseDown}
-      >
-        🤖
-      </div>
+      {!isAiBubbleOpen && (
+        <div
+          className="ai-floating-bubble"
+          style={{ left: `${aiPosition.x}px`, top: `${aiPosition.y}px` }}
+          onMouseDown={handleAiBubbleMouseDown}
+        >
+          🤖
+        </div>
+      )}
 
       {isAiBubbleOpen && (
-        <div className="ai-mini-chat-window">
-          <div className="ai-mini-chat-header">
+        <div
+          className="ai-mini-chat-window"
+          style={{
+            left: `${aiChatPosition.x}px`,
+            top: `${aiChatPosition.y}px`,
+            right: 'auto',
+            bottom: 'auto'
+          }}
+        >
+          <div className="ai-mini-chat-header" onMouseDown={handleAiChatMouseDown}>
             <h3>🤖 Trợ lý AI Chatbot</h3>
             <button className="ai-mini-chat-close-btn" onClick={() => setIsAiBubbleOpen(false)}>×</button>
           </div>

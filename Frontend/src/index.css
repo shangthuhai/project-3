@@ -2180,6 +2180,12 @@ body {
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: grab;
+  user-select: none;
+}
+
+.ai-mini-chat-header:active {
+  cursor: grabbing;
 }
 
 .ai-mini-chat-header h3 {
@@ -2333,12 +2339,16 @@ body {
   background: rgba(239, 68, 68, 0.2) !important;
 }
 
-/* ==================== ADMIN AI COPILOT STYLES ==================== */
+.admin-ai-fab {
+  cursor: grab;
+  user-select: none;
+}
 .admin-ai-fab:hover {
   transform: scale(1.08);
   box-shadow: 0 0 25px rgba(139, 92, 246, 0.6) !important;
 }
 .admin-ai-fab:active {
+  cursor: grabbing;
   transform: scale(0.95);
 }
 .drawer-close-btn:hover {
