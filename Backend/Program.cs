@@ -16,6 +16,9 @@ builder.Services.AddHostedService<Backend.Services.SMSBackgroundService>();
 // Register AI Service
 builder.Services.AddHttpClient<Backend.Services.IAiService, Backend.Services.AiService>();
 
+// Register Telegram Service
+builder.Services.AddHttpClient<Backend.Services.ITelegramService, Backend.Services.TelegramService>();
+
 // Configure JWT Authentication
 builder.Services.AddAuthentication(options =>
 {

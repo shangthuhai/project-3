@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Backend.Data;
 using Backend.Models;
+using Backend.Services;
 using System;
 using System.Threading.Tasks;
 using System.Linq;
@@ -19,10 +20,12 @@ namespace Backend.Controllers
     public class AuthController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly ITelegramService _telegramService;
 
-        public AuthController(AppDbContext context)
+        public AuthController(AppDbContext context, ITelegramService telegramService)
         {
             _context = context;
+            _telegramService = telegramService;
         }
 
         private string GenerateJwtToken(User user)
@@ -181,6 +184,9 @@ namespace Backend.Controllers
 
                     // Console output for simulation/retrieval
                     Console.WriteLine($"[2FA OTP] Generated login code for user '{user.Username}': {code} (Sent to {user.Email})");
+
+                    // Send OTP code via Telegram Bot
+                    await _telegramService.SendMessageAsync($"[2FA OTP] Mã xác nhận đăng nhập cho tài khoản '{user.Username}' của bạn là: {code} (Hạn dùng trong 5 phút)");
 
                     return Ok(new { requires2Fa = true, username = user.Username, email = user.Email });
                 }
