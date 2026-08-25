@@ -55,17 +55,17 @@ export default function App() {
   const [users, setUsers] = useState([]);
   const [loggedInUser, setLoggedInUser] = useState(null); // Authenticated User profile
   const [authMode, setAuthMode] = useState('login'); // login | register
-  
+
   // Public Forms States
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [registerForm, setRegisterForm] = useState({
     username: '', password: '', confirmPassword: '', email: '', mobileNumber: '', name: ''
   });
-  
+
   // Real-time Validations States
   const [usernameValidation, setUsernameValidation] = useState({ checking: false, available: null, message: '' });
   const [mobileValidation, setMobileValidation] = useState({ checking: false, available: null, message: '' });
-  
+
   // Captcha State
   const [captchaCode, setCaptchaCode] = useState('');
   const [captchaInput, setCaptchaInput] = useState('');
@@ -75,30 +75,30 @@ export default function App() {
   const [contacts, setContacts] = useState([]);
   const [friends, setFriends] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
-  
+
   // Active Chat Session
   const [selectedContact, setSelectedContact] = useState(null); // { name, contactNumber, isFriend }
   const [chatMessages, setChatMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [remainingQuota, setRemainingQuota] = useState(null); // { isFriend, remaining, limit, sentCount }
-  
+
   // Premium Services
   const [activatedServices, setActivatedServices] = useState([]);
   const [selectedServices, setSelectedServices] = useState([]); // List of service names checked for activation
-  
+
   // Modals state
   const [showAddContactModal, setShowAddContactModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  
+
   // Dashboard Modal Forms
   const [contactForm, setContactForm] = useState({ firstName: '', lastName: '', contactNumber: '' });
   const [requestForm, setRequestForm] = useState({ email: '' });
   const [paymentForm, setPaymentForm] = useState({ cardNumber: '', expiryDate: '', cvv: '' });
   const [profileForm, setProfileForm] = useState({});
-  
+
   // Global Alerts/Notifications
   const [alert, setAlert] = useState(null); // { type: 'success'|'error', message: '' }
-  
+
   // Refs
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
@@ -115,7 +115,7 @@ export default function App() {
   const [aiMessages, setAiMessages] = useState([]);
   const [aiNewMessage, setAiNewMessage] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
-  
+
   const aiDragRef = useRef({ isDragging: false, startX: 0, startY: 0, posX: 0, posY: 0 });
   const aiMessagesEndRef = useRef(null);
 
@@ -202,7 +202,7 @@ export default function App() {
 
   const handleAdminChatSend = (e, customPrompt = '') => {
     if (e) e.preventDefault();
-    
+
     const promptToSend = customPrompt || adminChatInput.trim();
     if (!promptToSend || isAdminChatLoading) return;
 
@@ -229,7 +229,7 @@ export default function App() {
 
   const loadAdminDashboardData = () => {
     if (!loggedInUser || !loggedInUser.isAdmin) return;
-    
+
     if (adminTab === 'overview') {
       getAdminStats().then(setAdminStats).catch(() => triggerAlert('error', 'Cannot load dashboard stats.'));
     } else if (adminTab === 'users') {
@@ -341,7 +341,7 @@ export default function App() {
       setUsernameValidation({ checking: false, available: null, message: '' });
       return;
     }
-    
+
     const timeoutId = setTimeout(() => {
       setUsernameValidation({ checking: true, available: null, message: 'Checking availability...' });
       checkUsername(registerForm.username)
@@ -367,7 +367,7 @@ export default function App() {
       setMobileValidation({ checking: false, available: null, message: 'Mobile must be exactly 10 digits.' });
       return;
     }
-    
+
     setMobileValidation({ checking: true, available: null, message: 'Checking mobile number...' });
     checkMobile(mobile)
       .then(res => {
@@ -385,15 +385,15 @@ export default function App() {
   // Load backend private details when loggedInUser becomes available
   useEffect(() => {
     if (!loggedInUser) return;
-    
+
     if (loggedInUser.isAdmin) {
       loadAdminDashboardData();
       return;
     }
-    
+
     // Fetch private dashboard state
     refreshDashboardData();
-    
+
     // Reset selections
     setSelectedContact(null);
     setChatMessages([]);
@@ -409,7 +409,7 @@ export default function App() {
     setAiPrompt('');
 
     loadChatDetails();
-    
+
     const interval = setInterval(() => {
       loadChatMessagesOnly();
     }, 3000);
@@ -439,12 +439,12 @@ export default function App() {
 
     getChatHistory(loggedInUser.id, '9999999999')
       .then(setAiMessages)
-      .catch(() => {});
+      .catch(() => { });
 
     const interval = setInterval(() => {
       getChatHistory(loggedInUser.id, '9999999999')
         .then(setAiMessages)
-        .catch(() => {});
+        .catch(() => { });
     }, 2000);
 
     return () => clearInterval(interval);
@@ -486,7 +486,7 @@ export default function App() {
     aiDragRef.current.startY = e.clientY;
     aiDragRef.current.posX = aiPosition.x;
     aiDragRef.current.posY = aiPosition.y;
-    
+
     document.addEventListener('mousemove', handleAiBubbleMouseMove);
     document.addEventListener('mouseup', handleAiBubbleMouseUp);
   };
@@ -494,24 +494,24 @@ export default function App() {
   const handleAiBubbleMouseMove = (e) => {
     const dx = e.clientX - aiDragRef.current.startX;
     const dy = e.clientY - aiDragRef.current.startY;
-    
+
     if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
       aiDragRef.current.isDragging = true;
     }
-    
+
     let newX = aiDragRef.current.posX + dx;
     let newY = aiDragRef.current.posY + dy;
-    
+
     newX = Math.max(10, Math.min(window.innerWidth - 70, newX));
     newY = Math.max(10, Math.min(window.innerHeight - 70, newY));
-    
+
     setAiPosition({ x: newX, y: newY });
   };
 
   const handleAiBubbleMouseUp = (e) => {
     document.removeEventListener('mousemove', handleAiBubbleMouseMove);
     document.removeEventListener('mouseup', handleAiBubbleMouseUp);
-    
+
     if (!aiDragRef.current.isDragging) {
       setIsAiBubbleOpen(prev => !prev);
     }
@@ -538,18 +538,18 @@ export default function App() {
   const loadUsersList = () => {
     getUsers()
       .then(setUsers)
-      .catch(() => {});
+      .catch(() => { });
   };
 
   const refreshDashboardData = () => {
-    getContacts(loggedInUser.id).then(setContacts).catch(() => {});
-    getFriends(loggedInUser.id).then(setFriends).catch(() => {});
-    getPendingRequests(loggedInUser.id).then(setPendingRequests).catch(() => {});
+    getContacts(loggedInUser.id).then(setContacts).catch(() => { });
+    getFriends(loggedInUser.id).then(setFriends).catch(() => { });
+    getPendingRequests(loggedInUser.id).then(setPendingRequests).catch(() => { });
     getActivatedServices(loggedInUser.id)
       .then(data => setActivatedServices(data.map(s => s.serviceName)))
-      .catch(() => {});
+      .catch(() => { });
     setProfileForm(loggedInUser);
-    
+
     // Load new entities
     loadTemplates();
     loadGroups();
@@ -575,7 +575,7 @@ export default function App() {
     if (!loggedInUser || !selectedContact) return;
     getChatHistory(loggedInUser.id, selectedContact.contactNumber)
       .then(setChatMessages)
-      .catch(() => {});
+      .catch(() => { });
   };
 
   const handleLoginSubmit = (e) => {
@@ -625,7 +625,7 @@ export default function App() {
   const loadTemplates = () => {
     getTemplates()
       .then(setTemplates)
-      .catch(() => {});
+      .catch(() => { });
   };
 
   const handleCreateTemplate = (e) => {
@@ -653,7 +653,7 @@ export default function App() {
   const loadGroups = () => {
     getGroups()
       .then(setGroups)
-      .catch(() => {});
+      .catch(() => { });
   };
 
   const handleCreateGroup = (e) => {
@@ -685,7 +685,7 @@ export default function App() {
   const loadGroupMembers = (groupId) => {
     getGroupMembers(groupId)
       .then(setGroupMembers)
-      .catch(() => {});
+      .catch(() => { });
   };
 
   const handleAddGroupMember = (e) => {
@@ -713,7 +713,7 @@ export default function App() {
   const loadBlocklist = () => {
     getBlocklist()
       .then(setBlocklist)
-      .catch(() => {});
+      .catch(() => { });
   };
 
   const handleBlockNumber = (e) => {
@@ -769,7 +769,7 @@ export default function App() {
   const loadAnalyticsStats = () => {
     getAnalyticsStats()
       .then(setAnalyticsStats)
-      .catch(() => {});
+      .catch(() => { });
   };
 
   const handleSendBulkMessage = (e) => {
@@ -795,7 +795,7 @@ export default function App() {
 
   const handleRegisterSubmit = (e) => {
     e.preventDefault();
-    
+
     // Captcha Validation
     if (captchaInput.toLowerCase() !== captchaCode.toLowerCase()) {
       triggerAlert('error', 'Verification code is incorrect.');
@@ -952,7 +952,7 @@ export default function App() {
         setShowScheduler(false);
         getQuota(loggedInUser.id, selectedContact.contactNumber)
           .then(setRemainingQuota)
-          .catch(() => {});
+          .catch(() => { });
         loadAnalyticsStats();
       })
       .catch(err => {
@@ -981,7 +981,7 @@ export default function App() {
   // Submit sequential activations in a bundle payment
   const handlePaymentSubmit = (e) => {
     e.preventDefault();
-    
+
     // If 2FA is enabled, and OTP is not showing yet, request OTP
     if (loggedInUser.twoFactorEnabled && !showPaymentOtpField) {
       requestPaymentOtp()
@@ -997,7 +997,7 @@ export default function App() {
     }
 
     // Trigger sequential activation API calls for each selected service
-    const promises = selectedServices.map(serviceName => 
+    const promises = selectedServices.map(serviceName =>
       activateService(loggedInUser.id, serviceName, paymentForm.cardNumber, paymentForm.expiryDate, paymentForm.cvv, paymentOtpCode)
     );
 
@@ -1107,8 +1107,8 @@ export default function App() {
       }
 
       return chatItems.map(item => (
-        <div 
-          key={item.contactNumber} 
+        <div
+          key={item.contactNumber}
           className={`sidebar-list-item ${selectedContact?.contactNumber === item.contactNumber ? 'selected' : ''}`}
           onClick={() => setSelectedContact(item)}
         >
@@ -1135,7 +1135,7 @@ export default function App() {
           <button className="add-contact-trigger-btn" onClick={() => setShowAddContactModal(true)}>
             <span>+</span> Add New Contact
           </button>
-          
+
           {contacts.length === 0 ? (
             <div className="empty-list-message">Your contact list is empty.</div>
           ) : (
@@ -1145,7 +1145,7 @@ export default function App() {
               return (
                 <div key={c.id} className="sidebar-list-item">
                   <div className="item-avatar" style={{
-                    width: '44px', height: '44px', borderRadius: '50%', background: '#3b5998', 
+                    width: '44px', height: '44px', borderRadius: '50%', background: '#3b5998',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold'
                   }}>
                     {c.firstName ? c.firstName[0] : ''}{c.lastName ? c.lastName[0] : ''}
@@ -1153,8 +1153,8 @@ export default function App() {
                   <div className="item-details">
                     <div className="item-row">
                       <span className="item-name">{c.firstName} {c.lastName}</span>
-                      <button 
-                        className="btn-danger" 
+                      <button
+                        className="btn-danger"
                         style={{ padding: '2px 8px', fontSize: '0.75rem', borderRadius: '4px', border: 'none', cursor: 'pointer' }}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1166,8 +1166,8 @@ export default function App() {
                     </div>
                     <div className="item-row">
                       <span className="item-subtext">{c.contactNumber}</span>
-                      <button 
-                        className="btn-primary" 
+                      <button
+                        className="btn-primary"
                         style={{ padding: '2px 8px', fontSize: '0.75rem', borderRadius: '4px', border: 'none', cursor: 'pointer' }}
                         onClick={() => startChat(`${c.firstName} ${c.lastName}`, c.contactNumber, isFriend)}
                       >
@@ -1187,7 +1187,7 @@ export default function App() {
   };
 
   // ==================== RENDERING VIEW ROUTER ====================
-  
+
   // Public Landing / Authenticating View
   if (!loggedInUser) {
     return (
@@ -1271,8 +1271,8 @@ export default function App() {
             <span style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
               {authMode === 'login' ? "Don't have an account?" : "Already registered?"}
             </span>
-            <button 
-              className="btn btn-secondary" 
+            <button
+              className="btn btn-secondary"
               style={{ padding: '6px 12px', fontSize: '0.8rem' }}
               onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
             >
@@ -1290,9 +1290,9 @@ export default function App() {
               <form onSubmit={handle2FaVerifySubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                 <div className="form-group">
                   <label>Mã OTP</label>
-                  <input 
-                    type="text" 
-                    placeholder="Nhập 6 số (e.g. 123456)" 
+                  <input
+                    type="text"
+                    placeholder="Nhập 6 số (e.g. 123456)"
                     value={otpInput}
                     onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, '').substring(0, 6))}
                     maxLength={6}
@@ -1302,9 +1302,9 @@ export default function App() {
                 <button type="submit" className="btn btn-primary" style={{ padding: '12px' }}>
                   Xác minh & Đăng nhập
                 </button>
-                <button 
-                  type="button" 
-                  className="btn btn-secondary" 
+                <button
+                  type="button"
+                  className="btn btn-secondary"
                   onClick={() => {
                     setRequires2Fa(false);
                     setOtpInput('');
@@ -1321,20 +1321,20 @@ export default function App() {
               <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                 <div className="form-group">
                   <label>Username</label>
-                  <input 
-                    type="text" 
-                    placeholder="Enter your username" 
+                  <input
+                    type="text"
+                    placeholder="Enter your username"
                     value={loginForm.username}
                     onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
                     required
                   />
                 </div>
-                
+
                 <div className="form-group">
                   <label>Password</label>
-                  <input 
-                    type="password" 
-                    placeholder="Enter your password" 
+                  <input
+                    type="password"
+                    placeholder="Enter your password"
                     value={loginForm.password}
                     onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
                     required
@@ -1351,12 +1351,12 @@ export default function App() {
             <div className="auth-card" style={{ maxWidth: '480px' }}>
               <h2>Create Account</h2>
               <form onSubmit={handleRegisterSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                
+
                 <div className="form-row">
                   <div className="form-group">
                     <label>Full Name</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       placeholder="e.g. John Doe"
                       value={registerForm.name}
                       onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
@@ -1365,8 +1365,8 @@ export default function App() {
                   </div>
                   <div className="form-group">
                     <label>Email ID</label>
-                    <input 
-                      type="email" 
+                    <input
+                      type="email"
                       placeholder="e.g. john@example.com"
                       value={registerForm.email}
                       onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
@@ -1377,8 +1377,8 @@ export default function App() {
 
                 <div className="form-group">
                   <label>Username</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="Create username"
                     value={registerForm.username}
                     onChange={(e) => setRegisterForm({ ...registerForm, username: e.target.value.toLowerCase().replace(/\s/g, '') })}
@@ -1396,8 +1396,8 @@ export default function App() {
                 <div className="form-row">
                   <div className="form-group">
                     <label>Password</label>
-                    <input 
-                      type="password" 
+                    <input
+                      type="password"
                       placeholder="Password"
                       value={registerForm.password}
                       onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
@@ -1406,8 +1406,8 @@ export default function App() {
                   </div>
                   <div className="form-group">
                     <label>Confirm Password</label>
-                    <input 
-                      type="password" 
+                    <input
+                      type="password"
                       placeholder="Confirm"
                       value={registerForm.confirmPassword}
                       onChange={(e) => setRegisterForm({ ...registerForm, confirmPassword: e.target.value })}
@@ -1418,8 +1418,8 @@ export default function App() {
 
                 <div className="form-group">
                   <label>Mobile Number (10 digits)</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="e.g. 0912345678"
                     value={registerForm.mobileNumber}
                     onChange={(e) => setRegisterForm({ ...registerForm, mobileNumber: e.target.value.replace(/\D/g, '').substring(0, 10) })}
@@ -1443,9 +1443,9 @@ export default function App() {
                     <button type="button" className="captcha-refresh-btn" onClick={generateCaptcha}>
                       ↻
                     </button>
-                    <input 
-                      type="text" 
-                      placeholder="Enter code" 
+                    <input
+                      type="text"
+                      placeholder="Enter code"
                       value={captchaInput}
                       onChange={(e) => setCaptchaInput(e.target.value.trim())}
                       style={{ flex: 1, padding: '8px' }}
@@ -1454,14 +1454,14 @@ export default function App() {
                   </div>
                 </div>
 
-                <button 
-                  type="submit" 
-                  className="btn btn-primary" 
+                <button
+                  type="submit"
+                  className="btn btn-primary"
                   style={{ marginTop: '10px', padding: '12px' }}
                   disabled={
-                    usernameValidation.available !== true || 
-                    mobileValidation.available !== true || 
-                    !captchaInput || 
+                    usernameValidation.available !== true ||
+                    mobileValidation.available !== true ||
+                    !captchaInput ||
                     registerForm.password !== registerForm.confirmPassword
                   }
                 >
@@ -1478,7 +1478,7 @@ export default function App() {
   // ==================== ADMIN PORTAL RENDERING FUNCTIONS ====================
   const renderAdminOverview = () => {
     if (!adminStats) return <div className="admin-loading" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>📊 Loading system analytics...</div>;
-    
+
     return (
       <div className="admin-tab-content">
         <div className="admin-header" style={{ marginBottom: '30px' }}>
@@ -1543,7 +1543,7 @@ export default function App() {
                   <div className="status-progress-bar success" style={{ height: '100%', background: 'var(--color-accent)', width: `${(adminStats.deliveredCount / (adminStats.totalMessages || 1)) * 100}%` }}></div>
                 </div>
               </div>
-              
+
               <div className="status-bar-item">
                 <div className="status-header" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', marginBottom: '6px', color: 'var(--text-main)' }}>
                   <span>Queued / Pending</span>
@@ -1574,7 +1574,7 @@ export default function App() {
                 const heightPct = (day.count / maxVal) * 100;
                 const dateObj = new Date(day.date);
                 const dayLabel = dateObj.getDate() + '/' + (dateObj.getMonth() + 1);
-                
+
                 return (
                   <div className="chart-bar-col" key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: '1', height: '100%' }}>
                     <div className="chart-bar-val" style={{ fontSize: '0.78rem', color: 'var(--color-primary)', fontWeight: '600', marginBottom: '6px' }}>{day.count}</div>
@@ -1636,8 +1636,8 @@ export default function App() {
                     </td>
                     <td style={{ padding: '12px 20px' }}>
                       <div className="admin-actions-cell" style={{ display: 'flex', gap: '8px' }}>
-                        <button 
-                          className="btn btn-secondary" 
+                        <button
+                          className="btn btn-secondary"
                           onClick={() => {
                             setSelectedUserForQuota(user);
                             setNewQuotaValue(quotaVal);
@@ -1647,8 +1647,8 @@ export default function App() {
                         >
                           ⚙️ Quota
                         </button>
-                        <button 
-                          className={`btn ${user.isActive ? 'btn-danger' : 'btn-accent'}`} 
+                        <button
+                          className={`btn ${user.isActive ? 'btn-danger' : 'btn-accent'}`}
                           onClick={() => handleToggleUserStatus(user.id, user.isActive)}
                           style={{ padding: '6px 12px', fontSize: '0.78rem', minWidth: '75px', background: user.isActive ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)', border: '1px solid ' + (user.isActive ? 'var(--color-danger)' : 'var(--color-accent)'), color: user.isActive ? 'var(--color-danger)' : 'var(--color-accent)' }}
                         >
@@ -1790,8 +1790,8 @@ export default function App() {
           <form onSubmit={handleCreateSystemTemplate} className="admin-template-form" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
             <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>Template Title</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 placeholder="e.g. Happy New Year Greeting"
                 value={adminTemplateForm.title}
                 onChange={(e) => setAdminTemplateForm({ ...adminTemplateForm, title: e.target.value })}
@@ -1801,8 +1801,8 @@ export default function App() {
             </div>
             <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>Template Body (supports {`{Name}`} auto-replacements)</label>
-              <textarea 
-                rows="3" 
+              <textarea
+                rows="3"
                 placeholder="e.g. Wishing you a wonderful birthday, {Name}! Hope your day is filled with joy."
                 value={adminTemplateForm.body}
                 onChange={(e) => setAdminTemplateForm({ ...adminTemplateForm, body: e.target.value })}
@@ -1835,8 +1835,8 @@ export default function App() {
                     <td style={{ padding: '12px 20px', color: '#fff' }}><strong>{t.title}</strong></td>
                     <td style={{ padding: '12px 20px', color: 'var(--text-main)', fontSize: '0.88rem' }}>{t.body}</td>
                     <td style={{ padding: '12px 20px' }}>
-                      <button 
-                        className="btn btn-danger" 
+                      <button
+                        className="btn btn-danger"
                         onClick={() => handleDeleteSystemTemplate(t.id)}
                         style={{ padding: '6px 12px', fontSize: '0.78rem', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid var(--color-danger)', color: 'var(--color-danger)' }}
                       >
@@ -1876,36 +1876,36 @@ export default function App() {
           </div>
 
           <div className="admin-sidebar-nav" style={{ flex: '1', padding: '20px 10px', display: 'flex', flexDirection: 'column', gap: '6px', overflowY: 'auto' }}>
-            <button 
-              className={`admin-nav-btn ${adminTab === 'overview' ? 'active' : ''}`} 
+            <button
+              className={`admin-nav-btn ${adminTab === 'overview' ? 'active' : ''}`}
               onClick={() => setAdminTab('overview')}
               style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'overview' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'overview' ? '#fff' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '500', textAlign: 'left', transition: 'var(--transition-fast)' }}
             >
               📊 Dashboard
             </button>
-            <button 
-              className={`admin-nav-btn ${adminTab === 'users' ? 'active' : ''}`} 
+            <button
+              className={`admin-nav-btn ${adminTab === 'users' ? 'active' : ''}`}
               onClick={() => setAdminTab('users')}
               style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'users' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'users' ? '#fff' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '500', textAlign: 'left', transition: 'var(--transition-fast)' }}
             >
               👥 User Accounts
             </button>
-            <button 
-              className={`admin-nav-btn ${adminTab === 'logs' ? 'active' : ''}`} 
+            <button
+              className={`admin-nav-btn ${adminTab === 'logs' ? 'active' : ''}`}
               onClick={() => setAdminTab('logs')}
               style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'logs' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'logs' ? '#fff' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '500', textAlign: 'left', transition: 'var(--transition-fast)' }}
             >
               📜 SMS Logs
             </button>
-            <button 
-              className={`admin-nav-btn ${adminTab === 'transactions' ? 'active' : ''}`} 
+            <button
+              className={`admin-nav-btn ${adminTab === 'transactions' ? 'active' : ''}`}
               onClick={() => setAdminTab('transactions')}
               style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'transactions' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'transactions' ? '#fff' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '500', textAlign: 'left', transition: 'var(--transition-fast)' }}
             >
               💳 Transactions
             </button>
-            <button 
-              className={`admin-nav-btn ${adminTab === 'templates' ? 'active' : ''}`} 
+            <button
+              className={`admin-nav-btn ${adminTab === 'templates' ? 'active' : ''}`}
               onClick={() => setAdminTab('templates')}
               style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'templates' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'templates' ? '#fff' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '500', textAlign: 'left', transition: 'var(--transition-fast)' }}
             >
@@ -1918,8 +1918,8 @@ export default function App() {
               <span style={{ fontSize: '0.88rem', fontWeight: '600', color: '#fff' }}>{loggedInUser.fullName}</span>
               <span className="admin-subtext" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>{loggedInUser.email}</span>
             </div>
-            <button 
-              className="admin-logout-btn" 
+            <button
+              className="admin-logout-btn"
               onClick={handleLogout}
               style={{ width: '100%', padding: '10px', border: '1px solid var(--color-danger)', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-danger)', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer', transition: 'var(--transition-fast)' }}
             >
@@ -1945,11 +1945,11 @@ export default function App() {
               <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: '20px' }}>Adjust SMS limit for user <strong>{selectedUserForQuota.username}</strong></p>
               <div className="form-group" style={{ margin: '20px 0', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <label style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>Free SMS Messages Left</label>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   min="0"
-                  value={newQuotaValue} 
-                  onChange={(e) => setNewQuotaValue(parseInt(e.target.value) || 0)} 
+                  value={newQuotaValue}
+                  onChange={(e) => setNewQuotaValue(parseInt(e.target.value) || 0)}
                   style={{ width: '100%', padding: '10px', background: '#182533', border: '1px solid var(--border-light)', color: '#fff', borderRadius: '8px' }}
                 />
               </div>
@@ -1967,24 +1967,24 @@ export default function App() {
 
         {/* Admin AI Copilot Button (FAB) */}
         {!isAdminChatOpen && (
-          <button 
-            className="admin-ai-fab animate-glow" 
+          <button
+            className="admin-ai-fab animate-glow"
             onClick={() => setIsAdminChatOpen(true)}
-            style={{ 
-              position: 'fixed', 
-              bottom: '30px', 
-              right: '30px', 
-              width: '60px', 
-              height: '60px', 
-              borderRadius: '50%', 
-              background: 'linear-gradient(135deg, var(--color-primary), #8b5cf6)', 
-              border: 'none', 
-              cursor: 'pointer', 
-              boxShadow: '0 0 15px rgba(36, 129, 204, 0.4)', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              zIndex: 9999, 
+            style={{
+              position: 'fixed',
+              bottom: '30px',
+              right: '30px',
+              width: '60px',
+              height: '60px',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, var(--color-primary), #8b5cf6)',
+              border: 'none',
+              cursor: 'pointer',
+              boxShadow: '0 0 15px rgba(36, 129, 204, 0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 9999,
               fontSize: '1.8rem',
               outline: 'none',
               transition: 'transform 0.2s ease, box-shadow 0.2s ease'
@@ -1996,7 +1996,7 @@ export default function App() {
         )}
 
         {/* Admin AI Copilot Drawer */}
-        <div 
+        <div
           className={`admin-ai-drawer ${isAdminChatOpen ? 'open' : ''}`}
           style={{
             position: 'fixed',
@@ -2016,7 +2016,7 @@ export default function App() {
           }}
         >
           {/* Resize Handle */}
-          <div 
+          <div
             onMouseDown={startResizeAdminChat}
             style={{
               position: 'absolute',
@@ -2043,7 +2043,7 @@ export default function App() {
                 </div>
               </div>
             </div>
-            <button 
+            <button
               onClick={() => setIsAdminChatOpen(false)}
               style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '1.2rem', cursor: 'pointer', outline: 'none' }}
               className="drawer-close-btn"
@@ -2055,22 +2055,22 @@ export default function App() {
           {/* Chat Messages */}
           <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '15px' }} className="admin-chat-scroll">
             {adminChatMessages.map((msg, index) => (
-              <div 
-                key={index} 
-                style={{ 
-                  display: 'flex', 
-                  flexDirection: 'column', 
+              <div
+                key={index}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
                   alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start',
                   maxWidth: '85%',
                   alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start'
                 }}
               >
-                <div 
-                  style={{ 
-                    padding: '12px 16px', 
-                    borderRadius: msg.role === 'user' ? '16px 16px 0 16px' : '16px 16px 16px 0', 
-                    background: msg.role === 'user' ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.05)', 
-                    color: '#fff', 
+                <div
+                  style={{
+                    padding: '12px 16px',
+                    borderRadius: msg.role === 'user' ? '16px 16px 0 16px' : '16px 16px 16px 0',
+                    background: msg.role === 'user' ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.05)',
+                    color: '#fff',
                     fontSize: '0.9rem',
                     lineHeight: '1.4',
                     whiteSpace: 'pre-wrap',
@@ -2095,21 +2095,21 @@ export default function App() {
 
           {/* Suggested Quick Prompt Chips */}
           <div style={{ padding: '0 20px 15px 20px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            <button 
+            <button
               onClick={(e) => handleAdminChatSend(e, 'Hãy báo cáo tỷ lệ gửi tin nhắn SMS thành công hiện tại.')}
               style={{ background: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '16px', padding: '6px 12px', fontSize: '0.78rem', color: 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s', outline: 'none' }}
               className="suggestion-chip"
             >
               📊 Tỷ lệ SMS
             </button>
-            <button 
+            <button
               onClick={(e) => handleAdminChatSend(e, 'Hãy thống kê nhanh các thông số tổng quan hệ thống.')}
               style={{ background: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '16px', padding: '6px 12px', fontSize: '0.78rem', color: 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s', outline: 'none' }}
               className="suggestion-chip"
             >
               📉 Thống kê tổng quan
             </button>
-            <button 
+            <button
               onClick={(e) => handleAdminChatSend(e, 'Soạn giúp tôi một mẫu tin nhắn SMS thông báo bảo trì hệ thống dài dưới 120 ký tự.')}
               style={{ background: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '16px', padding: '6px 12px', fontSize: '0.78rem', color: 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s', outline: 'none' }}
               className="suggestion-chip"
@@ -2119,20 +2119,20 @@ export default function App() {
           </div>
 
           {/* Drawer Input */}
-          <form 
+          <form
             onSubmit={(e) => handleAdminChatSend(e)}
             style={{ padding: '15px 20px 20px 20px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', gap: '10px', alignItems: 'center' }}
           >
-            <input 
-              type="text" 
-              placeholder="Hỏi về doanh thu, stats hoặc nhờ soạn SMS..." 
-              value={adminChatInput} 
-              onChange={(e) => setAdminChatInput(e.target.value)} 
+            <input
+              type="text"
+              placeholder="Hỏi về doanh thu, stats hoặc nhờ soạn SMS..."
+              value={adminChatInput}
+              onChange={(e) => setAdminChatInput(e.target.value)}
               disabled={isAdminChatLoading}
               style={{ flex: 1, padding: '12px 16px', background: '#121c27', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '24px', color: '#fff', fontSize: '0.9rem', outline: 'none' }}
             />
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={isAdminChatLoading || !adminChatInput.trim()}
               style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'var(--color-primary)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyCenter: 'center', justifyContent: 'center', fontSize: '1rem', flexShrink: 0 }}
             >
@@ -2159,11 +2159,11 @@ export default function App() {
               <div className="app-logo">💬</div>
               <h2>SMS Workspace</h2>
             </div>
-            
+
             {/* Real Logout button */}
             <button className="header-logout-btn" onClick={handleLogout}>Log Out</button>
           </div>
-          
+
           {/* Switcher Context is kept for easy pair programming/evaluation */}
           <div className="user-switcher-container">
             <img src={loggedInUser.profilePhoto} alt={loggedInUser.name} className="user-switcher-avatar" />
@@ -2236,9 +2236,9 @@ export default function App() {
           <>
             <div className="chat-header">
               <div className="chat-header-user">
-                <img 
-                  src={selectedContact.avatar || `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%237f91a4"/><text x="50%" y="50%" font-family="sans-serif" font-weight="bold" font-size="40" fill="white" text-anchor="middle" dominant-baseline="central">${selectedContact.name[0]}</text></svg>`} 
-                  alt={selectedContact.name} 
+                <img
+                  src={selectedContact.avatar || `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%237f91a4"/><text x="50%" y="50%" font-family="sans-serif" font-weight="bold" font-size="40" fill="white" text-anchor="middle" dominant-baseline="central">${selectedContact.name[0]}</text></svg>`}
+                  alt={selectedContact.name}
                   className="item-avatar"
                   style={{ width: '38px', height: '38px' }}
                 />
@@ -2295,8 +2295,8 @@ export default function App() {
             <form className="chat-input-area" onSubmit={handleSendMessageSubmit} style={{ position: 'relative' }}>
               {/* Composer Toolbar */}
               <div className="composer-tools-row">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className={`composer-tool-btn ${showScheduler ? 'active' : ''}`}
                   onClick={() => {
                     setShowScheduler(!showScheduler);
@@ -2306,8 +2306,8 @@ export default function App() {
                 >
                   ⏰ Hẹn giờ {scheduleDate && '✓'}
                 </button>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className={`composer-tool-btn ${showTemplatePicker ? 'active' : ''}`}
                   onClick={() => {
                     setShowTemplatePicker(!showTemplatePicker);
@@ -2317,8 +2317,8 @@ export default function App() {
                 >
                   📄 Mẫu tin nhắn
                 </button>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className={`composer-tool-btn ${showAiAssistant ? 'active' : ''}`}
                   onClick={() => {
                     setShowAiAssistant(!showAiAssistant);
@@ -2339,8 +2339,8 @@ export default function App() {
               {showScheduler && (
                 <div className="scheduler-popover">
                   <label style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>Chọn Ngày/Giờ Gửi:</label>
-                  <input 
-                    type="datetime-local" 
+                  <input
+                    type="datetime-local"
                     value={scheduleDate}
                     onChange={(e) => setScheduleDate(e.target.value)}
                     min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
@@ -2367,8 +2367,8 @@ export default function App() {
                     <div style={{ padding: '15px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>Không có mẫu tin nhắn.</div>
                   ) : (
                     templates.map(tpl => (
-                      <div 
-                        key={tpl.id} 
+                      <div
+                        key={tpl.id}
                         className="template-picker-item"
                         onClick={() => {
                           let text = tpl.body.replace('{Name}', selectedContact.name);
@@ -2391,10 +2391,10 @@ export default function App() {
                     <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-main)' }}>✨ Trợ lý SMS AI</span>
                     <button type="button" style={{ background: 'none', border: 'none', color: '#ff5555', cursor: 'pointer', fontSize: '1rem' }} onClick={() => setShowAiAssistant(false)}>✕</button>
                   </div>
-                  
+
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
                     <label style={{ fontSize: '0.72rem', fontWeight: 'bold', color: 'var(--text-muted)', textAlign: 'left', display: 'block' }}>Ý tưởng tin nhắn:</label>
-                    <textarea 
+                    <textarea
                       placeholder="VD: nhắc nợ bạn tiền ăn trưa lịch sự..."
                       value={aiPrompt}
                       onChange={(e) => setAiPrompt(e.target.value)}
@@ -2403,7 +2403,7 @@ export default function App() {
                     />
 
                     <label style={{ fontSize: '0.72rem', fontWeight: 'bold', color: 'var(--text-muted)', textAlign: 'left', display: 'block' }}>Văn phong:</label>
-                    <select 
+                    <select
                       value={aiTone}
                       onChange={(e) => setAiTone(e.target.value)}
                       disabled={generatingAi}
@@ -2415,9 +2415,9 @@ export default function App() {
                       <option value="intimate">Thân mật</option>
                     </select>
 
-                    <button 
-                      type="button" 
-                      className="btn btn-primary" 
+                    <button
+                      type="button"
+                      className="btn btn-primary"
                       style={{ padding: '6px', fontSize: '0.8rem', marginTop: '4px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', width: '100%' }}
                       onClick={handleGenerateAiMessage}
                       disabled={generatingAi || !aiPrompt.trim()}
@@ -2436,13 +2436,13 @@ export default function App() {
 
               <div className="chat-input-row">
                 <div className="chat-textarea-container">
-                  <textarea 
+                  <textarea
                     ref={textareaRef}
-                    className="chat-textarea" 
+                    className="chat-textarea"
                     placeholder={
-                      remainingQuota?.remaining === 0 && !remainingQuota?.isFriend 
-                      ? "SMS limit reached. Friend this user to chat." 
-                      : "Type an SMS message..."
+                      remainingQuota?.remaining === 0 && !remainingQuota?.isFriend
+                        ? "SMS limit reached. Friend this user to chat."
+                        : "Type an SMS message..."
                     }
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value.substring(0, 150))}
@@ -2461,8 +2461,8 @@ export default function App() {
                     </span>
                   </div>
                 </div>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="send-msg-btn"
                   disabled={!newMessage.trim() || newMessage.length > 120 || (remainingQuota?.remaining === 0 && !remainingQuota?.isFriend)}
                 >
@@ -2486,16 +2486,16 @@ export default function App() {
               <h1>Friend Requests</h1>
               <p>Add friends by email to unlock unlimited free SMS messaging.</p>
             </div>
-            
+
             <div className="requests-grid">
               <div className="pending-requests-card" style={{ height: 'fit-content' }}>
                 <h3 style={{ marginBottom: '15px', color: 'var(--color-primary-hover)' }}>Send Friend Request</h3>
                 <form onSubmit={handleSendRequestSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                   <div className="form-group">
                     <label>Friend's Email Address</label>
-                    <input 
-                      type="email" 
-                      placeholder="e.g. bob@example.com" 
+                    <input
+                      type="email"
+                      placeholder="e.g. bob@example.com"
                       value={requestForm.email}
                       onChange={(e) => setRequestForm({ email: e.target.value })}
                       required
@@ -2545,7 +2545,7 @@ export default function App() {
 
             <div className="service-checklist-container">
               <h3 style={{ marginBottom: '15px', color: 'var(--color-primary-hover)' }}>Available Services</h3>
-              
+
               {[
                 { name: 'Joke', desc: 'Get a funny joke delivered daily. Keep smiling!', price: 2.99 },
                 { name: 'Current Affairs', desc: 'Stay updated with global affairs and political news.', price: 4.99 },
@@ -2554,24 +2554,24 @@ export default function App() {
               ].map(service => {
                 const isActive = activatedServices.includes(service.name);
                 const isChecked = selectedServices.includes(service.name);
-                
+
                 return (
-                  <div 
-                    key={service.name} 
+                  <div
+                    key={service.name}
                     className={`service-checklist-item ${isActive ? 'active-subscribed' : isChecked ? 'selected' : ''}`}
                     onClick={() => !isActive && handleServiceCheck(service.name)}
                   >
                     {!isActive ? (
-                      <input 
-                        type="checkbox" 
-                        className="checklist-checkbox" 
+                      <input
+                        type="checkbox"
+                        className="checklist-checkbox"
                         checked={isChecked}
-                        onChange={() => {}} // handled by click of parent card
+                        onChange={() => { }} // handled by click of parent card
                       />
                     ) : (
                       <span style={{ color: 'var(--color-accent)', fontWeight: 'bold', fontSize: '1.2rem', width: '20px', textAlign: 'center' }}>✓</span>
                     )}
-                    
+
                     <div className="checklist-details">
                       <h4>{service.name} {isActive && <span className="service-status-tag" style={{ fontSize: '0.65rem', marginLeft: '5px' }}>Activated</span>}</h4>
                       <p>{service.desc}</p>
@@ -2616,10 +2616,10 @@ export default function App() {
 
             <form onSubmit={handleProfileSubmit} className="profile-grid">
               <div className="profile-avatar-column">
-                <img 
-                  src={profileForm.profilePhoto || loggedInUser.profilePhoto} 
-                  alt="Profile" 
-                  className="profile-avatar-large" 
+                <img
+                  src={profileForm.profilePhoto || loggedInUser.profilePhoto}
+                  alt="Profile"
+                  className="profile-avatar-large"
                 />
                 <label className="avatar-upload-label">
                   Choose New Photo
@@ -2633,12 +2633,12 @@ export default function App() {
                   <div className="form-row">
                     <div className="form-group">
                       <label>Full Name *</label>
-                      <input 
-                        type="text" 
-                        name="name" 
-                        value={profileForm.name || ''} 
-                        onChange={handleProfileFormChange} 
-                        required 
+                      <input
+                        type="text"
+                        name="name"
+                        value={profileForm.name || ''}
+                        onChange={handleProfileFormChange}
+                        required
                       />
                     </div>
                     <div className="form-group">
@@ -2654,11 +2654,11 @@ export default function App() {
                   <div className="form-row">
                     <div className="form-group">
                       <label>Date of Birth</label>
-                      <input 
-                        type="date" 
-                        name="dob" 
-                        value={profileForm.dob ? profileForm.dob.split('T')[0] : ''} 
-                        onChange={handleProfileFormChange} 
+                      <input
+                        type="date"
+                        name="dob"
+                        value={profileForm.dob ? profileForm.dob.split('T')[0] : ''}
+                        onChange={handleProfileFormChange}
                       />
                     </div>
                     <div className="form-group">
@@ -2673,31 +2673,31 @@ export default function App() {
 
                   <div className="form-group" style={{ marginBottom: '15px' }}>
                     <label>Address</label>
-                    <input 
-                      type="text" 
-                      name="address" 
-                      value={profileForm.address || ''} 
-                      onChange={handleProfileFormChange} 
+                    <input
+                      type="text"
+                      name="address"
+                      value={profileForm.address || ''}
+                      onChange={handleProfileFormChange}
                     />
                   </div>
 
                   <div className="form-row">
                     <div className="form-group">
                       <label>Hobbies</label>
-                      <input 
-                        type="text" 
-                        name="hobbies" 
-                        value={profileForm.hobbies || ''} 
-                        onChange={handleProfileFormChange} 
+                      <input
+                        type="text"
+                        name="hobbies"
+                        value={profileForm.hobbies || ''}
+                        onChange={handleProfileFormChange}
                       />
                     </div>
                     <div className="form-group">
                       <label>Sports</label>
-                      <input 
-                        type="text" 
-                        name="sports" 
-                        value={profileForm.sports || ''} 
-                        onChange={handleProfileFormChange} 
+                      <input
+                        type="text"
+                        name="sports"
+                        value={profileForm.sports || ''}
+                        onChange={handleProfileFormChange}
                       />
                     </div>
                   </div>
@@ -2705,31 +2705,31 @@ export default function App() {
                   <div className="form-row">
                     <div className="form-group">
                       <label>Likes</label>
-                      <input 
-                        type="text" 
-                        name="likes" 
-                        value={profileForm.likes || ''} 
-                        onChange={handleProfileFormChange} 
+                      <input
+                        type="text"
+                        name="likes"
+                        value={profileForm.likes || ''}
+                        onChange={handleProfileFormChange}
                       />
                     </div>
                     <div className="form-group">
                       <label>Dislikes</label>
-                      <input 
-                        type="text" 
-                        name="dislikes" 
-                        value={profileForm.dislikes || ''} 
-                        onChange={handleProfileFormChange} 
+                      <input
+                        type="text"
+                        name="dislikes"
+                        value={profileForm.dislikes || ''}
+                        onChange={handleProfileFormChange}
                       />
                     </div>
                   </div>
 
                   <div className="form-group">
                     <label>Preferred Cuisines</label>
-                    <input 
-                      type="text" 
-                      name="cuisines" 
-                      value={profileForm.cuisines || ''} 
-                      onChange={handleProfileFormChange} 
+                    <input
+                      type="text"
+                      name="cuisines"
+                      value={profileForm.cuisines || ''}
+                      onChange={handleProfileFormChange}
                     />
                   </div>
                 </div>
@@ -2739,11 +2739,11 @@ export default function App() {
                   <div className="form-row">
                     <div className="form-group">
                       <label>Qualification</label>
-                      <input 
-                        type="text" 
-                        name="qualification" 
-                        value={profileForm.qualification || ''} 
-                        onChange={handleProfileFormChange} 
+                      <input
+                        type="text"
+                        name="qualification"
+                        value={profileForm.qualification || ''}
+                        onChange={handleProfileFormChange}
                       />
                     </div>
                     <div className="form-group">
@@ -2759,20 +2759,20 @@ export default function App() {
                   <div className="form-row">
                     <div className="form-group">
                       <label>School Name</label>
-                      <input 
-                        type="text" 
-                        name="school" 
-                        value={profileForm.school || ''} 
-                        onChange={handleProfileFormChange} 
+                      <input
+                        type="text"
+                        name="school"
+                        value={profileForm.school || ''}
+                        onChange={handleProfileFormChange}
                       />
                     </div>
                     <div className="form-group">
                       <label>College Name</label>
-                      <input 
-                        type="text" 
-                        name="college" 
-                        value={profileForm.college || ''} 
-                        onChange={handleProfileFormChange} 
+                      <input
+                        type="text"
+                        name="college"
+                        value={profileForm.college || ''}
+                        onChange={handleProfileFormChange}
                       />
                     </div>
                   </div>
@@ -2780,21 +2780,21 @@ export default function App() {
                   <div className="form-row">
                     <div className="form-group">
                       <label>Company / Organization</label>
-                      <input 
-                        type="text" 
-                        name="organization" 
-                        value={profileForm.organization || ''} 
-                        onChange={handleProfileFormChange} 
+                      <input
+                        type="text"
+                        name="organization"
+                        value={profileForm.organization || ''}
+                        onChange={handleProfileFormChange}
                         disabled={profileForm.workStatus === 'Student'}
                       />
                     </div>
                     <div className="form-group">
                       <label>Designation</label>
-                      <input 
-                        type="text" 
-                        name="designation" 
-                        value={profileForm.designation || ''} 
-                        onChange={handleProfileFormChange} 
+                      <input
+                        type="text"
+                        name="designation"
+                        value={profileForm.designation || ''}
+                        onChange={handleProfileFormChange}
                         disabled={profileForm.workStatus === 'Student'}
                       />
                     </div>
@@ -2828,9 +2828,9 @@ export default function App() {
                 <form onSubmit={handleCreateTemplate} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                   <div className="form-group">
                     <label>Tiêu đề mẫu</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. Lời chúc Sinh nhật" 
+                    <input
+                      type="text"
+                      placeholder="e.g. Lời chúc Sinh nhật"
                       value={templateForm.title}
                       onChange={(e) => setTemplateForm({ ...templateForm, title: e.target.value })}
                       required
@@ -2838,8 +2838,8 @@ export default function App() {
                   </div>
                   <div className="form-group">
                     <label>Nội dung tin nhắn</label>
-                    <textarea 
-                      placeholder="Sử dụng {Name} để tự điền tên người nhận." 
+                    <textarea
+                      placeholder="Sử dụng {Name} để tự điền tên người nhận."
                       value={templateForm.body}
                       onChange={(e) => setTemplateForm({ ...templateForm, body: e.target.value.substring(0, 120) })}
                       rows={4}
@@ -2872,7 +2872,7 @@ export default function App() {
                       </div>
                       <div className="template-card-actions">
                         {tpl.userId && (
-                          <button 
+                          <button
                             className="btn-icon-danger"
                             onClick={() => handleDeleteTemplate(tpl.id)}
                             title="Xóa mẫu tin"
@@ -2901,8 +2901,8 @@ export default function App() {
               <div className="groups-sidebar">
                 <h3 style={{ fontSize: '1rem', fontWeight: 'bold' }}>Danh sách nhóm</h3>
                 <form onSubmit={handleCreateGroup} style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="Tên nhóm mới"
                     value={groupForm.name}
                     onChange={(e) => setGroupForm({ name: e.target.value })}
@@ -2917,8 +2917,8 @@ export default function App() {
                     <div style={{ padding: '15px', fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center' }}>Chưa có nhóm nào.</div>
                   ) : (
                     groups.map(g => (
-                      <div 
-                        key={g.id} 
+                      <div
+                        key={g.id}
                         className={`group-list-item ${selectedGroup?.id === g.id ? 'active' : ''}`}
                         onClick={() => {
                           setSelectedGroup(g);
@@ -2927,7 +2927,7 @@ export default function App() {
                         }}
                       >
                         <span className="group-list-name">👥 {g.name}</span>
-                        <button 
+                        <button
                           style={{ background: 'none', border: 'none', color: '#ff5555', cursor: 'pointer', fontSize: '0.8rem' }}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -2948,8 +2948,8 @@ export default function App() {
                     <div className="group-pane-header">
                       <h3 className="group-pane-title">Chi tiết nhóm: {selectedGroup.name}</h3>
                       <form onSubmit={handleAddGroupMember} style={{ display: 'flex', gap: '8px' }}>
-                        <select 
-                          value={newGroupMemberId} 
+                        <select
+                          value={newGroupMemberId}
                           onChange={(e) => setNewGroupMemberId(e.target.value)}
                           style={{ background: 'var(--bg-app)', border: '1px solid var(--border-light)', color: 'var(--text-main)', padding: '6px 10px', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', outline: 'none' }}
                           required
@@ -2981,7 +2981,7 @@ export default function App() {
                                 <h5>{m.firstName} {m.lastName}</h5>
                                 <p>{m.contactNumber}</p>
                               </div>
-                              <button 
+                              <button
                                 className="btn-icon-danger"
                                 onClick={() => handleRemoveGroupMember(m.id)}
                                 title="Xóa khỏi nhóm"
@@ -2998,19 +2998,19 @@ export default function App() {
                       <div className="group-bulk-box">
                         <h4 style={{ fontSize: '0.9rem', marginBottom: '10px', color: 'var(--color-primary)' }}>Soạn tin nhắn hàng loạt</h4>
                         <form onSubmit={handleSendBulkMessage} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                          <textarea 
+                          <textarea
                             placeholder="Nhập nội dung gửi cho cả nhóm..."
                             value={bulkContent}
                             onChange={(e) => setBulkContent(e.target.value.substring(0, 120))}
                             rows={2}
                             required
                           />
-                          
+
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <label style={{ fontSize: '0.78rem' }}>Hẹn giờ gửi (Tùy chọn):</label>
-                              <input 
-                                type="datetime-local" 
+                              <input
+                                type="datetime-local"
                                 value={bulkScheduleDate}
                                 onChange={(e) => setBulkScheduleDate(e.target.value)}
                                 style={{ background: 'var(--bg-app)', border: '1px solid var(--border-light)', color: 'var(--text-main)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.78rem' }}
@@ -3088,17 +3088,17 @@ export default function App() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '25px' }}>
               <div className="analytics-chart-panel">
                 <h3 className="analytics-chart-title">Lưu lượng gửi tin nhắn (7 ngày qua)</h3>
-                
+
                 <div className="custom-chart-container">
                   {analyticsStats.dailyStats.map((item, idx) => {
                     const maxVal = Math.max(...analyticsStats.dailyStats.map(d => d.count), 1);
                     const heightPercent = Math.min((item.count / maxVal) * 100, 100);
                     const shortDate = item.date.substring(5);
-                    
+
                     return (
                       <div key={idx} className="chart-bar-column">
-                        <div 
-                          className="chart-bar-body" 
+                        <div
+                          className="chart-bar-body"
                           style={{ height: `${heightPercent}%` }}
                         >
                           <div className="chart-bar-tooltip">{item.count} SMS</div>
@@ -3116,7 +3116,7 @@ export default function App() {
                   <span style={{ fontWeight: 'bold' }}>{analyticsStats.freeLeft} / 5 tin</span>
                 </div>
                 <div className="quota-gauge-progress-bg">
-                  <div 
+                  <div
                     className={`quota-gauge-progress-fill ${analyticsStats.freeLeft <= 1 ? 'danger' : analyticsStats.freeLeft <= 3 ? 'warning' : ''}`}
                     style={{ width: `${(analyticsStats.freeLeft / 5) * 100}%` }}
                   />
@@ -3140,16 +3140,16 @@ export default function App() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '25px' }}>
               <div>
                 <h3 className="settings-section-title">Bảo mật tài khoản</h3>
-                
+
                 <div className="privacy-toggle-card">
                   <div className="privacy-toggle-info">
                     <h4>Xác thực 2 lớp qua Email (2FA)</h4>
                     <p>Yêu cầu nhập mã OTP gửi về Email khi đăng nhập tài khoản hoặc mua dịch vụ VAS.</p>
                   </div>
                   <div>
-                    <input 
-                      type="checkbox" 
-                      className="checklist-checkbox" 
+                    <input
+                      type="checkbox"
+                      className="checklist-checkbox"
                       checked={privacySettings.twoFactorEnabled}
                       onChange={(e) => handleToggle2FaSetting(e.target.checked)}
                       style={{ width: '22px', height: '22px' }}
@@ -3158,16 +3158,16 @@ export default function App() {
                 </div>
 
                 <h3 className="settings-section-title">Cài đặt Quyền riêng tư</h3>
-                
+
                 <div className="privacy-toggle-card">
                   <div className="privacy-toggle-info">
                     <h4>Chỉ nhận SMS từ Bạn bè</h4>
                     <p>Từ chối nhận tin nhắn từ những số lạ (người lạ không thể gửi 5 tin nhắn miễn phí cho bạn).</p>
                   </div>
                   <div>
-                    <input 
-                      type="checkbox" 
-                      className="checklist-checkbox" 
+                    <input
+                      type="checkbox"
+                      className="checklist-checkbox"
                       checked={privacySettings.onlyReceiveFromFriends}
                       onChange={(e) => handleTogglePrivacySetting(e.target.checked)}
                       style={{ width: '22px', height: '22px' }}
@@ -3180,11 +3180,11 @@ export default function App() {
                 <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '15px', color: 'var(--color-primary)' }}>
                   Danh sách chặn (Blocklist)
                 </h3>
-                
+
                 <form onSubmit={handleBlockNumber} className="blocklist-input-group">
-                  <input 
-                    type="text" 
-                    placeholder="Số điện thoại cần chặn (10 số)" 
+                  <input
+                    type="text"
+                    placeholder="Số điện thoại cần chặn (10 số)"
                     value={blockNumberInput}
                     onChange={(e) => setBlockNumberInput(e.target.value.replace(/\D/g, '').substring(0, 10))}
                     maxLength={10}
@@ -3202,7 +3202,7 @@ export default function App() {
                         <div>
                           <div className="block-item-number">🚫 {b.blockedNumber}</div>
                         </div>
-                        <button 
+                        <button
                           className="btn-icon-danger"
                           onClick={() => handleUnblockNumber(b.id)}
                           style={{ fontSize: '0.78rem' }}
@@ -3231,34 +3231,34 @@ export default function App() {
               <div className="form-row">
                 <div className="form-group">
                   <label>First Name</label>
-                  <input 
-                    type="text" 
-                    placeholder="First Name" 
+                  <input
+                    type="text"
+                    placeholder="First Name"
                     value={contactForm.firstName}
                     onChange={(e) => setContactForm({ ...contactForm, firstName: e.target.value })}
-                    required 
+                    required
                   />
                 </div>
                 <div className="form-group">
                   <label>Last Name</label>
-                  <input 
-                    type="text" 
-                    placeholder="Last Name" 
+                  <input
+                    type="text"
+                    placeholder="Last Name"
                     value={contactForm.lastName}
                     onChange={(e) => setContactForm({ ...contactForm, lastName: e.target.value })}
-                    required 
+                    required
                   />
                 </div>
               </div>
               <div className="form-group">
                 <label>Mobile Number (10 digits)</label>
-                <input 
-                  type="text" 
-                  placeholder="e.g. 0944444444" 
+                <input
+                  type="text"
+                  placeholder="e.g. 0944444444"
                   value={contactForm.contactNumber}
                   onChange={(e) => setContactForm({ ...contactForm, contactNumber: e.target.value.replace(/\D/g, '').substring(0, 10) })}
                   maxLength={10}
-                  required 
+                  required
                 />
               </div>
               <div className="form-actions">
@@ -3282,7 +3282,7 @@ export default function App() {
               <h3>Subscribe to premium services</h3>
               <button className="close-btn" onClick={() => setShowPaymentModal(false)}>×</button>
             </div>
-            
+
             {/* Interactive Credit Card Mockup */}
             <div className="card-mockup-wrapper">
               <div className="credit-card-mockup">
@@ -3290,13 +3290,13 @@ export default function App() {
                   <div className="card-chip"></div>
                   <span style={{ fontSize: '0.8rem', fontStyle: 'italic', fontWeight: 'bold' }}>CREDIT CARD</span>
                 </div>
-                
+
                 <div className="card-number-display">
-                  {paymentForm.cardNumber 
+                  {paymentForm.cardNumber
                     ? paymentForm.cardNumber.replace(/(\d{4})/g, '$1 ').trim()
                     : '•••• •••• •••• ••••'}
                 </div>
-                
+
                 <div className="card-bottom-row">
                   <div className="card-holder-display">
                     <span>Card Holder</span>
@@ -3318,13 +3318,13 @@ export default function App() {
               {showPaymentOtpField && (
                 <div className="form-group" style={{ background: 'rgba(245, 158, 11, 0.08)', padding: '12px', borderRadius: '4px', border: '1px dashed rgba(245, 158, 11, 0.3)' }}>
                   <label style={{ color: '#fbbf24', fontWeight: 'bold' }}>Nhập mã OTP Xác thực thanh toán</label>
-                  <input 
-                    type="text" 
-                    placeholder="Nhập mã OTP 6 số" 
+                  <input
+                    type="text"
+                    placeholder="Nhập mã OTP 6 số"
                     value={paymentOtpCode}
                     onChange={(e) => setPaymentOtpCode(e.target.value.replace(/\D/g, '').substring(0, 6))}
                     maxLength={6}
-                    required 
+                    required
                   />
                   <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
                     * Vui lòng kiểm tra Console backend để lấy mã OTP giao dịch.
@@ -3334,22 +3334,22 @@ export default function App() {
 
               <div className="form-group">
                 <label>Credit Card Number</label>
-                <input 
-                  type="text" 
-                  placeholder="16 digits (e.g. 1234567812345678)" 
+                <input
+                  type="text"
+                  placeholder="16 digits (e.g. 1234567812345678)"
                   value={paymentForm.cardNumber}
                   onChange={(e) => setPaymentForm({ ...paymentForm, cardNumber: e.target.value.replace(/\D/g, '').substring(0, 16) })}
                   maxLength={16}
-                  required 
+                  required
                 />
               </div>
 
               <div className="form-row">
                 <div className="form-group">
                   <label>Expiry Date (MM/YY)</label>
-                  <input 
-                    type="text" 
-                    placeholder="MM/YY" 
+                  <input
+                    type="text"
+                    placeholder="MM/YY"
                     value={paymentForm.expiryDate}
                     onChange={(e) => {
                       let val = e.target.value.replace(/\D/g, '');
@@ -3359,18 +3359,18 @@ export default function App() {
                       setPaymentForm({ ...paymentForm, expiryDate: val });
                     }}
                     maxLength={5}
-                    required 
+                    required
                   />
                 </div>
                 <div className="form-group">
                   <label>CVV (3 digits)</label>
-                  <input 
-                    type="password" 
-                    placeholder="•••" 
+                  <input
+                    type="password"
+                    placeholder="•••"
                     value={paymentForm.cvv}
                     onChange={(e) => setPaymentForm({ ...paymentForm, cvv: e.target.value.replace(/\D/g, '').substring(0, 3) })}
                     maxLength={3}
-                    required 
+                    required
                   />
                 </div>
               </div>
@@ -3393,7 +3393,7 @@ export default function App() {
       )}
 
       {/* AI Floating Chatbot Widget */}
-      <div 
+      <div
         className="ai-floating-bubble"
         style={{ left: `${aiPosition.x}px`, top: `${aiPosition.y}px` }}
         onMouseDown={handleAiBubbleMouseDown}
@@ -3407,7 +3407,7 @@ export default function App() {
             <h3>🤖 Trợ lý AI Chatbot</h3>
             <button className="ai-mini-chat-close-btn" onClick={() => setIsAiBubbleOpen(false)}>×</button>
           </div>
-          
+
           <div className="ai-mini-chat-messages">
             {aiMessages.length === 0 ? (
               <div style={{ color: '#94a3b8', fontSize: '0.82rem', textAlign: 'center', marginTop: '20px' }}>
@@ -3433,9 +3433,9 @@ export default function App() {
           </div>
 
           <form className="ai-mini-chat-input-area" onSubmit={handleAiSendMessage}>
-            <input 
-              type="text" 
-              placeholder="Nhập câu hỏi..." 
+            <input
+              type="text"
+              placeholder="Nhập câu hỏi..."
               value={aiNewMessage}
               onChange={(e) => setAiNewMessage(e.target.value)}
               disabled={isAiLoading}

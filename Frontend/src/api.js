@@ -117,8 +117,8 @@ export const updateUserQuota = (id, freeMessagesLeft) =>
 export const getAdminTransactions = () => 
   api.get('/admin/transactions').then(res => res.data);
 
-export const getAdminSmsLogs = () => 
-  api.get('/admin/sms-logs').then(res => res.data);
+export const getAdminSmsLogs = (page = 1, pageSize = 10) => 
+  api.get(`/admin/sms-logs?page=${page}&pageSize=${pageSize}`).then(res => res.data);
 
 export const createAdminTemplate = (title, body) => 
   api.post('/admin/templates', { title, body }).then(res => res.data);
