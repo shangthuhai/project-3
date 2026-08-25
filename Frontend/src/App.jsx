@@ -47,7 +47,9 @@ import {
   getAdminSmsLogs,
   createAdminTemplate,
   deleteAdminTemplate,
-  chatWithAdminAi
+  chatWithAdminAi,
+  reportTyping,
+  getTypingStatus
 } from './api';
 
 export default function App() {
@@ -79,6 +81,9 @@ export default function App() {
   // Active Chat Session
   const [selectedContact, setSelectedContact] = useState(null); // { name, contactNumber, isFriend }
   const [chatMessages, setChatMessages] = useState([]);
+  const [contactIsTyping, setContactIsTyping] = useState(false);
+  const lastTypingReportRef = useRef(0);
+  const newMessageRef = useRef(null); // We don't necessarily need this, let's just keep lastTypingReportRef.
   const [newMessage, setNewMessage] = useState('');
   const [remainingQuota, setRemainingQuota] = useState(null); // { isFriend, remaining, limit, sentCount }
 
@@ -407,11 +412,14 @@ export default function App() {
     // Reset AI popover state when switching chats
     setShowAiAssistant(false);
     setAiPrompt('');
+    setContactIsTyping(false);
 
     loadChatDetails();
+    loadTypingStatus();
 
     const interval = setInterval(() => {
       loadChatMessagesOnly();
+      loadTypingStatus();
     }, 3000);
 
     return () => clearInterval(interval);
@@ -576,6 +584,22 @@ export default function App() {
     getChatHistory(loggedInUser.id, selectedContact.contactNumber)
       .then(setChatMessages)
       .catch(() => { });
+  };
+
+  const loadTypingStatus = () => {
+    if (!loggedInUser || !selectedContact) return;
+    getTypingStatus(selectedContact.contactNumber)
+      .then(res => setContactIsTyping(res.isTyping))
+      .catch(() => {});
+  };
+
+  const handleTyping = () => {
+    if (!loggedInUser || !selectedContact) return;
+    const now = Date.now();
+    if (now - lastTypingReportRef.current > 2000) {
+      lastTypingReportRef.current = now;
+      reportTyping(selectedContact.contactNumber).catch(() => {});
+    }
   };
 
   const handleLoginSubmit = (e) => {
@@ -2289,6 +2313,18 @@ export default function App() {
                   );
                 })
               )}
+              {contactIsTyping && (
+                <div className="message-bubble-row received">
+                  <div className="message-bubble typing-bubble">
+                    <div className="typing-dots">
+                      <span className="typing-dot"></span>
+                      <span className="typing-dot"></span>
+                      <span className="typing-dot"></span>
+                    </div>
+                    <span className="typing-text">{selectedContact.name} đang nhập...</span>
+                  </div>
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
 
@@ -2445,7 +2481,10 @@ export default function App() {
                         : "Type an SMS message..."
                     }
                     value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value.substring(0, 150))}
+                    onChange={(e) => {
+                      setNewMessage(e.target.value.substring(0, 150));
+                      handleTyping();
+                    }}
                     disabled={remainingQuota?.remaining === 0 && !remainingQuota?.isFriend}
                     rows={1}
                     onKeyDown={(e) => {

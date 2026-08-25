@@ -129,4 +129,10 @@ export const deleteAdminTemplate = (id) =>
 export const chatWithAdminAi = (message, history) => 
   api.post('/admin/ai-chat', { message, history }).then(res => res.data);
 
+export const reportTyping = (receiverNumber) => 
+  api.post('/messages/typing', { receiverNumber }).then(res => res.data);
+
+export const getTypingStatus = (contactNumber) => 
+  api.get(`/messages/typing-status?contactNumber=${contactNumber}`).then(res => res.data);
+
 export default api;

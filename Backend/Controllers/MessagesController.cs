@@ -28,6 +28,53 @@ namespace Backend.Controllers
         private int AuthenticatedUserId => 
             int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var id) ? id : 0;
 
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<(int SenderId, string ReceiverNumber), DateTime> _typingState = new();
+
+        public class TypingRequest
+        {
+            public string ReceiverNumber { get; set; } = string.Empty;
+        }
+
+        // POST: api/messages/typing
+        [HttpPost("typing")]
+        public IActionResult ReportTyping([FromBody] TypingRequest request)
+        {
+            int senderId = AuthenticatedUserId;
+            if (senderId == 0 || string.IsNullOrEmpty(request.ReceiverNumber))
+            {
+                return BadRequest();
+            }
+
+            _typingState[(senderId, request.ReceiverNumber)] = DateTime.UtcNow;
+            return Ok();
+        }
+
+        // GET: api/messages/typing-status?contactNumber=0987654321
+        [HttpGet("typing-status")]
+        public async Task<ActionResult<object>> GetTypingStatus([FromQuery] string contactNumber)
+        {
+            int currentUserId = AuthenticatedUserId;
+            var currentUser = await _context.Users.FindAsync(currentUserId);
+            if (currentUser == null || string.IsNullOrEmpty(contactNumber))
+            {
+                return BadRequest();
+            }
+
+            var contactUser = await _context.Users.FirstOrDefaultAsync(u => u.MobileNumber == contactNumber);
+            if (contactUser == null)
+            {
+                return Ok(new { isTyping = false });
+            }
+
+            if (_typingState.TryGetValue((contactUser.UserId, currentUser.MobileNumber), out var lastTyped))
+            {
+                bool isTyping = (DateTime.UtcNow - lastTyped).TotalSeconds < 5;
+                return Ok(new { isTyping });
+            }
+
+            return Ok(new { isTyping = false });
+        }
+
         // GET: api/messages/history?userId=1&contactNumber=0912345678
         [HttpGet("history")]
         public async Task<ActionResult<IEnumerable<Message>>> GetHistory([FromQuery] int? userId, [FromQuery] string contactNumber)

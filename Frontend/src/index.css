@@ -2381,5 +2381,58 @@ body {
   background: rgba(36, 129, 204, 0.4) !important;
 }
 
+/* Typing Indicator styles */
+.typing-bubble {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bubble-receiver);
+  color: var(--text-bubble-receiver);
+  max-width: fit-content;
+  border-bottom-left-radius: 2px;
+}
+
+.typing-dots {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 10px;
+}
+
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  background-color: var(--text-bubble-receiver);
+  border-radius: 50%;
+  opacity: 0.4;
+  animation: typingBounce 1.4s infinite ease-in-out both;
+}
+
+.typing-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes typingBounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.typing-text {
+  font-size: 0.8rem;
+  font-style: italic;
+  opacity: 0.85;
+}
+
 
 
