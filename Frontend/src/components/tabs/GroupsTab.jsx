@@ -1,5 +1,9 @@
 import React from 'react';
 import { useChat } from '../../context/ChatContext';
+import styles from './GroupsTab.module.css';
+import classNames from 'classnames/bind';
+
+const cx = classNames.bind(styles);
 
 export default function GroupsTab() {
   const {
@@ -34,8 +38,8 @@ export default function GroupsTab() {
         <p>Tạo danh mục nhóm danh bạ và gửi tin nhắn hàng loạt chỉ với 1 click.</p>
       </div>
 
-      <div className="groups-container">
-        <div className="groups-sidebar">
+      <div className={cx('groups-tab__container')}>
+        <div className={cx('groups-tab__sidebar')}>
           <h3 style={{ fontSize: '1rem', fontWeight: 'bold' }}>Danh sách nhóm</h3>
           <form onSubmit={handleCreateGroup} style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
             <input
@@ -49,21 +53,21 @@ export default function GroupsTab() {
             <button type="submit" className="btn btn-primary" style={{ padding: '6px 10px', fontSize: '0.8rem' }}>+</button>
           </form>
 
-          <div className="groups-list">
+          <div className={cx('groups-tab__list')}>
             {groups.length === 0 ? (
               <div style={{ padding: '15px', fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center' }}>Chưa có nhóm nào.</div>
             ) : (
               groups.map(g => (
                 <div
                   key={g.id}
-                  className={`group-list-item ${selectedGroup?.id === g.id ? 'active' : ''}`}
+                  className={cx('groups-tab__list-item', { 'groups-tab__list-item--active': selectedGroup?.id === g.id })}
                   onClick={() => {
                     setSelectedGroup(g);
                     loadGroupMembers(g.id);
                     setBulkResultsLog(null);
                   }}
                 >
-                  <span className="group-list-name">👥 {g.name}</span>
+                  <span className={cx('groups-tab__list-name')}>👥 {g.name}</span>
                   <button
                     style={{ background: 'none', border: 'none', color: '#ff5555', cursor: 'pointer', fontSize: '0.8rem' }}
                     onClick={(e) => {
@@ -79,11 +83,11 @@ export default function GroupsTab() {
           </div>
         </div>
 
-        <div className="group-details-pane">
+        <div className={cx('groups-tab__details-pane')}>
           {selectedGroup ? (
             <>
-              <div className="group-pane-header">
-                <h3 className="group-pane-title">Chi tiết nhóm: {selectedGroup.name}</h3>
+              <div className={cx('groups-tab__pane-header')}>
+                <h3 className={cx('groups-tab__pane-title')}>Chi tiết nhóm: {selectedGroup.name}</h3>
                 <form onSubmit={handleAddGroupMember} style={{ display: 'flex', gap: '8px' }}>
                   <select
                     value={newGroupMemberId}
@@ -111,12 +115,12 @@ export default function GroupsTab() {
                     Nhóm chưa có thành viên. Hãy chọn liên hệ từ danh sách trên để thêm!
                   </div>
                 ) : (
-                  <div className="group-members-grid">
+                  <div className={cx('groups-tab__members-grid')}>
                     {groupMembers.map(m => (
-                      <div key={m.id} className="group-member-card">
+                      <div key={m.id} className={cx('groups-tab__member-card')}>
                         <div className="group-member-info">
-                          <h5>{m.firstName} {m.lastName}</h5>
-                          <p>{m.contactNumber}</p>
+                          <h5 className={cx('groups-tab__member-name')}>{m.firstName} {m.lastName}</h5>
+                          <p className={cx('groups-tab__member-phone')}>{m.contactNumber}</p>
                         </div>
                         <button
                           className="btn-icon-danger"
@@ -132,7 +136,7 @@ export default function GroupsTab() {
               </div>
 
               {groupMembers.length > 0 && (
-                <div className="group-bulk-box">
+                <div className={cx('groups-tab__bulk-box')}>
                   <h4 style={{ fontSize: '0.9rem', marginBottom: '10px', color: 'var(--color-primary)' }}>Soạn tin nhắn hàng loạt</h4>
                   <form onSubmit={handleSendBulkMessage} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <textarea
@@ -164,7 +168,7 @@ export default function GroupsTab() {
                   </form>
 
                   {bulkResultsLog && (
-                    <div className="bulk-results-log">
+                    <div className={cx('groups-tab__bulk-log')}>
                       {bulkResultsLog}
                     </div>
                   )}

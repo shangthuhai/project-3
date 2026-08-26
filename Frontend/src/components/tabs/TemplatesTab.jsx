@@ -1,5 +1,9 @@
 import React from 'react';
 import { useChat } from '../../context/ChatContext';
+import styles from './TemplatesTab.module.css';
+import classNames from 'classnames/bind';
+
+const cx = classNames.bind(styles);
 
 export default function TemplatesTab() {
   const {
@@ -48,24 +52,24 @@ export default function TemplatesTab() {
           </form>
         </div>
 
-        <div className="templates-grid">
+        <div className={cx('templates-tab__grid')}>
           {templates.length === 0 ? (
             <div className="empty-list-message" style={{ gridColumn: '1/-1' }}>
               Chưa có tin nhắn mẫu nào. Hãy tạo một mẫu ở form bên trái!
             </div>
           ) : (
             templates.map(tpl => (
-              <div key={tpl.id} className="template-card">
-                <div className="template-card-header">
-                  <span className="template-card-title">{tpl.title}</span>
-                  <span className={`template-badge ${tpl.userId ? 'custom' : 'system'}`}>
+              <div key={tpl.id} className={cx('templates-tab__card')}>
+                <div className={cx('templates-tab__card-header')}>
+                  <span className={cx('templates-tab__card-title')}>{tpl.title}</span>
+                  <span className={cx('templates-tab__badge', tpl.userId ? 'templates-tab__badge--custom' : 'templates-tab__badge--system')}>
                     {tpl.userId ? 'Custom' : 'System'}
                   </span>
                 </div>
-                <div className="template-card-body">
+                <div className={cx('templates-tab__card-body')}>
                   {tpl.body}
                 </div>
-                <div className="template-card-actions">
+                <div className={cx('templates-tab__card-actions')}>
                   {tpl.userId && (
                     <button
                       className="btn-icon-danger"

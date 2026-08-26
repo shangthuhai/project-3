@@ -2,6 +2,10 @@ import React, { useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
 import { sendFriendRequest, respondFriendRequest } from '../../api';
+import styles from './ChatWindow.module.css';
+import classNames from 'classnames/bind';
+
+const cx = classNames.bind(styles);
 
 export default function ChatWindow() {
   const { loggedInUser, triggerAlert } = useAuth();
@@ -40,9 +44,9 @@ export default function ChatWindow() {
 
   const getCharCounterClass = () => {
     const count = newMessage.length;
-    if (count > 120) return 'char-counter danger';
-    if (count > 100) return 'char-counter warning';
-    return 'char-counter safe';
+    if (count > 120) return cx('chat-window__char-counter', 'chat-window__char-counter--danger');
+    if (count > 100) return cx('chat-window__char-counter', 'chat-window__char-counter--warning');
+    return cx('chat-window__char-counter', 'chat-window__char-counter--safe');
   };
 
   // Auto-scroll to bottom of messages thread when chat messages update
@@ -77,15 +81,14 @@ export default function ChatWindow() {
 
   return (
     <>
-      <div className="chat-header">
-        <div className="chat-header-user">
+      <div className={cx('chat-window__header')}>
+        <div className={cx('chat-window__header-user')}>
           <img
             src={selectedContact.avatar || `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%237f91a4"/><text x="50%" y="50%" font-family="sans-serif" font-weight="bold" font-size="40" fill="white" text-anchor="middle" dominant-baseline="central">${selectedContact.name[0]}</text></svg>`}
             alt={selectedContact.name}
-            className="item-avatar"
-            style={{ width: '38px', height: '38px' }}
+            style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover' }}
           />
-          <div className="chat-header-info">
+          <div className={cx('chat-window__header-info')}>
             <h3>{selectedContact.name}</h3>
             <p>{selectedContact.contactNumber} • {remainingQuota?.isFriend ? 'Friend (Unlimited SMS)' : 'Non-friend (5 Free Messages Limit)'}</p>
           </div>
@@ -93,7 +96,7 @@ export default function ChatWindow() {
       </div>
 
       {remainingQuota && !remainingQuota.isFriend && (
-        <div className="chat-quota-banner" style={{
+        <div className={cx('chat-window__quota-banner')} style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -183,7 +186,7 @@ export default function ChatWindow() {
       <div 
         ref={chatMessagesAreaRef}
         onScroll={handleScroll}
-        className="chat-messages-area"
+        className={cx('chat-window__messages')}
       >
         {chatMessages.length === 0 ? (
           <div style={{ margin: 'auto', textAlign: 'center', opacity: 0.3, fontSize: '0.9rem' }}>
@@ -196,13 +199,13 @@ export default function ChatWindow() {
             const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             const isPending = msg.scheduledAt && new Date(msg.scheduledAt) > new Date();
             return (
-              <div key={msg.id} className={`message-bubble-row ${isSentByMe ? 'sent' : 'received'}`}>
-                <div className="message-bubble">
-                  <span className="message-text">{msg.content}</span>
-                  <span className="message-time">
+              <div key={msg.id} className={cx('chat-window__message-row', isSentByMe ? 'chat-window__message-row--sent' : 'chat-window__message-row--received')}>
+                <div className={cx('chat-window__message-bubble', isSentByMe ? 'chat-window__message-bubble--sent' : 'chat-window__message-bubble--received')}>
+                  <span className={cx('chat-window__message-text')}>{msg.content}</span>
+                  <span className={cx('chat-window__message-time')}>
                     {formattedTime}
                     {isPending && (
-                      <span className="msg-scheduled-badge">⏰ Hẹn giờ: {new Date(msg.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span className={cx('chat-window__msg-scheduled-badge')}>⏰ Hẹn giờ: {new Date(msg.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     )}
                   </span>
                 </div>
@@ -211,26 +214,26 @@ export default function ChatWindow() {
           })
         )}
         {contactIsTyping && (
-          <div className="message-bubble-row received">
-            <div className="message-bubble typing-bubble">
-              <div className="typing-dots">
-                <span className="typing-dot"></span>
-                <span className="typing-dot"></span>
-                <span className="typing-dot"></span>
+          <div className={cx('chat-window__message-row', 'chat-window__message-row--received')}>
+            <div className={cx('chat-window__message-bubble', 'chat-window__message-bubble--received', 'chat-window__typing-bubble')}>
+              <div className={cx('chat-window__typing-dots')}>
+                <span className={cx('chat-window__typing-dot')}></span>
+                <span className={cx('chat-window__typing-dot')}></span>
+                <span className={cx('chat-window__typing-dot')}></span>
               </div>
-              <span className="typing-text">{selectedContact.name} đang nhập...</span>
+              <span className={cx('chat-window__typing-text')}>{selectedContact.name} đang nhập...</span>
             </div>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      <form className="chat-input-area" onSubmit={handleSendMessageSubmit} style={{ position: 'relative' }}>
+      <form className={cx('chat-window__input-area')} onSubmit={handleSendMessageSubmit} style={{ position: 'relative' }}>
         {/* Composer Toolbar */}
-        <div className="composer-tools-row">
+        <div className={cx('chat-window__composer-tools')}>
           <button
             type="button"
-            className={`composer-tool-btn ${showScheduler ? 'active' : ''}`}
+            className={cx('chat-window__composer-btn', { 'chat-window__composer-btn--active': showScheduler })}
             onClick={() => {
               setShowScheduler(!showScheduler);
               setShowTemplatePicker(false);
@@ -241,7 +244,7 @@ export default function ChatWindow() {
           </button>
           <button
             type="button"
-            className={`composer-tool-btn ${showTemplatePicker ? 'active' : ''}`}
+            className={cx('chat-window__composer-btn', { 'chat-window__composer-btn--active': showTemplatePicker })}
             onClick={() => {
               setShowTemplatePicker(!showTemplatePicker);
               setShowScheduler(false);
@@ -252,7 +255,7 @@ export default function ChatWindow() {
           </button>
           <button
             type="button"
-            className={`composer-tool-btn ${showAiAssistant ? 'active' : ''}`}
+            className={cx('chat-window__composer-btn', { 'chat-window__composer-btn--active': showAiAssistant })}
             onClick={() => {
               setShowAiAssistant(!showAiAssistant);
               setShowScheduler(false);
@@ -270,7 +273,7 @@ export default function ChatWindow() {
 
         {/* Scheduler Popover */}
         {showScheduler && (
-          <div className="scheduler-popover">
+          <div className={cx('chat-window__scheduler-popover')}>
             <label style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>Chọn Ngày/Giờ Gửi:</label>
             <input
               type="datetime-local"
@@ -291,7 +294,7 @@ export default function ChatWindow() {
 
         {/* Template Picker Popover */}
         {showTemplatePicker && (
-          <div className="template-quick-picker">
+          <div className={cx('chat-window__template-picker')}>
             <div style={{ padding: '10px', fontWeight: 'bold', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span>Chọn tin nhắn mẫu</span>
               <button type="button" style={{ background: 'none', border: 'none', color: '#ff5555', cursor: 'pointer' }} onClick={() => setShowTemplatePicker(false)}>✕</button>
@@ -302,15 +305,15 @@ export default function ChatWindow() {
               templates.map(tpl => (
                 <div
                   key={tpl.id}
-                  className="template-picker-item"
+                  className={cx('chat-window__template-item')}
                   onClick={() => {
                     let text = tpl.body.replace('{Name}', selectedContact.name);
                     setNewMessage(text.substring(0, 120));
                     setShowTemplatePicker(false);
                   }}
                 >
-                  <h5>{tpl.title}</h5>
-                  <p>{tpl.body}</p>
+                  <h5 className={cx('chat-window__template-item-title')}>{tpl.title}</h5>
+                  <p className={cx('chat-window__template-item-body')}>{tpl.body}</p>
                 </div>
               ))
             )}
@@ -319,7 +322,7 @@ export default function ChatWindow() {
 
         {/* AI Assistant Popover */}
         {showAiAssistant && (
-          <div className="ai-assistant-popover">
+          <div className={cx('chat-window__ai-popover')}>
             <div style={{ padding: '4px 0px 8px 0px', fontWeight: 'bold', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-main)' }}>✨ Trợ lý SMS AI</span>
               <button type="button" style={{ background: 'none', border: 'none', color: '#ff5555', cursor: 'pointer', fontSize: '1rem' }} onClick={() => setShowAiAssistant(false)}>✕</button>
@@ -332,6 +335,7 @@ export default function ChatWindow() {
                 value={aiPrompt}
                 onChange={(e) => setAiPrompt(e.target.value)}
                 disabled={generatingAi}
+                className={cx('chat-window__ai-textarea')}
                 style={{ width: '100%', boxSizing: 'border-box' }}
               />
 
@@ -340,6 +344,7 @@ export default function ChatWindow() {
                 value={aiTone}
                 onChange={(e) => setAiTone(e.target.value)}
                 disabled={generatingAi}
+                className={cx('chat-window__ai-select')}
                 style={{ width: '100%' }}
               >
                 <option value="polite">Lịch sự</option>
@@ -357,7 +362,7 @@ export default function ChatWindow() {
               >
                 {generatingAi ? (
                   <>
-                    <span className="spinner-small"></span> Đang tạo...
+                    <span className={cx('chat-window__spinner-small')}></span> Đang tạo...
                   </>
                 ) : (
                   'Tạo tin nhắn'
@@ -367,11 +372,11 @@ export default function ChatWindow() {
           </div>
         )}
 
-        <div className="chat-input-row">
-          <div className="chat-textarea-container">
+        <div className={cx('chat-window__input-row')}>
+          <div className={cx('chat-window__textarea-container')}>
             <textarea
               ref={textareaRef}
-              className="chat-textarea"
+              className={cx('chat-window__textarea')}
               placeholder={
                 remainingQuota?.remaining === 0 && !remainingQuota?.isFriend
                   ? "SMS limit reached. Friend this user to chat."
@@ -391,7 +396,7 @@ export default function ChatWindow() {
                 }
               }}
             />
-            <div className="chat-input-controls">
+            <div className={cx('chat-window__input-controls')}>
               <span className={getCharCounterClass()}>
                 {newMessage.length}/120
               </span>
@@ -399,7 +404,7 @@ export default function ChatWindow() {
           </div>
           <button
             type="submit"
-            className="send-msg-btn"
+            className={cx('chat-window__send-btn')}
             disabled={!newMessage.trim() || newMessage.length > 120 || (remainingQuota?.remaining === 0 && !remainingQuota?.isFriend)}
           >
             ➤

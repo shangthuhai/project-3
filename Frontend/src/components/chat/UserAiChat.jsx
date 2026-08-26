@@ -1,5 +1,9 @@
 import React, { useEffect, useRef } from 'react';
 import { useChat } from '../../context/ChatContext';
+import styles from './UserAiChat.module.css';
+import classNames from 'classnames/bind';
+
+const cx = classNames.bind(styles);
 
 export default function UserAiChat() {
   const {
@@ -60,7 +64,7 @@ export default function UserAiChat() {
 
   const handleAiChatMouseDown = (e) => {
     if (e.button !== 0) return;
-    if (e.target.closest('.ai-mini-chat-close-btn')) return;
+    if (e.target.closest(`.${styles['ai-chat__close-btn']}`)) return;
 
     aiChatDragRef.current.isDragging = false;
     aiChatDragRef.current.startX = e.clientX;
@@ -114,7 +118,7 @@ export default function UserAiChat() {
       {/* AI Floating Chatbot Widget Bubble */}
       {!isAiBubbleOpen && (
         <div
-          className="ai-floating-bubble"
+          className={cx('ai-chat__bubble')}
           style={{ left: `${aiPosition.x}px`, top: `${aiPosition.y}px` }}
           onMouseDown={handleAiBubbleMouseDown}
         >
@@ -124,7 +128,7 @@ export default function UserAiChat() {
 
       {isAiBubbleOpen && (
         <div
-          className="ai-mini-chat-window"
+          className={cx('ai-chat__window')}
           style={{
             left: `${aiChatPosition.x}px`,
             top: `${aiChatPosition.y}px`,
@@ -132,12 +136,12 @@ export default function UserAiChat() {
             bottom: 'auto'
           }}
         >
-          <div className="ai-mini-chat-header" onMouseDown={handleAiChatMouseDown}>
+          <div className={cx('ai-chat__header')} onMouseDown={handleAiChatMouseDown}>
             <h3>🤖 Trợ lý AI Chatbot</h3>
-            <button className="ai-mini-chat-close-btn" onClick={() => setIsAiBubbleOpen(false)}>×</button>
+            <button className={cx('ai-chat__close-btn')} onClick={() => setIsAiBubbleOpen(false)}>×</button>
           </div>
 
-          <div className="ai-mini-chat-messages">
+          <div className={cx('ai-chat__messages')}>
             {aiMessages.length === 0 ? (
               <div style={{ color: '#94a3b8', fontSize: '0.82rem', textAlign: 'center', marginTop: '20px' }}>
                 Hỏi mình bất cứ điều gì nhé! 💬
@@ -146,22 +150,22 @@ export default function UserAiChat() {
               aiMessages.map((msg, index) => {
                 const isBot = msg.senderId === 999;
                 return (
-                  <div key={index} className={`ai-mini-msg ${isBot ? 'bot' : 'user'}`}>
+                  <div key={index} className={cx('ai-chat__msg', isBot ? 'ai-chat__msg--bot' : 'ai-chat__msg--user')}>
                     {msg.content}
                   </div>
                 );
               })
             )}
             {isAiLoading && (
-              <div className="ai-mini-chat-loading">
-                <div className="spinner-small"></div>
+              <div className={cx('ai-chat__loading')}>
+                <div className={cx('ai-chat__spinner')}></div>
                 <span>Trợ lý AI đang soạn câu trả lời...</span>
               </div>
             )}
             <div ref={aiMessagesEndRef} />
           </div>
 
-          <form className="ai-mini-chat-input-area" onSubmit={handleAiSendMessage}>
+          <form className={cx('ai-chat__input-area')} onSubmit={handleAiSendMessage}>
             <input
               type="text"
               placeholder="Nhập câu hỏi..."
@@ -169,7 +173,7 @@ export default function UserAiChat() {
               onChange={(e) => setAiNewMessage(e.target.value)}
               disabled={isAiLoading}
             />
-            <button type="submit" className="ai-mini-chat-send-btn" disabled={!aiNewMessage.trim() || isAiLoading}>
+            <button type="submit" className={cx('ai-chat__send-btn')} disabled={!aiNewMessage.trim() || isAiLoading}>
               ➡️
             </button>
           </form>

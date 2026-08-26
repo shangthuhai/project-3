@@ -1,5 +1,9 @@
 import React from 'react';
 import { useChat } from '../../context/ChatContext';
+import styles from './AnalyticsTab.module.css';
+import classNames from 'classnames/bind';
+
+const cx = classNames.bind(styles);
 
 export default function AnalyticsTab() {
   const { analyticsStats } = useChat();
@@ -19,70 +23,73 @@ export default function AnalyticsTab() {
         <p>Theo dõi hiệu suất gửi tin nhắn, tỷ lệ thành công và kiểm soát hạn mức quota của bạn.</p>
       </div>
 
-      <div className="analytics-grid">
-        <div className="analytics-card">
-          <div className="analytics-card-icon sent">💬</div>
-          <div className="analytics-card-content">
-            <h4>Tổng tin nhắn gửi</h4>
-            <p>{analyticsStats.totalSent}</p>
+      <div className={cx('analytics__grid')}>
+        <div className={cx('analytics__card')}>
+          <div className={cx('analytics__card-icon', 'analytics__card-icon--sent')}>💬</div>
+          <div className={cx('analytics__card-content')}>
+            <h4 className={cx('analytics__card-label')}>Tổng tin nhắn gửi</h4>
+            <p className={cx('analytics__card-value')}>{analyticsStats.totalSent}</p>
           </div>
         </div>
-        <div className="analytics-card">
-          <div className="analytics-card-icon success">✓</div>
-          <div className="analytics-card-content">
-            <h4>Gửi Thành công</h4>
-            <p>{analyticsStats.deliveredCount}</p>
+        <div className={cx('analytics__card')}>
+          <div className={cx('analytics__card-icon', 'analytics__card-icon--success')}>✓</div>
+          <div className={cx('analytics__card-content')}>
+            <h4 className={cx('analytics__card-label')}>Gửi Thành công</h4>
+            <p className={cx('analytics__card-value')}>{analyticsStats.deliveredCount}</p>
           </div>
         </div>
-        <div className="analytics-card">
-          <div className="analytics-card-icon failed">✗</div>
-          <div className="analytics-card-content">
-            <h4>Gửi thất bại</h4>
-            <p>{analyticsStats.failedCount}</p>
+        <div className={cx('analytics__card')}>
+          <div className={cx('analytics__card-icon', 'analytics__card-icon--failed')}>✗</div>
+          <div className={cx('analytics__card-content')}>
+            <h4 className={cx('analytics__card-label')}>Gửi thất bại</h4>
+            <p className={cx('analytics__card-value')}>{analyticsStats.failedCount}</p>
           </div>
         </div>
-        <div className="analytics-card">
-          <div className="analytics-card-icon pending">⏰</div>
-          <div className="analytics-card-content">
-            <h4>Chờ gửi (Hẹn giờ)</h4>
-            <p>{analyticsStats.pendingCount}</p>
+        <div className={cx('analytics__card')}>
+          <div className={cx('analytics__card-icon', 'analytics__card-icon--pending')}>⏰</div>
+          <div className={cx('analytics__card-content')}>
+            <h4 className={cx('analytics__card-label')}>Chờ gửi (Hẹn giờ)</h4>
+            <p className={cx('analytics__card-value')}>{analyticsStats.pendingCount}</p>
           </div>
         </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '25px' }}>
-        <div className="analytics-chart-panel">
-          <h3 className="analytics-chart-title">Lưu lượng gửi tin nhắn (7 ngày qua)</h3>
+        <div className={cx('analytics__chart-panel')}>
+          <h3 className={cx('analytics__chart-title')}>Lưu lượng gửi tin nhắn (7 ngày qua)</h3>
 
-          <div className="custom-chart-container">
+          <div className={cx('analytics__chart-container')}>
             {analyticsStats.dailyStats.map((item, idx) => {
               const maxVal = Math.max(...analyticsStats.dailyStats.map(d => d.count), 1);
               const heightPercent = Math.min((item.count / maxVal) * 100, 100);
               const shortDate = item.date.substring(5);
 
               return (
-                <div key={idx} className="chart-bar-column">
+                <div key={idx} className={cx('analytics__chart-bar-column')}>
                   <div
-                    className="chart-bar-body"
+                    className={cx('analytics__chart-bar')}
                     style={{ height: `${heightPercent}%` }}
                   >
-                    <div className="chart-bar-tooltip">{item.count} SMS</div>
+                    <div className={cx('analytics__chart-bar-tooltip')}>{item.count} SMS</div>
                   </div>
-                  <div className="chart-axis-label">{shortDate}</div>
+                  <div className={cx('analytics__chart-axis-label')}>{shortDate}</div>
                 </div>
               );
             })}
           </div>
         </div>
 
-        <div className="quota-gauge-card">
-          <div className="quota-gauge-header">
+        <div className={cx('analytics__quota-card')}>
+          <div className={cx('analytics__quota-header')}>
             <span>Hạn mức gửi tin miễn phí còn lại (Người lạ)</span>
             <span style={{ fontWeight: 'bold' }}>{analyticsStats.freeLeft} / 5 tin</span>
           </div>
-          <div className="quota-gauge-progress-bg">
+          <div className={cx('analytics__quota-progress-bg')}>
             <div
-              className={`quota-gauge-progress-fill ${analyticsStats.freeLeft <= 1 ? 'danger' : analyticsStats.freeLeft <= 3 ? 'warning' : ''}`}
+              className={cx('analytics__quota-progress-fill', {
+                'analytics__quota-progress-fill--danger': analyticsStats.freeLeft <= 1,
+                'analytics__quota-progress-fill--warning': analyticsStats.freeLeft > 1 && analyticsStats.freeLeft <= 3
+              })}
               style={{ width: `${(analyticsStats.freeLeft / 5) * 100}%` }}
             />
           </div>

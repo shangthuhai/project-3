@@ -1,5 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { chatWithAdminAi } from '../../api';
+import styles from './AdminAiCopilot.module.css';
+import classNames from 'classnames/bind';
+
+const cx = classNames.bind(styles);
 
 export default function AdminAiCopilot({ triggerAlert }) {
   const [isAdminChatOpen, setIsAdminChatOpen] = useState(false);
@@ -124,27 +128,11 @@ export default function AdminAiCopilot({ triggerAlert }) {
       {/* Admin AI Copilot Button (FAB) */}
       {!isAdminChatOpen && (
         <button
-          className="admin-ai-fab animate-glow"
+          className={cx('admin-copilot__fab')}
           onMouseDown={handleAdminAiBubbleMouseDown}
           style={{
-            position: 'fixed',
             left: `${adminAiPosition.x}px`,
-            top: `${adminAiPosition.y}px`,
-            width: '60px',
-            height: '60px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, var(--color-primary), #8b5cf6)',
-            border: 'none',
-            cursor: 'grab',
-            boxShadow: '0 0 15px rgba(36, 129, 204, 0.4)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-            fontSize: '1.8rem',
-            outline: 'none',
-            transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-            userSelect: 'none'
+            top: `${adminAiPosition.y}px`
           }}
           title="Open Admin AI Copilot"
         >
@@ -154,122 +142,91 @@ export default function AdminAiCopilot({ triggerAlert }) {
 
       {/* Admin AI Copilot Drawer */}
       <div
-        className={`admin-ai-drawer ${isAdminChatOpen ? 'open' : ''}`}
+        className={cx('admin-copilot__drawer')}
         style={{
-          position: 'fixed',
-          top: 0,
           right: isAdminChatOpen ? 0 : `-${adminChatWidth + 20}px`,
-          width: `${adminChatWidth}px`,
-          height: '100vh',
-          background: 'rgba(21, 31, 43, 0.8)',
-          backdropFilter: 'blur(20px)',
-          borderLeft: '1px solid rgba(255, 255, 255, 0.08)',
-          boxShadow: '-10px 0 30px rgba(0, 0, 0, 0.5)',
-          zIndex: 99999,
-          display: 'flex',
-          flexDirection: 'column',
-          transition: 'right 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.05s ease-out',
-          overflow: 'hidden'
+          width: `${adminChatWidth}px`
         }}
       >
         {/* Resize Handle */}
         <div
           onMouseDown={startResizeAdminChat}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '6px',
-            height: '100%',
-            cursor: 'col-resize',
-            zIndex: 100000,
-            background: 'transparent',
-            transition: 'background 0.2s'
-          }}
-          className="drawer-resize-handle"
+          className={cx('admin-copilot__resize-handle')}
         />
         {/* Drawer Header */}
-        <div style={{ padding: '20px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div className={cx('admin-copilot__header')}>
+          <div className={cx('admin-copilot__header-profile')}>
             <span style={{ fontSize: '1.5rem' }}>🤖</span>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <h3 style={{ margin: 0, color: '#fff', fontSize: '1.05rem', fontWeight: '600' }}>Admin Copilot</h3>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '2px' }}>
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }}></span>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Online & Connected</span>
+            <div className={cx('admin-copilot__header-info')}>
+              <h3 className={cx('admin-copilot__header-title')}>Admin Copilot</h3>
+              <div className={cx('admin-copilot__status-container')}>
+                <span className={cx('admin-copilot__status-dot')}></span>
+                <span className={cx('admin-copilot__status-text')}>Online & Connected</span>
               </div>
             </div>
           </div>
           <button
             onClick={() => setIsAdminChatOpen(false)}
-            style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '1.2rem', cursor: 'pointer', outline: 'none' }}
-            className="drawer-close-btn"
+            className={cx('admin-copilot__close-btn')}
           >
             ✕
           </button>
         </div>
 
         {/* Chat Messages */}
-        <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '15px' }} className="admin-chat-scroll">
+        <div className={cx('admin-copilot__messages')}>
           {adminChatMessages.map((msg, index) => (
             <div
               key={index}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                maxWidth: '85%',
-                alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start'
-              }}
+              className={cx('admin-copilot__message-wrapper', {
+                'admin-copilot__message-wrapper--user': msg.role === 'user',
+                'admin-copilot__message-wrapper--assistant': msg.role !== 'user'
+              })}
             >
               <div
-                style={{
-                  padding: '12px 16px',
-                  borderRadius: msg.role === 'user' ? '16px 16px 0 16px' : '16px 16px 16px 0',
-                  background: msg.role === 'user' ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.05)',
-                  color: '#fff',
-                  fontSize: '0.9rem',
-                  lineHeight: '1.4',
-                  whiteSpace: 'pre-wrap',
-                  border: msg.role === 'user' ? 'none' : '1px solid rgba(255, 255, 255, 0.06)'
-                }}
+                className={cx('admin-copilot__message-bubble', {
+                  'admin-copilot__message-bubble--user': msg.role === 'user',
+                  'admin-copilot__message-bubble--assistant': msg.role !== 'user'
+                })}
               >
                 {msg.content}
               </div>
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px', alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+              <span
+                className={cx('admin-copilot__message-meta', {
+                  'admin-copilot__message-meta--user': msg.role === 'user',
+                  'admin-copilot__message-meta--assistant': msg.role !== 'user'
+                })}
+              >
                 {msg.role === 'user' ? 'Bạn' : 'Copilot'}
               </span>
             </div>
           ))}
           {isAdminChatLoading && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', alignSelf: 'flex-start', background: 'rgba(255, 255, 255, 0.03)', padding: '10px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-              <div className="spinner-mini" style={{ width: '12px', height: '12px', border: '2px solid rgba(255,255,255,0.2)', borderTopColor: 'var(--color-primary)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
-              <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Copilot đang phân tích dữ liệu...</span>
+            <div className={cx('admin-copilot__loading-indicator')}>
+              <div className={cx('admin-copilot__spinner')}></div>
+              <span className={cx('admin-copilot__status-text')}>Copilot đang phân tích dữ liệu...</span>
             </div>
           )}
           <div ref={adminChatEndRef} />
         </div>
 
         {/* Suggested Quick Prompt Chips */}
-        <div style={{ padding: '0 20px 15px 20px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+        <div className={cx('admin-copilot__suggestions')}>
           <button
             onClick={(e) => handleAdminChatSend(e, 'Hãy báo cáo tỷ lệ gửi tin nhắn SMS thành công hiện tại.')}
-            style={{ background: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '16px', padding: '6px 12px', fontSize: '0.78rem', color: 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s', outline: 'none' }}
-            className="suggestion-chip"
+            className={cx('admin-copilot__suggestion-chip')}
           >
             📊 Tỷ lệ SMS
           </button>
           <button
             onClick={(e) => handleAdminChatSend(e, 'Hãy thống kê nhanh các thông số tổng quan hệ thống.')}
-            style={{ background: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '16px', padding: '6px 12px', fontSize: '0.78rem', color: 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s', outline: 'none' }}
-            className="suggestion-chip"
+            className={cx('admin-copilot__suggestion-chip')}
           >
             📉 Thống kê tổng quan
           </button>
           <button
             onClick={(e) => handleAdminChatSend(e, 'Soạn giúp tôi một mẫu tin nhắn SMS thông báo bảo trì hệ thống dài dưới 120 ký tự.')}
-            style={{ background: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '16px', padding: '6px 12px', fontSize: '0.78rem', color: 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s', outline: 'none' }}
-            className="suggestion-chip"
+            className={cx('admin-copilot__suggestion-chip')}
           >
             🔧 Soạn SMS bảo trì
           </button>
@@ -278,7 +235,7 @@ export default function AdminAiCopilot({ triggerAlert }) {
         {/* Drawer Input */}
         <form
           onSubmit={(e) => handleAdminChatSend(e)}
-          style={{ padding: '15px 20px 20px 20px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', gap: '10px', alignItems: 'center' }}
+          className={cx('admin-copilot__input-form')}
         >
           <input
             type="text"
@@ -286,12 +243,12 @@ export default function AdminAiCopilot({ triggerAlert }) {
             value={adminChatInput}
             onChange={(e) => setAdminChatInput(e.target.value)}
             disabled={isAdminChatLoading}
-            style={{ flex: 1, padding: '12px 16px', background: '#121c27', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '24px', color: '#fff', fontSize: '0.9rem', outline: 'none' }}
+            className={cx('admin-copilot__input')}
           />
           <button
             type="submit"
             disabled={isAdminChatLoading || !adminChatInput.trim()}
-            style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'var(--color-primary)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', flexShrink: 0 }}
+            className={cx('admin-copilot__send-btn')}
           >
             ➔
           </button>

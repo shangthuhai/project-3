@@ -11,6 +11,10 @@ import TemplatesTab from '../components/tabs/TemplatesTab';
 import GroupsTab from '../components/tabs/GroupsTab';
 import AnalyticsTab from '../components/tabs/AnalyticsTab';
 import SecurityTab from '../components/tabs/SecurityTab';
+import styles from './UserDashboard.module.css';
+import classNames from 'classnames/bind';
+
+const cx = classNames.bind(styles);
 
 export default function UserDashboard() {
   const { loggedInUser } = useAuth();
@@ -54,8 +58,8 @@ export default function UserDashboard() {
           /* CHAT AREA VIEW */
           <ChatWindow />
         ) : activeTab === 'chats' ? (
-          <div className="workspace-placeholder">
-            <div className="placeholder-icon">💬</div>
+          <div className={cx('dashboard__placeholder')}>
+            <div className={cx('dashboard__placeholder-icon')}>💬</div>
             <h3>Welcome to SMS Chat System</h3>
             <p>Select a chat from the sidebar or go to the Contacts tab to start a new thread.</p>
           </div>
@@ -72,11 +76,11 @@ export default function UserDashboard() {
 
       {/* Add Contact Modal Dialog */}
       {showAddContactModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
+        <div className={cx('dashboard__modal-overlay')}>
+          <div className={cx('dashboard__modal-content')}>
+            <div className={cx('dashboard__modal-header')}>
               <h3>Create New Contact</h3>
-              <button className="close-btn" onClick={() => setShowAddContactModal(false)}>×</button>
+              <button className={cx('dashboard__modal-close-btn')} onClick={() => setShowAddContactModal(false)}>×</button>
             </div>
             <form onSubmit={handleAddContactSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               <div className="form-row">
@@ -127,33 +131,33 @@ export default function UserDashboard() {
 
       {/* Premium Service Credit Card Payment Modal */}
       {showPaymentModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
+        <div className={cx('dashboard__modal-overlay')}>
+          <div className={cx('dashboard__modal-content')}>
+            <div className={cx('dashboard__modal-header')}>
               <h3>Subscribe to premium services</h3>
-              <button className="close-btn" onClick={() => setShowPaymentModal(false)}>×</button>
+              <button className={cx('dashboard__modal-close-btn')} onClick={() => setShowPaymentModal(false)}>×</button>
             </div>
 
             {/* Interactive Credit Card Mockup */}
-            <div className="card-mockup-wrapper">
-              <div className="credit-card-mockup">
+            <div className={cx('dashboard__card-mockup-wrapper')}>
+              <div className={cx('dashboard__credit-card-mockup')}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div className="card-chip"></div>
+                  <div className={cx('dashboard__card-chip')}></div>
                   <span style={{ fontSize: '0.8rem', fontStyle: 'italic', fontWeight: 'bold' }}>CREDIT CARD</span>
                 </div>
 
-                <div className="card-number-display">
+                <div className={cx('dashboard__card-number')}>
                   {paymentForm.cardNumber
                     ? paymentForm.cardNumber.replace(/(\d{4})/g, '$1 ').trim()
                     : '•••• •••• •••• ••••'}
                 </div>
 
-                <div className="card-bottom-row">
-                  <div className="card-holder-display">
+                <div className={cx('dashboard__card-bottom-row')}>
+                  <div className={cx('dashboard__card-holder')}>
                     <span>Card Holder</span>
                     <span>{loggedInUser?.name || 'USER NAME'}</span>
                   </div>
-                  <div className="card-expiry-display">
+                  <div className={cx('dashboard__card-expiry')}>
                     <span>Expires</span>
                     <span>{paymentForm.expiryDate || 'MM/YY'}</span>
                   </div>

@@ -1,5 +1,9 @@
 import React from 'react';
 import { useChat } from '../../context/ChatContext';
+import styles from './ServicesTab.module.css';
+import classNames from 'classnames/bind';
+
+const cx = classNames.bind(styles);
 
 export default function ServicesTab() {
   const {
@@ -25,7 +29,7 @@ export default function ServicesTab() {
         <p>Select multiple daily services to activate via a single credit card transaction.</p>
       </div>
 
-      <div className="service-checklist-container">
+      <div className={cx('services__checklist-container')}>
         <h3 style={{ marginBottom: '15px', color: 'var(--color-primary-hover)' }}>Available Services</h3>
 
         {[
@@ -40,13 +44,16 @@ export default function ServicesTab() {
           return (
             <div
               key={service.name}
-              className={`service-checklist-item ${isActive ? 'active-subscribed' : isChecked ? 'selected' : ''}`}
+              className={cx('services__checklist-item', {
+                'services__checklist-item--subscribed': isActive,
+                'services__checklist-item--selected': !isActive && isChecked
+              })}
               onClick={() => !isActive && handleServiceCheck(service.name)}
             >
               {!isActive ? (
                 <input
                   type="checkbox"
-                  className="checklist-checkbox"
+                  className={cx('services__checklist-checkbox')}
                   checked={isChecked}
                   onChange={() => { }} // handled by click of parent card
                 />
@@ -54,12 +61,15 @@ export default function ServicesTab() {
                 <span style={{ color: 'var(--color-accent)', fontWeight: 'bold', fontSize: '1.2rem', width: '20px', textAlign: 'center' }}>✓</span>
               )}
 
-              <div className="checklist-details">
-                <h4>{service.name} {isActive && <span className="service-status-tag" style={{ fontSize: '0.65rem', marginLeft: '5px' }}>Activated</span>}</h4>
+              <div className={cx('services__checklist-details')}>
+                <h4>
+                  {service.name} 
+                  {isActive && <span className={cx('services__status-tag')} style={{ fontSize: '0.65rem', marginLeft: '5px' }}>Activated</span>}
+                </h4>
                 <p>{service.desc}</p>
               </div>
 
-              <div className="checklist-price">
+              <div className={cx('services__checklist-price')}>
                 ${service.price} <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>/mo</span>
               </div>
             </div>
@@ -74,8 +84,8 @@ export default function ServicesTab() {
         ) : null}
 
         {selectedServices.length > 0 && (
-          <div className="billing-summary-card">
-            <div className="billing-total">
+          <div className={cx('services__billing-card')}>
+            <div className={cx('services__billing-total')}>
               <h3>Total: ${getTotalSelectedPrice()}</h3>
               <p>{selectedServices.length} premium services selected</p>
             </div>

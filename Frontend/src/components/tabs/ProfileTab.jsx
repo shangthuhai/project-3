@@ -1,6 +1,10 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
+import styles from './ProfileTab.module.css';
+import classNames from 'classnames/bind';
+
+const cx = classNames.bind(styles);
 
 export default function ProfileTab() {
   const { loggedInUser } = useAuth();
@@ -33,22 +37,22 @@ export default function ProfileTab() {
         <p>Customize your personal and professional profile details.</p>
       </div>
 
-      <form onSubmit={handleProfileSubmit} className="profile-grid">
-        <div className="profile-avatar-column">
+      <form onSubmit={handleProfileSubmit} className={cx('profile__grid')}>
+        <div className={cx('profile__avatar-column')}>
           <img
             src={profileForm.profilePhoto || loggedInUser.profilePhoto}
             alt="Profile"
-            className="profile-avatar-large"
+            className={cx('profile__avatar')}
           />
-          <label className="avatar-upload-label">
+          <label className={cx('profile__upload-btn')}>
             Choose New Photo
             <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarUpload} />
           </label>
         </div>
 
-        <div className="profile-details-column">
-          <div className="profile-section-card">
-            <h3>Personal Details</h3>
+        <div className={cx('profile__details-column')}>
+          <div className={cx('profile__section-card')}>
+            <h3 className={cx('profile__section-title')}>Personal Details</h3>
             <div className="form-row">
               <div className="form-group">
                 <label>Full Name *</label>
@@ -153,8 +157,8 @@ export default function ProfileTab() {
             </div>
           </div>
 
-          <div className="profile-section-card">
-            <h3>Professional Details</h3>
+          <div className={cx('profile__section-card')}>
+            <h3 className={cx('profile__section-title')}>Professional Details</h3>
             <div className="form-row">
               <div className="form-group">
                 <label>Qualification</label>

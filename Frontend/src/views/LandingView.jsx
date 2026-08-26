@@ -1,5 +1,9 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
+import styles from './LandingView.module.css';
+import classNames from 'classnames/bind';
+
+const cx = classNames.bind(styles);
 
 export default function LandingView() {
   const {
@@ -27,49 +31,49 @@ export default function LandingView() {
   } = useAuth();
 
   return (
-    <div className="landing-page">
+    <div className={cx('landing')}>
       {/* Left Column: Website info */}
-      <div className="landing-left">
-        <div className="landing-hero">
-          <h1>Online SMS Hub</h1>
-          <p>
+      <div className={cx('landing__left')}>
+        <div className={cx('landing__hero')}>
+          <h1 className={cx('landing__hero-title')}>Online SMS Hub</h1>
+          <p className={cx('landing__hero-description')}>
             Connect with friends, manage your contacts, and receive automated updates on Jokes, Sports, and News directly to your mobile.
           </p>
         </div>
 
-        <div className="features-list">
-          <div className="feature-item">
-            <div className="feature-icon">💬</div>
-            <div className="feature-text">
-              <h3>Chat and Message friends</h3>
-              <p>Send unlimited free messages to any registered user in your friend list.</p>
+        <div className={cx('landing__features')}>
+          <div className={cx('landing__feature-item')}>
+            <div className={cx('landing__feature-icon')}>💬</div>
+            <div className={cx('landing__feature-text')}>
+              <h3 className={cx('landing__feature-title')}>Chat and Message friends</h3>
+              <p className={cx('landing__feature-description')}>Send unlimited free messages to any registered user in your friend list.</p>
             </div>
           </div>
 
-          <div className="feature-item">
-            <div className="feature-icon">⚡</div>
-            <div className="feature-text">
-              <h3>SMS to Non-Friends</h3>
-              <p>Allowing 5 free SMS messages per phone number to connect instantly with unregistered users.</p>
+          <div className={cx('landing__feature-item')}>
+            <div className={cx('landing__feature-icon')}>⚡</div>
+            <div className={cx('landing__feature-text')}>
+              <h3 className={cx('landing__feature-title')}>SMS to Non-Friends</h3>
+              <p className={cx('landing__feature-description')}>Allowing 5 free SMS messages per phone number to connect instantly with unregistered users.</p>
             </div>
           </div>
 
-          <div className="feature-item">
-            <div className="feature-icon">📰</div>
-            <div className="feature-text">
-              <h3>Paid SMS Services</h3>
-              <p>Activate premium daily updates for Sports scores, News alerts, Current affairs, or Jokes.</p>
+          <div className={cx('landing__feature-item')}>
+            <div className={cx('landing__feature-icon')}>📰</div>
+            <div className={cx('landing__feature-text')}>
+              <h3 className={cx('landing__feature-title')}>Paid SMS Services</h3>
+              <p className={cx('landing__feature-description')}>Activate premium daily updates for Sports scores, News alerts, Current affairs, or Jokes.</p>
             </div>
           </div>
         </div>
 
         {/* Quick Demo Swapper widget for easy evaluation */}
         {users.length > 0 && (
-          <div className="user-switcher-container" style={{ width: 'fit-content', marginTop: '30px' }}>
-            <div className="user-switcher-info">
-              <span className="user-switcher-label">Demo Quick Log In</span>
+          <div className={cx('landing__user-switcher')} style={{ width: 'fit-content', marginTop: '30px' }}>
+            <div className={cx('landing__user-switcher-info')}>
+              <span className={cx('landing__user-switcher-label')}>Demo Quick Log In</span>
               <select
-                className="user-select"
+                className={cx('landing__user-select')}
                 defaultValue=""
                 onChange={(e) => handleDemoUserSwitch(parseInt(e.target.value))}
               >
@@ -84,8 +88,8 @@ export default function LandingView() {
       </div>
 
       {/* Right Column: Auth forms */}
-      <div className="landing-right">
-        <div className="landing-header">
+      <div className={cx('landing__right')}>
+        <div className={cx('landing__header')}>
           <span style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
             {authMode === 'login' ? "Don't have an account?" : "Already registered?"}
           </span>
@@ -100,8 +104,8 @@ export default function LandingView() {
 
         {requires2Fa ? (
           /* 2FA CODE FORM */
-          <div className="auth-card">
-            <h2>Xác thực 2 lớp (2FA)</h2>
+          <div className={cx('landing__auth-card')}>
+            <h2 className={cx('landing__auth-title')}>Xác thực 2 lớp (2FA)</h2>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '15px' }}>
               Vui lòng nhập mã OTP 6 số đã được gửi tới email của bạn.
             </p>
@@ -134,8 +138,8 @@ export default function LandingView() {
           </div>
         ) : authMode === 'login' ? (
           /* LOGIN CARD */
-          <div className="auth-card">
-            <h2>Account Login</h2>
+          <div className={cx('landing__auth-card')}>
+            <h2 className={cx('landing__auth-title')}>Account Login</h2>
             <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               <div className="form-group">
                 <label>Username</label>
@@ -166,8 +170,8 @@ export default function LandingView() {
           </div>
         ) : (
           /* REGISTRATION CARD */
-          <div className="auth-card" style={{ maxWidth: '480px' }}>
-            <h2>Create Account</h2>
+          <div className={cx('landing__auth-card')} style={{ maxWidth: '480px' }}>
+            <h2 className={cx('landing__auth-title')}>Create Account</h2>
             <form onSubmit={handleRegisterSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
               <div className="form-row">
@@ -203,7 +207,7 @@ export default function LandingView() {
                   required
                 />
                 {usernameValidation.message && (
-                  <span className={`validation-info ${usernameValidation.available === true ? 'success' : usernameValidation.available === false ? 'error' : 'checking'}`}>
+                  <span className={cx('landing__validation', usernameValidation.available === true ? 'landing__validation--success' : usernameValidation.available === false ? 'landing__validation--error' : 'landing__validation--checking')}>
                     {usernameValidation.available === true && <span style={{ marginRight: '4px' }}>✓</span>}
                     {usernameValidation.available === false && <span style={{ marginRight: '4px' }}>✗</span>}
                     <span>{usernameValidation.message}</span>
@@ -245,7 +249,7 @@ export default function LandingView() {
                   required
                 />
                 {mobileValidation.message && (
-                  <span className={`validation-info ${mobileValidation.available === true ? 'success' : mobileValidation.available === false ? 'error' : 'checking'}`}>
+                  <span className={cx('landing__validation', mobileValidation.available === true ? 'landing__validation--success' : mobileValidation.available === false ? 'landing__validation--error' : 'landing__validation--checking')}>
                     {mobileValidation.available === true && <span style={{ marginRight: '4px' }}>✓</span>}
                     {mobileValidation.available === false && <span style={{ marginRight: '4px' }}>✗</span>}
                     <span>{mobileValidation.message}</span>
@@ -256,9 +260,9 @@ export default function LandingView() {
               {/* Captcha/Verification Code widget */}
               <div className="form-group">
                 <label>Verification Code</label>
-                <div className="captcha-container">
-                  <div className="captcha-image-mockup">{captchaCode}</div>
-                  <button type="button" className="captcha-refresh-btn" onClick={generateCaptcha}>
+                <div className={cx('landing__captcha-container')}>
+                  <div className={cx('landing__captcha-image')}>{captchaCode}</div>
+                  <button type="button" className={cx('landing__captcha-refresh')} onClick={generateCaptcha}>
                     ↻
                   </button>
                   <input

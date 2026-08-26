@@ -1,0 +1,57 @@
+.requests-tab__grid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 30px;
+}
+
+.requests-tab__card {
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+
+.requests-tab__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--bg-app);
+  margin-bottom: 12px;
+}
+
+.requests-tab__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.requests-tab__info {
+  flex: 1;
+}
+
+.requests-tab__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.requests-tab__btn {
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+
+.requests-tab__btn--accept {
+  background: var(--color-accent);
+  color: var(--bg-app);
+}
+
+.requests-tab__btn--reject {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--color-danger);
+}

@@ -1,5 +1,9 @@
 import React from 'react';
 import { useChat } from '../../context/ChatContext';
+import styles from './SecurityTab.module.css';
+import classNames from 'classnames/bind';
+
+const cx = classNames.bind(styles);
 
 export default function SecurityTab() {
   const {
@@ -22,12 +26,12 @@ export default function SecurityTab() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '25px' }}>
         <div>
-          <h3 className="settings-section-title">Bảo mật tài khoản</h3>
+          <h3 className={cx('security-tab__section-title')}>Bảo mật tài khoản</h3>
 
-          <div className="privacy-toggle-card">
-            <div className="privacy-toggle-info">
-              <h4>Xác thực 2 lớp qua Email (2FA)</h4>
-              <p>Yêu cầu nhập mã OTP gửi về Email khi đăng nhập tài khoản hoặc mua dịch vụ VAS.</p>
+          <div className={cx('security-tab__toggle-card')}>
+            <div className={cx('security-tab__toggle-info')}>
+              <h4 className={cx('security-tab__toggle-title')}>Xác thực 2 lớp qua Email (2FA)</h4>
+              <p className={cx('security-tab__toggle-description')}>Yêu cầu nhập mã OTP gửi về Email khi đăng nhập tài khoản hoặc mua dịch vụ VAS.</p>
             </div>
             <div>
               <input
@@ -40,12 +44,12 @@ export default function SecurityTab() {
             </div>
           </div>
 
-          <h3 className="settings-section-title">Cài đặt Quyền riêng tư</h3>
+          <h3 className={cx('security-tab__section-title')}>Cài đặt Quyền riêng tư</h3>
 
-          <div className="privacy-toggle-card">
-            <div className="privacy-toggle-info">
-              <h4>Chỉ nhận SMS từ Bạn bè</h4>
-              <p>Từ chối nhận tin nhắn từ những số lạ (người lạ không thể gửi 5 tin nhắn miễn phí cho bạn).</p>
+          <div className={cx('security-tab__toggle-card')}>
+            <div className={cx('security-tab__toggle-info')}>
+              <h4 className={cx('security-tab__toggle-title')}>Chỉ nhận SMS từ Bạn bè</h4>
+              <p className={cx('security-tab__toggle-description')}>Từ chối nhận tin nhắn từ những số lạ (người lạ không thể gửi 5 tin nhắn miễn phí cho bạn).</p>
             </div>
             <div>
               <input
@@ -59,31 +63,32 @@ export default function SecurityTab() {
           </div>
         </div>
 
-        <div className="blocklist-container">
+        <div className={cx('security-tab__blocklist-container')}>
           <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '15px', color: 'var(--color-primary)' }}>
             Danh sách chặn (Blocklist)
           </h3>
 
-          <form onSubmit={handleBlockNumber} className="blocklist-input-group">
+          <form onSubmit={handleBlockNumber} className={cx('security-tab__blocklist-input-group')}>
             <input
               type="text"
               placeholder="Số điện thoại cần chặn (10 số)"
               value={blockNumberInput}
               onChange={(e) => setBlockNumberInput(e.target.value.replace(/\D/g, '').substring(0, 10))}
               maxLength={10}
+              className={cx('security-tab__blocklist-input')}
               required
             />
             <button type="submit" className="btn btn-danger" style={{ padding: '8px 16px', fontSize: '0.82rem' }}>Block</button>
           </form>
 
-          <div className="block-items-list">
+          <div className={cx('security-tab__block-items-list')}>
             {blocklist.length === 0 ? (
               <div style={{ padding: '15px', fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>Danh sách chặn trống.</div>
             ) : (
               blocklist.map(b => (
-                <div key={b.id} className="block-item">
+                <div key={b.id} className={cx('security-tab__block-item')}>
                   <div>
-                    <div className="block-item-number">🚫 {b.blockedNumber}</div>
+                    <div className={cx('security-tab__block-item-number')}>🚫 {b.blockedNumber}</div>
                   </div>
                   <button
                     className="btn-icon-danger"
