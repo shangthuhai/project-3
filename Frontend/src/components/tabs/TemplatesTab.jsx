@@ -1,11 +1,13 @@
 import React from 'react';
 import { useChat } from '../../context/ChatContext';
+import { useLanguage } from '../../context/LanguageContext';
 import styles from './TemplatesTab.module.css';
 import classNames from 'classnames/bind';
 
 const cx = classNames.bind(styles);
 
 export default function TemplatesTab() {
+  const { t } = useLanguage();
   const {
     templates,
     templateForm,
@@ -17,16 +19,16 @@ export default function TemplatesTab() {
   return (
     <div className="view-panel">
       <div className="view-header">
-        <h1>Quản lý Tin nhắn mẫu</h1>
-        <p>Tạo và quản lý các câu chúc, mẫu tin nhắn công việc hoặc lời nhắc tự động.</p>
+        <h1>{t('sms_templates')}</h1>
+        <p>{t('templates_desc')}</p>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '25px' }}>
         <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', padding: '20px', height: 'fit-content' }}>
-          <h3 style={{ marginBottom: '15px', color: 'var(--color-primary)' }}>Tạo mẫu mới</h3>
+          <h3 style={{ marginBottom: '15px', color: 'var(--color-primary)' }}>{t('create_template')}</h3>
           <form onSubmit={handleCreateTemplate} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
             <div className="form-group">
-              <label>Tiêu đề mẫu</label>
+              <label>{t('template_title')}</label>
               <input
                 type="text"
                 placeholder="e.g. Lời chúc Sinh nhật"
@@ -36,7 +38,7 @@ export default function TemplatesTab() {
               />
             </div>
             <div className="form-group">
-              <label>Nội dung tin nhắn</label>
+              <label>{t('template_body')}</label>
               <textarea
                 placeholder="Sử dụng {Name} để tự điền tên người nhận."
                 value={templateForm.body}
@@ -45,17 +47,17 @@ export default function TemplatesTab() {
                 required
               />
               <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                Hạn mức: {templateForm.body.length}/120 ký tự.
+                Length: {templateForm.body.length}/120
               </span>
             </div>
-            <button type="submit" className="btn btn-primary">Lưu mẫu tin</button>
+            <button type="submit" className="btn btn-primary">{t('save_template')}</button>
           </form>
         </div>
 
         <div className={cx('templates-tab__grid')}>
           {templates.length === 0 ? (
             <div className="empty-list-message" style={{ gridColumn: '1/-1' }}>
-              Chưa có tin nhắn mẫu nào. Hãy tạo một mẫu ở form bên trái!
+              {t('no_templates')}
             </div>
           ) : (
             templates.map(tpl => (
@@ -74,7 +76,7 @@ export default function TemplatesTab() {
                     <button
                       className="btn-icon-danger"
                       onClick={() => handleDeleteTemplate(tpl.id)}
-                      title="Xóa mẫu tin"
+                      title={t('confirm_delete_template')}
                     >
                       🗑
                     </button>

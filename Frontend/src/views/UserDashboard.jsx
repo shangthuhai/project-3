@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useChat } from '../context/ChatContext';
+import { useLanguage } from '../context/LanguageContext';
 import Sidebar from '../components/chat/Sidebar';
 import ChatWindow from '../components/chat/ChatWindow';
 import UserAiChat from '../components/chat/UserAiChat';
@@ -11,12 +12,14 @@ import TemplatesTab from '../components/tabs/TemplatesTab';
 import GroupsTab from '../components/tabs/GroupsTab';
 import AnalyticsTab from '../components/tabs/AnalyticsTab';
 import SecurityTab from '../components/tabs/SecurityTab';
+import SettingsTab from '../components/tabs/SettingsTab';
 import styles from './UserDashboard.module.css';
 import classNames from 'classnames/bind';
 
 const cx = classNames.bind(styles);
 
 export default function UserDashboard() {
+  const { t } = useLanguage();
   const { loggedInUser } = useAuth();
   const {
     activeTab,
@@ -60,8 +63,8 @@ export default function UserDashboard() {
         ) : activeTab === 'chats' ? (
           <div className={cx('dashboard__placeholder')}>
             <div className={cx('dashboard__placeholder-icon')}>💬</div>
-            <h3>Welcome to SMS Chat System</h3>
-            <p>Select a chat from the sidebar or go to the Contacts tab to start a new thread.</p>
+            <h3>{t('welcome_message')}</h3>
+            <p>{t('select_chat_placeholder')}</p>
           </div>
         ) : null}
 
@@ -72,6 +75,7 @@ export default function UserDashboard() {
         {activeTab === 'groups' && <GroupsTab />}
         {activeTab === 'analytics' && <AnalyticsTab />}
         {activeTab === 'security' && <SecurityTab />}
+        {activeTab === 'settings' && <SettingsTab />}
       </div>
 
       {/* Add Contact Modal Dialog */}
@@ -79,26 +83,26 @@ export default function UserDashboard() {
         <div className={cx('dashboard__modal-overlay')}>
           <div className={cx('dashboard__modal-content')}>
             <div className={cx('dashboard__modal-header')}>
-              <h3>Create New Contact</h3>
+              <h3>{t('create_new_contact')}</h3>
               <button className={cx('dashboard__modal-close-btn')} onClick={() => setShowAddContactModal(false)}>×</button>
             </div>
             <form onSubmit={handleAddContactSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               <div className="form-row">
                 <div className="form-group">
-                  <label>First Name</label>
+                  <label>{t('first_name')}</label>
                   <input
                     type="text"
-                    placeholder="First Name"
+                    placeholder={t('first_name')}
                     value={contactForm.firstName}
                     onChange={(e) => setContactForm({ ...contactForm, firstName: e.target.value })}
                     required
                   />
                 </div>
                 <div className="form-group">
-                  <label>Last Name</label>
+                  <label>{t('last_name')}</label>
                   <input
                     type="text"
-                    placeholder="Last Name"
+                    placeholder={t('last_name')}
                     value={contactForm.lastName}
                     onChange={(e) => setContactForm({ ...contactForm, lastName: e.target.value })}
                     required
@@ -106,7 +110,7 @@ export default function UserDashboard() {
                 </div>
               </div>
               <div className="form-group">
-                <label>Mobile Number (10 digits)</label>
+                <label>{t('mobile_number_label')}</label>
                 <input
                   type="text"
                   placeholder="e.g. 0944444444"
@@ -118,10 +122,10 @@ export default function UserDashboard() {
               </div>
               <div className="form-actions">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowAddContactModal(false)}>
-                  Cancel
+                  {t('btn_cancel')}
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  Save Contact
+                  {t('btn_save_contact')}
                 </button>
               </div>
             </form>
@@ -134,7 +138,7 @@ export default function UserDashboard() {
         <div className={cx('dashboard__modal-overlay')}>
           <div className={cx('dashboard__modal-content')}>
             <div className={cx('dashboard__modal-header')}>
-              <h3>Subscribe to premium services</h3>
+              <h3>{t('subscribe_premium')}</h3>
               <button className={cx('dashboard__modal-close-btn')} onClick={() => setShowPaymentModal(false)}>×</button>
             </div>
 
@@ -143,7 +147,7 @@ export default function UserDashboard() {
               <div className={cx('dashboard__credit-card-mockup')}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div className={cx('dashboard__card-chip')}></div>
-                  <span style={{ fontSize: '0.8rem', fontStyle: 'italic', fontWeight: 'bold' }}>CREDIT CARD</span>
+                  <span style={{ fontSize: '0.8rem', fontStyle: 'italic', fontWeight: 'bold' }}>{t('credit_card')}</span>
                 </div>
 
                 <div className={cx('dashboard__card-number')}>
@@ -154,11 +158,11 @@ export default function UserDashboard() {
 
                 <div className={cx('dashboard__card-bottom-row')}>
                   <div className={cx('dashboard__card-holder')}>
-                    <span>Card Holder</span>
+                    <span>{t('card_holder')}</span>
                     <span>{loggedInUser?.name || 'USER NAME'}</span>
                   </div>
                   <div className={cx('dashboard__card-expiry')}>
-                    <span>Expires</span>
+                    <span>{t('expires')}</span>
                     <span>{paymentForm.expiryDate || 'MM/YY'}</span>
                   </div>
                 </div>
@@ -167,28 +171,28 @@ export default function UserDashboard() {
 
             <form onSubmit={handlePaymentSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               <div style={{ fontSize: '1rem', fontWeight: 'bold', textAlign: 'center', color: 'var(--color-primary-hover)' }}>
-                Billed Amount: ${getTotalSelectedPrice()}
+                {t('billed_amount')}: ${getTotalSelectedPrice()}
               </div>
 
               {showPaymentOtpField && (
                 <div className="form-group" style={{ background: 'rgba(245, 158, 11, 0.08)', padding: '12px', borderRadius: '4px', border: '1px dashed rgba(245, 158, 11, 0.3)' }}>
-                  <label style={{ color: '#fbbf24', fontWeight: 'bold' }}>Nhập mã OTP Xác thực thanh toán</label>
+                  <label style={{ color: '#fbbf24', fontWeight: 'bold' }}>{t('enter_otp_payment')}</label>
                   <input
                     type="text"
-                    placeholder="Nhập mã OTP 6 số"
+                    placeholder={t('enter_6_digit_otp')}
                     value={paymentOtpCode}
                     onChange={(e) => setPaymentOtpCode(e.target.value.replace(/\D/g, '').substring(0, 6))}
                     maxLength={6}
                     required
                   />
                   <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
-                    * Vui lòng kiểm tra Console backend để lấy mã OTP giao dịch.
+                    {t('check_console')}
                   </span>
                 </div>
               )}
 
               <div className="form-group">
-                <label>Credit Card Number</label>
+                <label>{t('card_number')}</label>
                 <input
                   type="text"
                   placeholder="16 digits (e.g. 1234567812345678)"
@@ -201,7 +205,7 @@ export default function UserDashboard() {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Expiry Date (MM/YY)</label>
+                  <label>{t('card_expiry')}</label>
                   <input
                     type="text"
                     placeholder="MM/YY"
@@ -218,7 +222,7 @@ export default function UserDashboard() {
                   />
                 </div>
                 <div className="form-group">
-                  <label>CVV (3 digits)</label>
+                  <label>{t('cvv')}</label>
                   <input
                     type="password"
                     placeholder="•••"
@@ -231,15 +235,15 @@ export default function UserDashboard() {
               </div>
 
               <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-                Charges will be billed to your credit card immediately.
+                {t('payment_notice')}
               </div>
 
               <div className="form-actions">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowPaymentModal(false)}>
-                  Cancel
+                  {t('btn_cancel')}
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  Pay & Activate
+                  {t('pay_and_activate')}
                 </button>
               </div>
             </form>

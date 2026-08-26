@@ -1,11 +1,13 @@
 import React, { useEffect, useRef } from 'react';
 import { useChat } from '../../context/ChatContext';
+import { useLanguage } from '../../context/LanguageContext';
 import styles from './UserAiChat.module.css';
 import classNames from 'classnames/bind';
 
 const cx = classNames.bind(styles);
 
 export default function UserAiChat() {
+  const { t } = useLanguage();
   const {
     aiPosition,
     setAiPosition,
@@ -137,14 +139,14 @@ export default function UserAiChat() {
           }}
         >
           <div className={cx('ai-chat__header')} onMouseDown={handleAiChatMouseDown}>
-            <h3>🤖 Trợ lý AI Chatbot</h3>
+            <h3>{t('ai_chatbot_title')}</h3>
             <button className={cx('ai-chat__close-btn')} onClick={() => setIsAiBubbleOpen(false)}>×</button>
           </div>
 
           <div className={cx('ai-chat__messages')}>
             {aiMessages.length === 0 ? (
               <div style={{ color: '#94a3b8', fontSize: '0.82rem', textAlign: 'center', marginTop: '20px' }}>
-                Hỏi mình bất cứ điều gì nhé! 💬
+                {t('ask_anything')}
               </div>
             ) : (
               aiMessages.map((msg, index) => {
@@ -159,7 +161,7 @@ export default function UserAiChat() {
             {isAiLoading && (
               <div className={cx('ai-chat__loading')}>
                 <div className={cx('ai-chat__spinner')}></div>
-                <span>Trợ lý AI đang soạn câu trả lời...</span>
+                <span>{t('ai_typing')}</span>
               </div>
             )}
             <div ref={aiMessagesEndRef} />
@@ -168,7 +170,7 @@ export default function UserAiChat() {
           <form className={cx('ai-chat__input-area')} onSubmit={handleAiSendMessage}>
             <input
               type="text"
-              placeholder="Nhập câu hỏi..."
+              placeholder={t('input_question')}
               value={aiNewMessage}
               onChange={(e) => setAiNewMessage(e.target.value)}
               disabled={isAiLoading}

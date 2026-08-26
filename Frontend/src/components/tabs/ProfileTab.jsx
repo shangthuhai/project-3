@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
+import { useLanguage } from '../../context/LanguageContext';
 import styles from './ProfileTab.module.css';
 import classNames from 'classnames/bind';
 
@@ -8,6 +9,7 @@ const cx = classNames.bind(styles);
 
 export default function ProfileTab() {
   const { loggedInUser } = useAuth();
+  const { language, t } = useLanguage();
   const {
     profileForm,
     setProfileForm,
@@ -33,8 +35,8 @@ export default function ProfileTab() {
   return (
     <div className="view-panel">
       <div className="view-header">
-        <h1>Edit Profile</h1>
-        <p>Customize your personal and professional profile details.</p>
+        <h1>{t('edit_profile')}</h1>
+        <p>{t('edit_profile_desc')}</p>
       </div>
 
       <form onSubmit={handleProfileSubmit} className={cx('profile__grid')}>
@@ -45,17 +47,17 @@ export default function ProfileTab() {
             className={cx('profile__avatar')}
           />
           <label className={cx('profile__upload-btn')}>
-            Choose New Photo
+            {language === 'en' ? 'Choose New Photo' : 'Chọn ảnh mới'}
             <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarUpload} />
           </label>
         </div>
 
         <div className={cx('profile__details-column')}>
           <div className={cx('profile__section-card')}>
-            <h3 className={cx('profile__section-title')}>Personal Details</h3>
+            <h3 className={cx('profile__section-title')}>{t('personal_details')}</h3>
             <div className="form-row">
               <div className="form-group">
-                <label>Full Name *</label>
+                <label>{t('fullname')} *</label>
                 <input
                   type="text"
                   name="name"
@@ -65,18 +67,18 @@ export default function ProfileTab() {
                 />
               </div>
               <div className="form-group">
-                <label>Gender</label>
+                <label>{t('gender')}</label>
                 <select name="gender" value={profileForm.gender || ''} onChange={handleProfileFormChange}>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
+                  <option value="Male">{language === 'en' ? 'Male' : 'Nam'}</option>
+                  <option value="Female">{language === 'en' ? 'Female' : 'Nữ'}</option>
+                  <option value="Other">{language === 'en' ? 'Other' : 'Khác'}</option>
                 </select>
               </div>
             </div>
 
             <div className="form-row">
               <div className="form-group">
-                <label>Date of Birth</label>
+                <label>{t('dob')}</label>
                 <input
                   type="date"
                   name="dob"
@@ -85,17 +87,17 @@ export default function ProfileTab() {
                 />
               </div>
               <div className="form-group">
-                <label>Marital Status</label>
+                <label>{t('marital_status')}</label>
                 <select name="maritalStatus" value={profileForm.maritalStatus || ''} onChange={handleProfileFormChange}>
-                  <option value="Single">Single</option>
-                  <option value="Married">Married</option>
-                  <option value="Divorced">Divorced</option>
+                  <option value="Single">{language === 'en' ? 'Single' : 'Độc thân'}</option>
+                  <option value="Married">{language === 'en' ? 'Married' : 'Đã kết hôn'}</option>
+                  <option value="Divorced">{language === 'en' ? 'Divorced' : 'Ly hôn'}</option>
                 </select>
               </div>
             </div>
 
             <div className="form-group" style={{ marginBottom: '15px' }}>
-              <label>Address</label>
+              <label>{t('address')}</label>
               <input
                 type="text"
                 name="address"
@@ -106,7 +108,7 @@ export default function ProfileTab() {
 
             <div className="form-row">
               <div className="form-group">
-                <label>Hobbies</label>
+                <label>{t('hobbies')}</label>
                 <input
                   type="text"
                   name="hobbies"
@@ -115,7 +117,7 @@ export default function ProfileTab() {
                 />
               </div>
               <div className="form-group">
-                <label>Sports</label>
+                <label>{t('sports')}</label>
                 <input
                   type="text"
                   name="sports"
@@ -127,7 +129,7 @@ export default function ProfileTab() {
 
             <div className="form-row">
               <div className="form-group">
-                <label>Likes</label>
+                <label>{t('likes')}</label>
                 <input
                   type="text"
                   name="likes"
@@ -136,7 +138,7 @@ export default function ProfileTab() {
                 />
               </div>
               <div className="form-group">
-                <label>Dislikes</label>
+                <label>{t('dislikes')}</label>
                 <input
                   type="text"
                   name="dislikes"
@@ -147,7 +149,7 @@ export default function ProfileTab() {
             </div>
 
             <div className="form-group">
-              <label>Preferred Cuisines</label>
+              <label>{t('cuisines')}</label>
               <input
                 type="text"
                 name="cuisines"
@@ -158,10 +160,10 @@ export default function ProfileTab() {
           </div>
 
           <div className={cx('profile__section-card')}>
-            <h3 className={cx('profile__section-title')}>Professional Details</h3>
+            <h3 className={cx('profile__section-title')}>{t('professional_details')}</h3>
             <div className="form-row">
               <div className="form-group">
-                <label>Qualification</label>
+                <label>{t('qualification')}</label>
                 <input
                   type="text"
                   name="qualification"
@@ -170,18 +172,18 @@ export default function ProfileTab() {
                 />
               </div>
               <div className="form-group">
-                <label>Work Status</label>
+                <label>{t('work_status')}</label>
                 <select name="workStatus" value={profileForm.workStatus || ''} onChange={handleProfileFormChange}>
-                  <option value="Employed">Employed</option>
-                  <option value="Student">Student</option>
-                  <option value="Unemployed">Unemployed</option>
+                  <option value="Employed">{language === 'en' ? 'Employed' : 'Đang đi làm'}</option>
+                  <option value="Student">{language === 'en' ? 'Student' : 'Học sinh / Sinh viên'}</option>
+                  <option value="Unemployed">{language === 'en' ? 'Unemployed' : 'Thất nghiệp'}</option>
                 </select>
               </div>
             </div>
 
             <div className="form-row">
               <div className="form-group">
-                <label>School Name</label>
+                <label>{t('school_name')}</label>
                 <input
                   type="text"
                   name="school"
@@ -190,7 +192,7 @@ export default function ProfileTab() {
                 />
               </div>
               <div className="form-group">
-                <label>College Name</label>
+                <label>{t('college_name')}</label>
                 <input
                   type="text"
                   name="college"
@@ -202,7 +204,7 @@ export default function ProfileTab() {
 
             <div className="form-row">
               <div className="form-group">
-                <label>Company / Organization</label>
+                <label>{t('company_name')}</label>
                 <input
                   type="text"
                   name="organization"
@@ -212,7 +214,7 @@ export default function ProfileTab() {
                 />
               </div>
               <div className="form-group">
-                <label>Designation</label>
+                <label>{t('designation')}</label>
                 <input
                   type="text"
                   name="designation"
@@ -226,10 +228,10 @@ export default function ProfileTab() {
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '15px' }}>
             <button type="button" className="btn btn-secondary" onClick={() => setProfileForm(loggedInUser)}>
-              Reset Changes
+              {t('reset_changes')}
             </button>
             <button type="submit" className="btn btn-primary">
-              Save Profile
+              {t('save_profile')}
             </button>
           </div>
         </div>

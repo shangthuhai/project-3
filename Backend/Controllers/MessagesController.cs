@@ -376,7 +376,9 @@ namespace Backend.Controllers
                 await _context.SaveChangesAsync();
 
                 // Call AI Chat
-                string aiReply = await _aiService.ChatWithAiAsync(dto.Content, history);
+                string lang = Request.Headers["Accept-Language"].ToString();
+                if (string.IsNullOrEmpty(lang)) lang = "en";
+                string aiReply = await _aiService.ChatWithAiAsync(dto.Content, history, lang);
 
                 var aiMessage = new Message
                 {

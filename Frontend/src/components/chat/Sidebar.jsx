@@ -1,12 +1,14 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
+import { useLanguage } from '../../context/LanguageContext';
 import styles from './Sidebar.module.css';
 import classNames from 'classnames/bind';
 
 const cx = classNames.bind(styles);
 
 export default function Sidebar() {
+  const { t } = useLanguage();
   const {
     loggedInUser,
     users,
@@ -59,11 +61,11 @@ export default function Sidebar() {
 
   const renderSearchResultsList = () => {
     if (loadingMoreSearchResults && searchResults.length === 0) {
-      return <div className={cx('sidebar__empty-list-message')}>Đang tìm kiếm...</div>;
+      return <div className={cx('sidebar__empty-list-message')}>{t('searching')}</div>;
     }
 
     if (searchResults.length === 0) {
-      return <div className={cx('sidebar__empty-list-message')}>Không tìm thấy người dùng phù hợp.</div>;
+      return <div className={cx('sidebar__empty-list-message')}>{t('no_matching_users')}</div>;
     }
 
     return (
@@ -76,13 +78,13 @@ export default function Sidebar() {
           let statusText = '';
           let badgeClass = 'non-friend';
           if (user.friendshipStatus === 'accepted') {
-            statusText = 'Bạn bè';
+            statusText = t('status_friend');
             badgeClass = 'friend';
           } else if (user.friendshipStatus === 'pending_sent') {
-            statusText = 'Đã gửi lời mời';
+            statusText = t('status_sent');
             badgeClass = 'pending-sent';
           } else if (user.friendshipStatus === 'pending_received') {
-            statusText = 'Lời mời kết bạn';
+            statusText = t('status_received');
             badgeClass = 'pending-received';
           }
 
@@ -113,7 +115,7 @@ export default function Sidebar() {
         })}
         {loadingMoreSearchResults && (
           <div style={{ textAlign: 'center', padding: '10px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            Đang tải thêm...
+            {t('loading_more')}
           </div>
         )}
       </div>
@@ -147,7 +149,7 @@ export default function Sidebar() {
             contactNumber: f.mobileNumber,
             avatar: f.profilePhoto,
             isFriend: true,
-            subtext: 'Friend (No messages)',
+            subtext: t('friend_no_msg'),
             lastMessageTime: null
           });
         }
@@ -163,14 +165,14 @@ export default function Sidebar() {
             contactNumber: c.contactNumber,
             avatar: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%237f91a4"/><text x="50%" y="50%" font-family="sans-serif" font-weight="bold" font-size="40" fill="white" text-anchor="middle" dominant-baseline="central">${c.firstName ? c.firstName[0] : ''}${c.lastName ? c.lastName[0] : ''}</text></svg>`,
             isFriend: false,
-            subtext: 'Contact (No messages)',
+            subtext: t('contact_no_msg'),
             lastMessageTime: null
           });
         }
       });
 
       if (chatItems.length === 0) {
-        return <div className={cx('sidebar__empty-list-message')}>No active chats. Add contacts to begin messaging.</div>;
+        return <div className={cx('sidebar__empty-list-message')}>{t('no_active_chats')}</div>;
       }
 
       chatItems.sort((a, b) => {
@@ -201,7 +203,7 @@ export default function Sidebar() {
               <span className={cx('sidebar__item-meta')} style={{ fontSize: '0.7rem' }}>
                 {item.lastMessageTime ? item.contactNumber : (
                   <span className={cx('sidebar__item-status-badge', item.isFriend ? 'sidebar__item-status-badge--friend' : 'sidebar__item-status-badge--non-friend')}>
-                    {item.isFriend ? 'Free' : 'Free 5/5'}
+                    {item.isFriend ? t('free_badge') : t('free_limit_badge')}
                   </span>
                 )}
               </span>
@@ -215,11 +217,11 @@ export default function Sidebar() {
       return (
         <>
           <button className={cx('sidebar__add-contact-btn')} onClick={() => setShowAddContactModal(true)}>
-            <span>+</span> Add New Contact
+            <span>+</span> {t('add_contact')}
           </button>
 
           {contacts.length === 0 ? (
-            <div className={cx('sidebar__empty-list-message')}>Your contact list is empty.</div>
+            <div className={cx('sidebar__empty-list-message')}>{t('empty_contacts')}</div>
           ) : (
             contacts.map(c => {
               if (c.contactNumber === '9999999999') return null;
@@ -240,7 +242,7 @@ export default function Sidebar() {
                           handleDeleteContact(c.id, `${c.firstName} ${c.lastName}`);
                         }}
                       >
-                        Delete
+                        {t('btn_delete')}
                       </button>
                     </div>
                     <div className={cx('sidebar__item-row')}>
@@ -250,7 +252,7 @@ export default function Sidebar() {
                         style={{ padding: '2px 8px', fontSize: '0.75rem', borderRadius: '4px', border: 'none', cursor: 'pointer' }}
                         onClick={() => startChat(`${c.firstName} ${c.lastName}`, c.contactNumber, isFriend)}
                       >
-                        Chat
+                        {t('btn_chat')}
                       </button>
                     </div>
                   </div>
@@ -271,11 +273,11 @@ export default function Sidebar() {
         <div className={cx('sidebar__title-area')} style={{ justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div className={cx('sidebar__logo')}>💬</div>
-            <h2 className={cx('sidebar__title-text')}>SMS Workspace</h2>
+            <h2 className={cx('sidebar__title-text')}>{t('sms_workspace')}</h2>
           </div>
 
           {/* Real Logout button */}
-          <button className={cx('sidebar__logout-btn')} onClick={handleLogout}>Log Out</button>
+          <button className={cx('sidebar__logout-btn')} onClick={handleLogout}>{t('logout')}</button>
         </div>
 
         {/* Switcher Context is kept for easy pair programming/evaluation */}
@@ -283,7 +285,7 @@ export default function Sidebar() {
           <div className={cx('sidebar__user-switcher')}>
             <img src={loggedInUser.profilePhoto} alt={loggedInUser.name} className={cx('sidebar__user-avatar')} />
             <div className={cx('sidebar__user-info')}>
-              <span className={cx('sidebar__user-label')}>Logged In As</span>
+              <span className={cx('sidebar__user-label')}>{t('logged_in_as')}</span>
               <select 
                 className={cx('sidebar__user-select')} 
                 value={loggedInUser.id} 
@@ -301,31 +303,35 @@ export default function Sidebar() {
       {/* Tab Buttons */}
       <div className={cx('sidebar__tabs')} style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px', padding: '8px' }}>
         <button className={cx('sidebar__tab-btn', { 'sidebar__tab-btn--active': activeTab === 'chats' })} onClick={() => { setActiveTab('chats'); setSelectedContact(null); }}>
-          Chats
+          {t('tab_chats')}
         </button>
         <button className={cx('sidebar__tab-btn', { 'sidebar__tab-btn--active': activeTab === 'contacts' })} onClick={() => setActiveTab('contacts')}>
-          Contacts
+          {t('tab_contacts')}
         </button>
         <button className={cx('sidebar__tab-btn', { 'sidebar__tab-btn--active': activeTab === 'requests' })} onClick={() => setActiveTab('requests')}>
-          Requests {pendingRequests.length > 0 && <span className={cx('sidebar__tab-btn-badge')}>{pendingRequests.length}</span>}
+          {t('tab_requests')} {pendingRequests.length > 0 && <span className={cx('sidebar__tab-btn-badge')}>{pendingRequests.length}</span>}
         </button>
         <button className={cx('sidebar__tab-btn', { 'sidebar__tab-btn--active': activeTab === 'services' })} onClick={() => setActiveTab('services')}>
-          Services
+          {t('tab_services')}
         </button>
         <button className={cx('sidebar__tab-btn', { 'sidebar__tab-btn--active': activeTab === 'templates' })} onClick={() => { setActiveTab('templates'); loadTemplates(); }}>
-          Templates
+          {t('tab_templates')}
         </button>
         <button className={cx('sidebar__tab-btn', { 'sidebar__tab-btn--active': activeTab === 'groups' })} onClick={() => { setActiveTab('groups'); loadGroups(); setSelectedGroup(null); setGroupMembers([]); setBulkResultsLog(null); }}>
-          Groups
+          {t('tab_groups')}
         </button>
         <button className={cx('sidebar__tab-btn', { 'sidebar__tab-btn--active': activeTab === 'analytics' })} onClick={() => { setActiveTab('analytics'); loadAnalyticsStats(); }}>
-          Stats
+          {t('tab_stats')}
         </button>
         <button className={cx('sidebar__tab-btn', { 'sidebar__tab-btn--active': activeTab === 'security' })} onClick={() => { setActiveTab('security'); loadBlocklist(); }}>
-          Security
+          {t('tab_security')}
         </button>
         <button className={cx('sidebar__tab-btn', { 'sidebar__tab-btn--active': activeTab === 'profile' })} onClick={() => setActiveTab('profile')}>
-          Profile
+          {t('tab_profile')}
+        </button>
+        {/* Settings button spanning 3 columns at the bottom of the grid */}
+        <button className={cx('sidebar__tab-btn', { 'sidebar__tab-btn--active': activeTab === 'settings' })} onClick={() => setActiveTab('settings')} style={{ gridColumn: 'span 3' }}>
+          ⚙️ {t('tab_settings')}
         </button>
       </div>
 
@@ -334,7 +340,7 @@ export default function Sidebar() {
         <div style={{ position: 'relative' }}>
           <input
             type="text"
-            placeholder="Tìm bạn bè bằng tên/SĐT..."
+            placeholder={t('search_placeholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className={cx('sidebar__search-input')}
@@ -352,9 +358,9 @@ export default function Sidebar() {
 
       <div className={cx('sidebar__list-container')}>
         {searchQuery ? renderSearchResultsList() : renderSidebarList()}
-        {['requests', 'services', 'profile', 'templates', 'groups', 'analytics', 'security'].includes(activeTab) && !searchQuery && (
+        {['requests', 'services', 'profile', 'templates', 'groups', 'analytics', 'security', 'settings'].includes(activeTab) && !searchQuery && (
           <div className={cx('sidebar__empty-list-message')} style={{ opacity: 0.7 }}>
-            Content is open in the main panel.
+            {t('content_open')}
           </div>
         )}
       </div>

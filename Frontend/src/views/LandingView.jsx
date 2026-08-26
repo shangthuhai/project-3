@@ -1,11 +1,13 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import styles from './LandingView.module.css';
 import classNames from 'classnames/bind';
 
 const cx = classNames.bind(styles);
 
 export default function LandingView() {
+  const { language, setLanguage, t } = useLanguage();
   const {
     users,
     authMode,
@@ -35,9 +37,9 @@ export default function LandingView() {
       {/* Left Column: Website info */}
       <div className={cx('landing__left')}>
         <div className={cx('landing__hero')}>
-          <h1 className={cx('landing__hero-title')}>Online SMS Hub</h1>
+          <h1 className={cx('landing__hero-title')}>{t('hero_title')}</h1>
           <p className={cx('landing__hero-description')}>
-            Connect with friends, manage your contacts, and receive automated updates on Jokes, Sports, and News directly to your mobile.
+            {t('hero_desc')}
           </p>
         </div>
 
@@ -45,24 +47,24 @@ export default function LandingView() {
           <div className={cx('landing__feature-item')}>
             <div className={cx('landing__feature-icon')}>💬</div>
             <div className={cx('landing__feature-text')}>
-              <h3 className={cx('landing__feature-title')}>Chat and Message friends</h3>
-              <p className={cx('landing__feature-description')}>Send unlimited free messages to any registered user in your friend list.</p>
+              <h3 className={cx('landing__feature-title')}>{t('feat_chat_title')}</h3>
+              <p className={cx('landing__feature-description')}>{t('feat_chat_desc')}</p>
             </div>
           </div>
 
           <div className={cx('landing__feature-item')}>
             <div className={cx('landing__feature-icon')}>⚡</div>
             <div className={cx('landing__feature-text')}>
-              <h3 className={cx('landing__feature-title')}>SMS to Non-Friends</h3>
-              <p className={cx('landing__feature-description')}>Allowing 5 free SMS messages per phone number to connect instantly with unregistered users.</p>
+              <h3 className={cx('landing__feature-title')}>{t('feat_sms_title')}</h3>
+              <p className={cx('landing__feature-description')}>{t('feat_sms_desc')}</p>
             </div>
           </div>
 
           <div className={cx('landing__feature-item')}>
             <div className={cx('landing__feature-icon')}>📰</div>
             <div className={cx('landing__feature-text')}>
-              <h3 className={cx('landing__feature-title')}>Paid SMS Services</h3>
-              <p className={cx('landing__feature-description')}>Activate premium daily updates for Sports scores, News alerts, Current affairs, or Jokes.</p>
+              <h3 className={cx('landing__feature-title')}>{t('feat_paid_title')}</h3>
+              <p className={cx('landing__feature-description')}>{t('feat_paid_desc')}</p>
             </div>
           </div>
         </div>
@@ -71,13 +73,13 @@ export default function LandingView() {
         {users.length > 0 && (
           <div className={cx('landing__user-switcher')} style={{ width: 'fit-content', marginTop: '30px' }}>
             <div className={cx('landing__user-switcher-info')}>
-              <span className={cx('landing__user-switcher-label')}>Demo Quick Log In</span>
+              <span className={cx('landing__user-switcher-label')}>{t('demo_login')}</span>
               <select
                 className={cx('landing__user-select')}
                 defaultValue=""
                 onChange={(e) => handleDemoUserSwitch(parseInt(e.target.value))}
               >
-                <option value="" disabled>Select pre-seeded account...</option>
+                <option value="" disabled>{t('select_preseed')}</option>
                 {users.map(u => (
                   <option key={u.id} value={u.id}>{u.name} ({u.username})</option>
                 ))}
@@ -90,31 +92,51 @@ export default function LandingView() {
       {/* Right Column: Auth forms */}
       <div className={cx('landing__right')}>
         <div className={cx('landing__header')}>
+          {/* Language Switcher */}
+          <div style={{ display: 'flex', gap: '8px', marginRight: 'auto' }}>
+            <button 
+              type="button" 
+              className={cx('landing__lang-btn', { 'landing__lang-btn--active': language === 'en' })}
+              onClick={() => setLanguage('en')}
+              style={{ background: language === 'en' ? 'var(--color-primary)' : 'rgba(255,255,255,0.08)', color: '#fff', border: 'none', borderRadius: '4px', padding: '4px 8px', fontSize: '0.75rem', cursor: 'pointer' }}
+            >
+              EN
+            </button>
+            <button 
+              type="button" 
+              className={cx('landing__lang-btn', { 'landing__lang-btn--active': language === 'vi' })}
+              onClick={() => setLanguage('vi')}
+              style={{ background: language === 'vi' ? 'var(--color-primary)' : 'rgba(255,255,255,0.08)', color: '#fff', border: 'none', borderRadius: '4px', padding: '4px 8px', fontSize: '0.75rem', cursor: 'pointer' }}
+            >
+              VI
+            </button>
+          </div>
+
           <span style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-            {authMode === 'login' ? "Don't have an account?" : "Already registered?"}
+            {authMode === 'login' ? t("dont_have_account") : t("already_registered")}
           </span>
           <button
             className="btn btn-secondary"
             style={{ padding: '6px 12px', fontSize: '0.8rem' }}
             onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
           >
-            {authMode === 'login' ? 'Sign Up' : 'Log In'}
+            {authMode === 'login' ? t('signup') : t('login')}
           </button>
         </div>
 
         {requires2Fa ? (
           /* 2FA CODE FORM */
           <div className={cx('landing__auth-card')}>
-            <h2 className={cx('landing__auth-title')}>Xác thực 2 lớp (2FA)</h2>
+            <h2 className={cx('landing__auth-title')}>{t('two_factor_title')}</h2>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '15px' }}>
-              Vui lòng nhập mã OTP 6 số đã được gửi tới email của bạn.
+              {t('two_factor_desc')}
             </p>
             <form onSubmit={handle2FaVerifySubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               <div className="form-group">
-                <label>Mã OTP</label>
+                <label>{t('otp_code')}</label>
                 <input
                   type="text"
-                  placeholder="Nhập 6 số (e.g. 123456)"
+                  placeholder={t('enter_otp')}
                   value={otpInput}
                   onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, '').substring(0, 6))}
                   maxLength={6}
@@ -122,7 +144,7 @@ export default function LandingView() {
                 />
               </div>
               <button type="submit" className="btn btn-primary" style={{ padding: '12px' }}>
-                Xác minh & Đăng nhập
+                {t('verify_and_login')}
               </button>
               <button
                 type="button"
@@ -132,17 +154,17 @@ export default function LandingView() {
                   setOtpInput('');
                 }}
               >
-                Quay lại đăng nhập
+                {t('back_to_login')}
               </button>
             </form>
           </div>
         ) : authMode === 'login' ? (
           /* LOGIN CARD */
           <div className={cx('landing__auth-card')}>
-            <h2 className={cx('landing__auth-title')}>Account Login</h2>
+            <h2 className={cx('landing__auth-title')}>{t('login')}</h2>
             <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               <div className="form-group">
-                <label>Username</label>
+                <label>{t('username')}</label>
                 <input
                   type="text"
                   placeholder="Enter your username"
@@ -153,7 +175,7 @@ export default function LandingView() {
               </div>
 
               <div className="form-group">
-                <label>Password</label>
+                <label>{t('password')}</label>
                 <input
                   type="password"
                   placeholder="Enter your password"
@@ -164,19 +186,19 @@ export default function LandingView() {
               </div>
 
               <button type="submit" className="btn btn-primary" style={{ marginTop: '10px', padding: '12px' }}>
-                Log In
+                {t('login')}
               </button>
             </form>
           </div>
         ) : (
           /* REGISTRATION CARD */
           <div className={cx('landing__auth-card')} style={{ maxWidth: '480px' }}>
-            <h2 className={cx('landing__auth-title')}>Create Account</h2>
+            <h2 className={cx('landing__auth-title')}>{t('create_account')}</h2>
             <form onSubmit={handleRegisterSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Full Name</label>
+                  <label>{t('fullname')}</label>
                   <input
                     type="text"
                     placeholder="e.g. John Doe"
@@ -186,7 +208,7 @@ export default function LandingView() {
                   />
                 </div>
                 <div className="form-group">
-                  <label>Email ID</label>
+                  <label>{t('email')}</label>
                   <input
                     type="email"
                     placeholder="e.g. john@example.com"
@@ -198,7 +220,7 @@ export default function LandingView() {
               </div>
 
               <div className="form-group">
-                <label>Username</label>
+                <label>{t('username')}</label>
                 <input
                   type="text"
                   placeholder="Create username"
@@ -210,14 +232,14 @@ export default function LandingView() {
                   <span className={cx('landing__validation', usernameValidation.available === true ? 'landing__validation--success' : usernameValidation.available === false ? 'landing__validation--error' : 'landing__validation--checking')}>
                     {usernameValidation.available === true && <span style={{ marginRight: '4px' }}>✓</span>}
                     {usernameValidation.available === false && <span style={{ marginRight: '4px' }}>✗</span>}
-                    <span>{usernameValidation.message}</span>
+                    <span>{usernameValidation.message === 'Checking availability...' ? t('checking_availability') : usernameValidation.available === true ? t('username_available') : t('username_taken')}</span>
                   </span>
                 )}
               </div>
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Password</label>
+                  <label>{t('password')}</label>
                   <input
                     type="password"
                     placeholder="Password"
@@ -227,7 +249,7 @@ export default function LandingView() {
                   />
                 </div>
                 <div className="form-group">
-                  <label>Confirm Password</label>
+                  <label>{t('confirm_password')}</label>
                   <input
                     type="password"
                     placeholder="Confirm"
@@ -239,7 +261,7 @@ export default function LandingView() {
               </div>
 
               <div className="form-group">
-                <label>Mobile Number (10 digits)</label>
+                <label>{t('mobile_number')}</label>
                 <input
                   type="text"
                   placeholder="e.g. 0912345678"
@@ -252,14 +274,14 @@ export default function LandingView() {
                   <span className={cx('landing__validation', mobileValidation.available === true ? 'landing__validation--success' : mobileValidation.available === false ? 'landing__validation--error' : 'landing__validation--checking')}>
                     {mobileValidation.available === true && <span style={{ marginRight: '4px' }}>✓</span>}
                     {mobileValidation.available === false && <span style={{ marginRight: '4px' }}>✗</span>}
-                    <span>{mobileValidation.message}</span>
+                    <span>{mobileValidation.message === 'Checking availability...' ? t('checking_availability') : mobileValidation.available === true ? t('username_available') : t('username_taken')}</span>
                   </span>
                 )}
               </div>
 
               {/* Captcha/Verification Code widget */}
               <div className="form-group">
-                <label>Verification Code</label>
+                <label>{t('verification_code')}</label>
                 <div className={cx('landing__captcha-container')}>
                   <div className={cx('landing__captcha-image')}>{captchaCode}</div>
                   <button type="button" className={cx('landing__captcha-refresh')} onClick={generateCaptcha}>
@@ -267,7 +289,7 @@ export default function LandingView() {
                   </button>
                   <input
                     type="text"
-                    placeholder="Enter code"
+                    placeholder={t('enter_code')}
                     value={captchaInput}
                     onChange={(e) => setCaptchaInput(e.target.value.trim())}
                     style={{ flex: 1, padding: '8px' }}
@@ -287,7 +309,7 @@ export default function LandingView() {
                   registerForm.password !== registerForm.confirmPassword
                 }
               >
-                Create Account
+                {t('create_account')}
               </button>
             </form>
           </div>

@@ -1,11 +1,13 @@
 import React from 'react';
 import { useChat } from '../../context/ChatContext';
+import { useLanguage } from '../../context/LanguageContext';
 import styles from './ServicesTab.module.css';
 import classNames from 'classnames/bind';
 
 const cx = classNames.bind(styles);
 
 export default function ServicesTab() {
+  const { t } = useLanguage();
   const {
     activatedServices,
     selectedServices,
@@ -25,30 +27,30 @@ export default function ServicesTab() {
   return (
     <div className="view-panel">
       <div className="view-header">
-        <h1>Premium SMS Services</h1>
-        <p>Select multiple daily services to activate via a single credit card transaction.</p>
+        <h1>{t('premium_services')}</h1>
+        <p>{t('services_desc')}</p>
       </div>
 
       <div className={cx('services__checklist-container')}>
-        <h3 style={{ marginBottom: '15px', color: 'var(--color-primary-hover)' }}>Available Services</h3>
+        <h3 style={{ marginBottom: '15px', color: 'var(--color-primary-hover)' }}>{t('premium_services')}</h3>
 
         {[
-          { name: 'Joke', desc: 'Get a funny joke delivered daily. Keep smiling!', price: 2.99 },
-          { name: 'Current Affairs', desc: 'Stay updated with global affairs and political news.', price: 4.99 },
-          { name: 'Sports', desc: 'Live scores, football highlights, and sports bulletins.', price: 3.99 },
-          { name: 'News', desc: 'Breaking news alerts and standard global reports.', price: 4.99 }
+          { key: 'Joke', name: t('jokes_service'), desc: t('jokes_desc'), price: 2.99 },
+          { key: 'Current Affairs', name: t('current_affairs_service'), desc: t('current_affairs_desc'), price: 4.99 },
+          { key: 'Sports', name: t('sports_service'), desc: t('sports_desc'), price: 3.99 },
+          { key: 'News', name: t('news_service'), desc: t('news_desc'), price: 4.99 }
         ].map(service => {
-          const isActive = activatedServices.includes(service.name);
-          const isChecked = selectedServices.includes(service.name);
+          const isActive = activatedServices.includes(service.key);
+          const isChecked = selectedServices.includes(service.key);
 
           return (
             <div
-              key={service.name}
+              key={service.key}
               className={cx('services__checklist-item', {
                 'services__checklist-item--subscribed': isActive,
                 'services__checklist-item--selected': !isActive && isChecked
               })}
-              onClick={() => !isActive && handleServiceCheck(service.name)}
+              onClick={() => !isActive && handleServiceCheck(service.key)}
             >
               {!isActive ? (
                 <input
@@ -64,13 +66,13 @@ export default function ServicesTab() {
               <div className={cx('services__checklist-details')}>
                 <h4>
                   {service.name} 
-                  {isActive && <span className={cx('services__status-tag')} style={{ fontSize: '0.65rem', marginLeft: '5px' }}>Activated</span>}
+                  {isActive && <span className={cx('services__status-tag')} style={{ fontSize: '0.65rem', marginLeft: '5px' }}>{t('activated')}</span>}
                 </h4>
                 <p>{service.desc}</p>
               </div>
 
               <div className={cx('services__checklist-price')}>
-                ${service.price} <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>/mo</span>
+                ${service.price} <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>/{t('price_per_month')}</span>
               </div>
             </div>
           );
@@ -90,7 +92,7 @@ export default function ServicesTab() {
               <p>{selectedServices.length} premium services selected</p>
             </div>
             <button className="btn btn-primary" onClick={handlePaymentCheckoutClick}>
-              Pay & Activate
+              {t('pay_and_activate')}
             </button>
           </div>
         )}

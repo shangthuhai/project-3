@@ -13,9 +13,9 @@ namespace Backend.Services
 {
     public interface IAiService
     {
-        Task<string> GenerateSmsAsync(string prompt, string tone);
+        Task<string> GenerateSmsAsync(string prompt, string tone, string language = "en");
         Task<bool> ModerateContentAsync(string content);
-        Task<string> ChatWithAiAsync(string userMessage, List<Message> history);
+        Task<string> ChatWithAiAsync(string userMessage, List<Message> history, string language = "en");
         Task<string> ChatWithAdminAsync(string userMessage, List<AdminChatMessage> history, string systemInstruction);
     }
 
@@ -46,39 +46,46 @@ namespace Backend.Services
             _model = configuration["AiConfig:Model"] ?? "llama-3.3-70b-versatile";
         }
 
-        public async Task<string> GenerateSmsAsync(string prompt, string tone)
+        public async Task<string> GenerateSmsAsync(string prompt, string tone, string language = "en")
         {
+            bool isVi = language.StartsWith("vi", StringComparison.OrdinalIgnoreCase);
             if (string.IsNullOrWhiteSpace(_apiKey))
             {
-                return "Lỗi: API Key chưa được cấu hình. Vui lòng thêm ApiKey vào mục AiConfig trong file appsettings.json của Backend.";
+                return isVi ? "Lỗi: API Key chưa được cấu hình. Vui lòng thêm ApiKey vào mục AiConfig trong file appsettings.json của Backend." : "Error: API Key is not configured. Please add ApiKey to the AiConfig section in appsettings.json.";
             }
 
             string baseUrl = string.IsNullOrWhiteSpace(_baseUrl) ? "https://api.openai.com/v1" : _baseUrl;
 
-            string toneDescription = tone.ToLower() switch
+            string toneDescription = isVi ? (tone.ToLower() switch
             {
                 "formal" => "Trang trọng, lịch sự, chuẩn mực công sở",
                 "funny" => "Hài hước, vui nhộn, thân mật, dí dỏm",
                 "polite" => "Lịch sự, tôn trọng, nhẹ nhàng",
                 "intimate" => "Thân mật, gần gũi, ấm áp",
                 _ => "Tự nhiên, lịch sự"
-            };
+            }) : (tone.ToLower() switch
+            {
+                "formal" => "Formal, polite, professional office standard",
+                "funny" => "Humorous, fun, intimate, witty",
+                "polite" => "Polite, respectful, gentle",
+                "intimate" => "Intimate, close, warm",
+                _ => "Natural, polite"
+            });
 
-
-            // string systemInstruction = 
-            //     "Bạn là trợ lý soạn thảo tin nhắn SMS chuyên nghiệp bằng tiếng Việt. Nhiệm vụ của bạn là diễn đạt ý tưởng, chủ đề hoặc bản nháp thô của người dùng thành một tin nhắn hoàn chỉnh, trôi chảy để người dùng gửi cho người khác. " +
-            //     "ĐẶC BIỆT LƯU Ý: KHÔNG trả lời hay giải quyết câu hỏi trong yêu cầu của người dùng. Hãy chuyển yêu cầu đó thành câu hỏi để gửi đi (Ví dụ: nếu người dùng nhập '2+3 = ?', bạn hãy soạn tin hỏi người khác như 'Cho mình hỏi phép tính 2 cộng 3 bằng bao nhiêu thế bạn?', chứ KHÔNG giải phép tính đó). " +
-            //     "RÀNG BUỘC CỰC KỲ QUAN TRỌNG: Độ dài của tin nhắn phải từ 10 đến tối đa 120 ký tự (kể cả dấu câu và khoảng trắng). Không được vượt quá 120 ký tự trong bất kỳ trường hợp nào. " +
-            //     $"Định dạng văn phong yêu cầu: {toneDescription}. " +
-            //     "Chỉ trả về DUY NHẤT nội dung tin nhắn cần gửi, không bao gồm bất kỳ lời dẫn giải, giải thích, lưu ý hay dấu nháy kép nào bao quanh tin nhắn.";
-
-            string systemInstruction =
+            string systemInstruction = isVi ? (
                 "Bạn là trợ lý soạn thảo tin nhắn SMS chuyên nghiệp bằng tiếng Việt. Nhiệm vụ của bạn là biên tập ý tưởng, chủ đề hoặc bản nháp thô của người dùng thành một tin nhắn hoàn chỉnh, trôi chảy để gửi cho người khác. " +
                 "ĐẶC BIỆT LƯU Ý: Hãy giữ nguyên bản chất của yêu cầu. Nếu người dùng muốn hỏi, hãy giữ là câu hỏi. Nếu người dùng muốn thông báo, hãy giữ là thông báo. TUYỆT ĐỐI KHÔNG biến đổi ý nghĩa. " +
                 "Lưu ý ngữ cảnh: Người dùng có thể nhập tiếng Việt không dấu (ví dụ: 'doi no' nghĩa là 'đòi nợ', 'di an' nghĩa là 'đi ăn'). Hãy tự động suy luận ngữ cảnh và khôi phục dấu tiếng Việt chính xác nhất trước khi biên tập tin nhắn. " +
                 "RÀNG BUỘC CỰC KỲ QUAN TRỌNG: Độ dài của tin nhắn phải từ 10 đến tối đa 120 ký tự (kể cả dấu câu và khoảng trắng). Không được vượt quá 120 ký tự trong bất kỳ trường hợp nào. " +
                 $"Định dạng văn phong yêu cầu: {toneDescription}. " +
-                "Chỉ trả về DUY NHẤT nội dung tin nhắn cần gửi, không bao gồm bất kỳ lời dẫn giải, giải thích, lưu ý hay dấu nháy kép nào bao quanh tin nhắn.";
+                "Chỉ trả về DUY NHẤT nội dung tin nhắn cần gửi, không bao gồm bất kỳ lời dẫn giải, giải thích, lưu ý hay dấu nháy kép nào bao quanh tin nhắn."
+            ) : (
+                "You are a professional SMS drafting assistant in English. Your task is to edit the user's ideas, themes, or raw drafts into a complete, smooth SMS message to be sent to others. " +
+                "SPECIAL NOTE: Keep the nature of the request. If the user wants to ask, keep it a question. If the user wants to notify, keep it a notification. ABSOLUTELY DO NOT change the meaning. " +
+                "CRITICAL CONSTRAINT: The message length must be between 10 and a maximum of 120 characters (including punctuation and spaces). Do not exceed 120 characters under any circumstances. " +
+                $"Required tone: {toneDescription}. " +
+                "Only return the EXACT message content to be sent, without any introductions, explanations, notes, or surrounding quotation marks."
+            );
 
             var requestBody = new
             {
@@ -107,7 +114,7 @@ namespace Backend.Services
                 {
                     string errorContent = await response.Content.ReadAsStringAsync();
                     _logger.LogError($"AI API error: Status={response.StatusCode}, Body={errorContent}");
-                    return "Lỗi: Không thể kết nối tới dịch vụ AI. Vui lòng thử lại sau.";
+                    return isVi ? "Lỗi: Không thể kết nối tới dịch vụ AI. Vui lòng thử lại sau." : "Error: Cannot connect to AI service. Please try again later.";
                 }
 
                 string responseString = await response.Content.ReadAsStringAsync();
@@ -127,12 +134,12 @@ namespace Backend.Services
                     return cleanedText.Trim().Trim('"');
                 }
 
-                return "Lỗi: Mô hình không trả về kết quả.";
+                return isVi ? "Lỗi: Mô hình không trả về kết quả." : "Error: The model did not return any result.";
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Exception while calling AI API");
-                return "Lỗi: Đã xảy ra lỗi hệ thống khi kết nối với AI.";
+                return isVi ? "Lỗi: Đã xảy ra lỗi hệ thống khi kết nối với AI." : "Error: A system error occurred while connecting to AI.";
             }
         }
 
@@ -236,19 +243,24 @@ namespace Backend.Services
             return true;
         }
 
-        public async Task<string> ChatWithAiAsync(string userMessage, List<Message> history)
+        public async Task<string> ChatWithAiAsync(string userMessage, List<Message> history, string language = "en")
         {
+            bool isVi = language.StartsWith("vi", StringComparison.OrdinalIgnoreCase);
             if (string.IsNullOrWhiteSpace(_apiKey))
             {
-                return "Lỗi: API Key chưa được cấu hình.";
+                return isVi ? "Lỗi: API Key chưa được cấu hình." : "Error: API Key is not configured.";
             }
 
             string baseUrl = string.IsNullOrWhiteSpace(_baseUrl) ? "https://api.openai.com/v1" : _baseUrl;
 
             var messagesList = new List<object>();
+            string systemPrompt = isVi ?
+                "Bạn là Trợ lý AI (Chatbot) thân thiện trong ứng dụng nhắn tin SMS. Hãy trả lời các câu hỏi hoặc trò chuyện tự nhiên với người dùng bằng tiếng Việt. Ràng buộc quan trọng: Trả lời ngắn gọn, súc tích, tối đa dưới 120 ký tự để phù hợp với định dạng tin nhắn SMS." :
+                "You are a friendly AI Assistant (Chatbot) in an SMS messaging application. Please reply to questions or chat naturally with the user in English. Critical constraint: Keep replies short and concise, maximum 120 characters to fit the SMS message format.";
+
             messagesList.Add(new { 
                 role = "system", 
-                content = "Bạn là Trợ lý AI (Chatbot) thân thiện trong ứng dụng nhắn tin SMS. Hãy trả lời các câu hỏi hoặc trò chuyện tự nhiên với người dùng bằng tiếng Việt. Ràng buộc quan trọng: Trả lời ngắn gọn, súc tích, tối đa dưới 120 ký tự để phù hợp với định dạng tin nhắn SMS." 
+                content = systemPrompt 
             });
 
             foreach (var msg in history)
@@ -285,7 +297,7 @@ namespace Backend.Services
                 {
                     string errorContent = await response.Content.ReadAsStringAsync();
                     _logger.LogError($"AI Chat API error: Status={response.StatusCode}, Body={errorContent}");
-                    return "Xin lỗi, mình đang gặp trục trặc kỹ thuật và không thể trả lời lúc này.";
+                    return isVi ? "Xin lỗi, mình đang gặp trục trặc kỹ thuật và không thể trả lời lúc này." : "Sorry, I am experiencing technical difficulties and cannot reply right now.";
                 }
 
                 string responseString = await response.Content.ReadAsStringAsync();
@@ -304,12 +316,12 @@ namespace Backend.Services
                     return cleanedText.Trim().Trim('"');
                 }
 
-                return "Mình chưa rõ ý bạn lắm.";
+                return isVi ? "Mình chưa rõ ý bạn lắm." : "I am not quite sure what you mean.";
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Exception while calling AI Chat API");
-                return "Lỗi hệ thống không thể xử lý câu trả lời.";
+                return isVi ? "Lỗi hệ thống không thể xử lý câu trả lời." : "System error, unable to process the reply.";
             }
         }
 

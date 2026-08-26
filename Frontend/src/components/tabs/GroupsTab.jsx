@@ -1,11 +1,13 @@
 import React from 'react';
 import { useChat } from '../../context/ChatContext';
+import { useLanguage } from '../../context/LanguageContext';
 import styles from './GroupsTab.module.css';
 import classNames from 'classnames/bind';
 
 const cx = classNames.bind(styles);
 
 export default function GroupsTab() {
+  const { t } = useLanguage();
   const {
     groups,
     selectedGroup,
@@ -34,17 +36,17 @@ export default function GroupsTab() {
   return (
     <div className="view-panel">
       <div className="view-header">
-        <h1>Gửi tin nhắn hàng loạt theo nhóm</h1>
-        <p>Tạo danh mục nhóm danh bạ và gửi tin nhắn hàng loạt chỉ với 1 click.</p>
+        <h1>{t('contact_groups')}</h1>
+        <p>{t('groups_desc')}</p>
       </div>
 
       <div className={cx('groups-tab__container')}>
         <div className={cx('groups-tab__sidebar')}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 'bold' }}>Danh sách nhóm</h3>
+          <h3 style={{ fontSize: '1rem', fontWeight: 'bold' }}>{t('tab_groups')}</h3>
           <form onSubmit={handleCreateGroup} style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
             <input
               type="text"
-              placeholder="Tên nhóm mới"
+              placeholder={t('group_name')}
               value={groupForm.name}
               onChange={(e) => setGroupForm({ name: e.target.value })}
               style={{ flex: 1, background: 'var(--bg-app)', border: '1px solid var(--border-light)', color: 'var(--text-main)', padding: '6px 10px', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', outline: 'none' }}
@@ -55,7 +57,7 @@ export default function GroupsTab() {
 
           <div className={cx('groups-tab__list')}>
             {groups.length === 0 ? (
-              <div style={{ padding: '15px', fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center' }}>Chưa có nhóm nào.</div>
+              <div style={{ padding: '15px', fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center' }}>{t('no_groups')}</div>
             ) : (
               groups.map(g => (
                 <div
@@ -87,7 +89,7 @@ export default function GroupsTab() {
           {selectedGroup ? (
             <>
               <div className={cx('groups-tab__pane-header')}>
-                <h3 className={cx('groups-tab__pane-title')}>Chi tiết nhóm: {selectedGroup.name}</h3>
+                <h3 className={cx('groups-tab__pane-title')}>{t('members_in_group')}: {selectedGroup.name}</h3>
                 <form onSubmit={handleAddGroupMember} style={{ display: 'flex', gap: '8px' }}>
                   <select
                     value={newGroupMemberId}
@@ -95,7 +97,7 @@ export default function GroupsTab() {
                     style={{ background: 'var(--bg-app)', border: '1px solid var(--border-light)', color: 'var(--text-main)', padding: '6px 10px', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', outline: 'none' }}
                     required
                   >
-                    <option value="">-- Thêm liên hệ vào nhóm --</option>
+                    <option value="">-- {t('add_member_to_group')} --</option>
                     {contacts.map(c => {
                       const inGroup = groupMembers.some(m => m.id === c.id);
                       if (inGroup) return null;
@@ -104,15 +106,15 @@ export default function GroupsTab() {
                       );
                     })}
                   </select>
-                  <button type="submit" className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>Thêm</button>
+                  <button type="submit" className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>{t('add_btn')}</button>
                 </form>
               </div>
 
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <h4 style={{ fontSize: '0.9rem', marginBottom: '10px' }}>Thành viên nhóm ({groupMembers.length})</h4>
+                <h4 style={{ fontSize: '0.9rem', marginBottom: '10px' }}>{t('members_in_group')} ({groupMembers.length})</h4>
                 {groupMembers.length === 0 ? (
                   <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                    Nhóm chưa có thành viên. Hãy chọn liên hệ từ danh sách trên để thêm!
+                    No members in group yet. Select a contact from the dropdown above to add!
                   </div>
                 ) : (
                   <div className={cx('groups-tab__members-grid')}>
@@ -125,7 +127,7 @@ export default function GroupsTab() {
                         <button
                           className="btn-icon-danger"
                           onClick={() => handleRemoveGroupMember(m.id)}
-                          title="Xóa khỏi nhóm"
+                          title={t('btn_delete')}
                         >
                           ✕
                         </button>
@@ -137,10 +139,10 @@ export default function GroupsTab() {
 
               {groupMembers.length > 0 && (
                 <div className={cx('groups-tab__bulk-box')}>
-                  <h4 style={{ fontSize: '0.9rem', marginBottom: '10px', color: 'var(--color-primary)' }}>Soạn tin nhắn hàng loạt</h4>
+                  <h4 style={{ fontSize: '0.9rem', marginBottom: '10px', color: 'var(--color-primary)' }}>{t('bulk_sms_title')}</h4>
                   <form onSubmit={handleSendBulkMessage} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <textarea
-                      placeholder="Nhập nội dung gửi cho cả nhóm..."
+                      placeholder={t('message_body') + '...'}
                       value={bulkContent}
                       onChange={(e) => setBulkContent(e.target.value.substring(0, 120))}
                       rows={2}
@@ -149,7 +151,7 @@ export default function GroupsTab() {
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <label style={{ fontSize: '0.78rem' }}>Hẹn giờ gửi (Tùy chọn):</label>
+                        <label style={{ fontSize: '0.78rem' }}>Scheduled Time (Optional):</label>
                         <input
                           type="datetime-local"
                           value={bulkScheduleDate}
@@ -159,10 +161,10 @@ export default function GroupsTab() {
                         />
                       </div>
                       <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        Đã viết: {bulkContent.length}/120
+                        Length: {bulkContent.length}/120
                       </span>
                       <button type="submit" className="btn btn-primary" style={{ marginLeft: 'auto', padding: '8px 20px' }}>
-                        Gửi hàng loạt 🚀
+                        {t('send_bulk_btn')} 🚀
                       </button>
                     </div>
                   </form>
@@ -178,8 +180,8 @@ export default function GroupsTab() {
           ) : (
             <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--text-muted)' }}>
               <div style={{ fontSize: '3rem', marginBottom: '15px' }}>👥</div>
-              <h3>Chưa chọn nhóm</h3>
-              <p>Hãy chọn một nhóm ở menu bên trái để quản lý thành viên hoặc gửi tin nhắn nhóm.</p>
+              <h3>No group selected</h3>
+              <p>Please select a group from the left menu to manage members or send group messages.</p>
             </div>
           )}
         </div>
