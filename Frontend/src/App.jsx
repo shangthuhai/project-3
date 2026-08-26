@@ -108,9 +108,14 @@ export default function App() {
 
   // Refs
   const messagesEndRef = useRef(null);
+  const chatMessagesAreaRef = useRef(null);
   const textareaRef = useRef(null);
   const connectionRef = useRef(null);
   const selectedContactRef = useRef(selectedContact);
+
+  // Pagination states for chat history
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [loadingMoreMessages, setLoadingMoreMessages] = useState(false);
 
   useEffect(() => {
     selectedContactRef.current = selectedContact;
@@ -517,8 +522,25 @@ export default function App() {
     loadChatDetails();
   }, [loggedInUser, selectedContact]);
 
+  const prevChatMessagesLengthRef = useRef(0);
+  const prevChatMessagesFirstIdRef = useRef(null);
+
   useEffect(() => {
-    scrollToBottom();
+    if (chatMessages.length === 0) {
+      prevChatMessagesLengthRef.current = 0;
+      prevChatMessagesFirstIdRef.current = null;
+      return;
+    }
+
+    const firstId = chatMessages[0]?.id;
+    const isPrepend = prevChatMessagesFirstIdRef.current !== null && firstId !== prevChatMessagesFirstIdRef.current;
+    
+    if (!isPrepend) {
+      scrollToBottom();
+    }
+
+    prevChatMessagesLengthRef.current = chatMessages.length;
+    prevChatMessagesFirstIdRef.current = firstId;
   }, [chatMessages]);
 
   // Auto-resize chat textarea to fit content
@@ -531,6 +553,45 @@ export default function App() {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleScroll = (e) => {
+    const container = e.target;
+    if (container.scrollTop <= 5 && hasMoreMessages && !loadingMoreMessages && chatMessages.length > 0) {
+      setLoadingMoreMessages(true);
+      
+      const oldestMsg = chatMessages[0];
+      const beforeTime = oldestMsg.sentTime;
+      const previousScrollHeight = container.scrollHeight;
+      const previousScrollTop = container.scrollTop;
+
+      getChatHistory(loggedInUser.id, selectedContact.contactNumber, beforeTime, 20)
+        .then(newMsgs => {
+          if (newMsgs.length < 20) {
+            setHasMoreMessages(false);
+          }
+          
+          if (newMsgs.length > 0) {
+            setChatMessages(prev => {
+              const existingIds = new Set(prev.map(m => m.id));
+              const filteredNew = newMsgs.filter(m => !existingIds.has(m.id));
+              return [...filteredNew, ...prev];
+            });
+
+            // Adjust scroll top to maintain position after state updates and DOM renders
+            setTimeout(() => {
+              if (chatMessagesAreaRef.current) {
+                const newScrollHeight = chatMessagesAreaRef.current.scrollHeight;
+                chatMessagesAreaRef.current.scrollTop = newScrollHeight - previousScrollHeight + previousScrollTop;
+              }
+            }, 30);
+          }
+          setLoadingMoreMessages(false);
+        })
+        .catch(() => {
+          setLoadingMoreMessages(false);
+        });
+    }
   };
 
   // Load AI Chat Messages once when AI Chat Widget is opened
@@ -747,8 +808,15 @@ export default function App() {
   };
 
   const loadChatDetails = () => {
-    getChatHistory(loggedInUser.id, selectedContact.contactNumber)
-      .then(setChatMessages)
+    setHasMoreMessages(true);
+    setLoadingMoreMessages(false);
+    getChatHistory(loggedInUser.id, selectedContact.contactNumber, null, 20)
+      .then(msgs => {
+        setChatMessages(msgs);
+        if (msgs.length < 20) {
+          setHasMoreMessages(false);
+        }
+      })
       .catch(() => triggerAlert('error', 'Failed to load chat history'));
 
     getQuota(loggedInUser.id, selectedContact.contactNumber)
@@ -758,8 +826,15 @@ export default function App() {
 
   const loadChatMessagesOnly = () => {
     if (!loggedInUser || !selectedContact) return;
-    getChatHistory(loggedInUser.id, selectedContact.contactNumber)
-      .then(setChatMessages)
+    setHasMoreMessages(true);
+    setLoadingMoreMessages(false);
+    getChatHistory(loggedInUser.id, selectedContact.contactNumber, null, 20)
+      .then(msgs => {
+        setChatMessages(msgs);
+        if (msgs.length < 20) {
+          setHasMoreMessages(false);
+        }
+      })
       .catch(() => { });
   };
 
@@ -2551,7 +2626,11 @@ export default function App() {
               </div>
             )}
 
-            <div className="chat-messages-area">
+            <div 
+              ref={chatMessagesAreaRef}
+              onScroll={handleScroll}
+              className="chat-messages-area"
+            >
               {chatMessages.length === 0 ? (
                 <div style={{ margin: 'auto', textAlign: 'center', opacity: 0.3, fontSize: '0.9rem' }}>
                   No messages yet. Say hello!

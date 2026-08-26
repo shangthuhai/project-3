@@ -76,8 +76,13 @@ export const createTemplate = (title, body) => api.post('/templates', { title, b
 export const deleteTemplate = (id) => api.delete(`/templates/${id}`).then(res => res.data);
 
 // Messages API
-export const getChatHistory = (userId, contactNumber) => 
-  api.get(`/messages/history?userId=${userId}&contactNumber=${contactNumber}`).then(res => res.data);
+export const getChatHistory = (userId, contactNumber, before = null, limit = 20) => {
+  let url = `/messages/history?userId=${userId}&contactNumber=${contactNumber}&limit=${limit}`;
+  if (before) {
+    url += `&before=${encodeURIComponent(before)}`;
+  }
+  return api.get(url).then(res => res.data);
+};
 export const getQuota = (userId, contactNumber) => 
   api.get(`/messages/quota?userId=${userId}&contactNumber=${contactNumber}`).then(res => res.data);
 export const sendMessage = (senderId, receiverNumber, content, scheduledAt) => 

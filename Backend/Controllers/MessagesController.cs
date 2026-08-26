@@ -78,9 +78,13 @@ namespace Backend.Controllers
             return Ok(new { isTyping = false });
         }
 
-        // GET: api/messages/history?userId=1&contactNumber=0912345678
+        // GET: api/messages/history?userId=1&contactNumber=0912345678&limit=20&before=2026-08-26T04:12:35.000Z
         [HttpGet("history")]
-        public async Task<ActionResult<IEnumerable<Message>>> GetHistory([FromQuery] int? userId, [FromQuery] string contactNumber)
+        public async Task<ActionResult<IEnumerable<Message>>> GetHistory(
+            [FromQuery] int? userId, 
+            [FromQuery] string contactNumber, 
+            [FromQuery] int limit = 20, 
+            [FromQuery] DateTime? before = null)
         {
             // Securely read from JWT claims
             int actualUserId = AuthenticatedUserId;
@@ -94,27 +98,33 @@ namespace Backend.Controllers
             // Find if there is a registered user with this contact number
             var contactUser = await _context.Users.FirstOrDefaultAsync(u => u.MobileNumber == contactNumber);
 
-            List<Message> messages;
+            var query = _context.Messages.AsQueryable();
 
             if (contactUser != null)
             {
                 // If they are registered, history is messages sent between actualUserId and contactUser.UserId
-                messages = await _context.Messages
-                    .Where(m => 
-                        (m.SenderId == actualUserId && (m.ReceiverNumber == contactNumber || m.ReceiverId == contactUser.UserId)) ||
-                        (m.SenderId == contactUser.UserId && (m.ReceiverNumber == user.MobileNumber || m.ReceiverId == actualUserId)))
-                    .OrderBy(m => m.SentAt)
-                    .ToListAsync();
+                query = query.Where(m => 
+                    (m.SenderId == actualUserId && (m.ReceiverNumber == contactNumber || m.ReceiverId == contactUser.UserId)) ||
+                    (m.SenderId == contactUser.UserId && (m.ReceiverNumber == user.MobileNumber || m.ReceiverId == actualUserId)));
             }
             else
             {
                 // If not registered, history is just messages sent by this user to this non-registered number
-                messages = await _context.Messages
-                    .Where(m => m.SenderId == actualUserId && m.ReceiverNumber == contactNumber)
-                    .OrderBy(m => m.SentAt)
-                    .ToListAsync();
+                query = query.Where(m => m.SenderId == actualUserId && m.ReceiverNumber == contactNumber);
             }
 
+            if (before.HasValue)
+            {
+                query = query.Where(m => m.SentAt < before.Value);
+            }
+
+            var messages = await query
+                .OrderByDescending(m => m.SentAt)
+                .ThenByDescending(m => m.MessageId)
+                .Take(limit)
+                .ToListAsync();
+
+            messages.Reverse();
             return messages;
         }
 
