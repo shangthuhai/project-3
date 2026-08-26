@@ -142,4 +142,7 @@ export const reportTyping = (receiverNumber) =>
 export const getTypingStatus = (contactNumber) => 
   api.get(`/messages/typing-status?contactNumber=${contactNumber}`).then(res => res.data);
 
+export const getConversations = () => 
+  api.get('/messages/conversations').then(res => res.data);
+
 export default api;

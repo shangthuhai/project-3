@@ -52,6 +52,7 @@ import {
   chatWithAdminAi,
   reportTyping,
   getTypingStatus,
+  getConversations,
   getApiUrl
 } from './api';
 
@@ -79,6 +80,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('chats'); // chats, contacts, requests, services, profile
   const [contacts, setContacts] = useState([]);
   const [friends, setFriends] = useState([]);
+  const [conversations, setConversations] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
 
   // Search State
@@ -178,6 +180,7 @@ export default function App() {
           return [...prev, message];
         });
       }
+      loadConversations();
     });
 
     conn.on("ReceiveTypingStatus", (senderMobileNumber) => {
@@ -858,9 +861,17 @@ export default function App() {
     setHasMoreSearchResults(false);
   };
 
+  const loadConversations = () => {
+    if (!loggedInUser) return;
+    getConversations()
+      .then(setConversations)
+      .catch(() => { });
+  };
+
   const refreshDashboardData = () => {
     getContacts(loggedInUser.id).then(setContacts).catch(() => { });
     getFriends(loggedInUser.id).then(setFriends).catch(() => { });
+    loadConversations();
     getPendingRequests(loggedInUser.id).then(setPendingRequests).catch(() => { });
     getActivatedServices(loggedInUser.id)
       .then(data => setActivatedServices(data.map(s => s.serviceName)))
@@ -1301,6 +1312,7 @@ export default function App() {
           .then(setRemainingQuota)
           .catch(() => { });
         loadAnalyticsStats();
+        loadConversations();
       })
       .catch(err => {
         const errorMsg = err.response?.data?.message || 'Failed to send message.';
@@ -1478,25 +1490,53 @@ export default function App() {
     );
   };
 
+  const formatMessageTime = (timeStr) => {
+    if (!timeStr) return '';
+    const date = new Date(timeStr);
+    const now = new Date();
+    if (date.toDateString() === now.toDateString()) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  };
+
   // Render Sidebar Content list
   const renderSidebarList = () => {
     if (activeTab === 'chats') {
       const chatItems = [];
 
-      // Add Friends
-      friends.forEach(f => {
-        if (f.mobileNumber === '9999999999') return;
+      // 1. Add active conversations from API
+      conversations.forEach(conv => {
+        if (conv.contactNumber === '9999999999') return;
         chatItems.push({
-          id: f.id,
-          name: f.name,
-          contactNumber: f.mobileNumber,
-          avatar: f.profilePhoto,
-          isFriend: true,
-          subtext: 'Friend'
+          id: conv.userId ? conv.userId : `conv_${conv.contactNumber}`,
+          name: conv.name,
+          contactNumber: conv.contactNumber,
+          avatar: conv.avatar,
+          isFriend: conv.isFriend,
+          subtext: conv.lastMessageContent,
+          lastMessageTime: conv.lastMessageTime
         });
       });
 
-      // Add Contacts (Not friends)
+      // 2. Add Friends (if not already added as active chats)
+      friends.forEach(f => {
+        if (f.mobileNumber === '9999999999') return;
+        const alreadyAdded = chatItems.some(i => i.contactNumber === f.mobileNumber);
+        if (!alreadyAdded) {
+          chatItems.push({
+            id: f.id,
+            name: f.name,
+            contactNumber: f.mobileNumber,
+            avatar: f.profilePhoto,
+            isFriend: true,
+            subtext: 'Friend (No messages)',
+            lastMessageTime: null
+          });
+        }
+      });
+
+      // 3. Add Contacts (if not already added as active chats or friends)
       contacts.forEach(c => {
         if (c.contactNumber === '9999999999') return;
         const alreadyAdded = chatItems.some(i => i.contactNumber === c.contactNumber);
@@ -1507,7 +1547,8 @@ export default function App() {
             contactNumber: c.contactNumber,
             avatar: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%237f91a4"/><text x="50%" y="50%" font-family="sans-serif" font-weight="bold" font-size="40" fill="white" text-anchor="middle" dominant-baseline="central">${c.firstName ? c.firstName[0] : ''}${c.lastName ? c.lastName[0] : ''}</text></svg>`,
             isFriend: false,
-            subtext: 'Contact (Non-friend)'
+            subtext: 'Contact (No messages)',
+            lastMessageTime: null
           });
         }
       });
@@ -1515,6 +1556,16 @@ export default function App() {
       if (chatItems.length === 0) {
         return <div className="empty-list-message">No active chats. Add contacts to begin messaging.</div>;
       }
+
+      // Sort: active chats on top (latest first), then others alphabetically
+      chatItems.sort((a, b) => {
+        if (a.lastMessageTime && b.lastMessageTime) {
+          return new Date(b.lastMessageTime) - new Date(a.lastMessageTime);
+        }
+        if (a.lastMessageTime) return -1;
+        if (b.lastMessageTime) return 1;
+        return a.name.localeCompare(b.name);
+      });
 
       return chatItems.map(item => (
         <div
@@ -1526,12 +1577,18 @@ export default function App() {
           <div className="item-details">
             <div className="item-row">
               <span className="item-name">{item.name}</span>
-              <span className="item-meta">{item.contactNumber}</span>
+              <span className="item-meta">
+                {item.lastMessageTime ? formatMessageTime(item.lastMessageTime) : item.contactNumber}
+              </span>
             </div>
             <div className="item-row">
-              <span className="item-subtext">{item.subtext}</span>
-              <span className={`item-status-badge ${item.isFriend ? 'friend' : 'non-friend'}`}>
-                {item.isFriend ? 'Free' : 'Free 5/5'}
+              <span className="item-subtext" title={item.subtext}>{item.subtext}</span>
+              <span className="item-meta" style={{ fontSize: '0.7rem' }}>
+                {item.lastMessageTime ? item.contactNumber : (
+                  <span className={`item-status-badge ${item.isFriend ? 'friend' : 'non-friend'}`}>
+                    {item.isFriend ? 'Free' : 'Free 5/5'}
+                  </span>
+                )}
               </span>
             </div>
           </div>

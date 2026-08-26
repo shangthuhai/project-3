@@ -78,6 +78,130 @@ namespace Backend.Controllers
             return Ok(new { isTyping = false });
         }
 
+        // GET: api/messages/conversations
+        [HttpGet("conversations")]
+        public async Task<ActionResult<IEnumerable<object>>> GetConversations()
+        {
+            int currentUserId = AuthenticatedUserId;
+            var currentUser = await _context.Users.FindAsync(currentUserId);
+            if (currentUser == null)
+            {
+                return NotFound(new { message = "User not found" });
+            }
+            string currentUserMobile = currentUser.MobileNumber;
+
+            // Get messages involving current user
+            var messages = await _context.Messages
+                .Include(m => m.Sender)
+                .Include(m => m.Receiver)
+                .Where(m => m.SenderId == currentUserId || m.ReceiverId == currentUserId || m.ReceiverNumber == currentUserMobile)
+                .ToListAsync();
+
+            // Group by the other party's mobile number
+            var conversations = messages
+                .GroupBy(m => {
+                    if (m.SenderId == currentUserId)
+                    {
+                        return m.ReceiverNumber;
+                    }
+                    else
+                    {
+                        return m.Sender?.MobileNumber ?? "";
+                    }
+                })
+                .Where(g => !string.IsNullOrEmpty(g.Key) && g.Key != currentUserMobile && g.Key != "9999999999") // Exclude self and AI
+                .Select(g => {
+                    var lastMsg = g.OrderByDescending(m => m.SentAt).ThenByDescending(m => m.MessageId).First();
+                    return new {
+                        MobileNumber = g.Key,
+                        LastMessage = lastMsg
+                    };
+                })
+                .ToList();
+
+            var result = new List<object>();
+
+            foreach (var conv in conversations)
+            {
+                var otherMobile = conv.MobileNumber;
+                var lastMsg = conv.LastMessage;
+
+                // Check if other party is a registered user
+                var registeredUser = await _context.Users
+                    .Include(u => u.Profile)
+                    .FirstOrDefaultAsync(u => u.MobileNumber == otherMobile);
+
+                // Check if in contacts
+                var contact = await _context.Contacts
+                    .FirstOrDefaultAsync(c => c.UserId == currentUserId && c.ContactNumber == otherMobile);
+
+                // Check friendship status
+                bool isFriend = false;
+                if (registeredUser != null)
+                {
+                    isFriend = await _context.Friendships.AnyAsync(fc =>
+                        fc.Status == "accepted" &&
+                        ((fc.RequesterId == currentUserId && fc.AddresseeId == registeredUser.UserId) ||
+                         (fc.RequesterId == registeredUser.UserId && fc.AddresseeId == currentUserId)));
+                }
+
+                string name = otherMobile;
+                if (contact != null)
+                {
+                    name = $"{contact.FirstName} {contact.LastName}".Trim();
+                }
+                else if (registeredUser != null && !string.IsNullOrEmpty(registeredUser.Name))
+                {
+                    name = registeredUser.Name;
+                }
+                else if (registeredUser != null)
+                {
+                    name = registeredUser.Username;
+                }
+
+                string avatar = "";
+                if (registeredUser != null && !string.IsNullOrEmpty(registeredUser.ProfilePhoto))
+                {
+                    avatar = registeredUser.ProfilePhoto;
+                }
+                else
+                {
+                    string initials = "";
+                    if (contact != null)
+                    {
+                        initials = $"{(contact.FirstName.Length > 0 ? contact.FirstName[0].ToString() : "")}{(contact.LastName.Length > 0 ? contact.LastName[0].ToString() : "")}";
+                    }
+                    else if (registeredUser != null)
+                    {
+                        initials = registeredUser.Username.Length > 0 ? registeredUser.Username[0].ToString().ToUpper() : "";
+                    }
+                    else
+                    {
+                        initials = "?";
+                    }
+                    avatar = $"data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><rect width=\"100\" height=\"100\" fill=\"%237f91a4\"/><text x=\"50%\" y=\"50%\" font-family=\"sans-serif\" font-weight=\"bold\" font-size=\"40\" fill=\"white\" text-anchor=\"middle\" dominant-baseline=\"central\">{Uri.EscapeDataString(initials)}</text></svg>";
+                }
+
+                result.Add(new
+                {
+                    contactNumber = otherMobile,
+                    name = name,
+                    avatar = avatar,
+                    isFriend = isFriend,
+                    lastMessageContent = lastMsg.Content,
+                    lastMessageTime = lastMsg.SentAt,
+                    isRegistered = registeredUser != null,
+                    userId = registeredUser?.UserId
+                });
+            }
+
+            var sortedResult = result
+                .OrderByDescending(r => ((dynamic)r).lastMessageTime)
+                .ToList();
+
+            return Ok(sortedResult);
+        }
+
         // GET: api/messages/history?userId=1&contactNumber=0912345678&limit=20&before=2026-08-26T04:12:35.000Z
         [HttpGet("history")]
         public async Task<ActionResult<IEnumerable<Message>>> GetHistory(
