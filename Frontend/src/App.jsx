@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { HubConnectionBuilder } from '@microsoft/signalr';
 import {
   getUsers,
   getUser,
@@ -49,7 +50,8 @@ import {
   deleteAdminTemplate,
   chatWithAdminAi,
   reportTyping,
-  getTypingStatus
+  getTypingStatus,
+  getApiUrl
 } from './api';
 
 export default function App() {
@@ -107,6 +109,91 @@ export default function App() {
   // Refs
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
+  const connectionRef = useRef(null);
+  const selectedContactRef = useRef(selectedContact);
+
+  useEffect(() => {
+    selectedContactRef.current = selectedContact;
+  }, [selectedContact]);
+
+  // Manage SignalR Connection lifecycle
+  useEffect(() => {
+    if (!loggedInUser) {
+      if (connectionRef.current) {
+        connectionRef.current.stop();
+        connectionRef.current = null;
+      }
+      return;
+    }
+
+    const token = loggedInUser.token;
+    const hubUrl = getApiUrl().replace('/api', '/chatHub');
+
+    const conn = new HubConnectionBuilder()
+      .withUrl(hubUrl, {
+        accessTokenFactory: () => token
+      })
+      .withAutomaticReconnect()
+      .build();
+
+    conn.on("ReceiveMessage", (message) => {
+      const active = selectedContactRef.current;
+      if (active) {
+        const isAiChat = active.contactNumber === "9999999999";
+        const isAiMessage = message.senderId === 999;
+        
+        if (isAiChat && isAiMessage) {
+          setChatMessages(prev => {
+            if (prev.some(m => m.id === message.id)) return prev;
+            return [...prev, message];
+          });
+        } else if (
+          message.senderMobileNumber === active.contactNumber ||
+          (message.senderId.toString() === active.id?.toString() && active.isFriend)
+        ) {
+          setChatMessages(prev => {
+            if (prev.some(m => m.id === message.id)) return prev;
+            return [...prev, message];
+          });
+        }
+      }
+      
+      if (message.senderId === 999) {
+        setAiMessages(prev => {
+          if (prev.some(m => m.id === message.id)) return prev;
+          return [...prev, message];
+        });
+      }
+    });
+
+    conn.on("ReceiveTypingStatus", (senderMobileNumber) => {
+      const active = selectedContactRef.current;
+      if (active && active.contactNumber === senderMobileNumber) {
+        setContactIsTyping(true);
+      }
+    });
+
+    conn.start()
+      .then(() => console.log("SignalR Connection Started Successfully."))
+      .catch(err => console.error("SignalR Connection Failed: ", err));
+
+    connectionRef.current = conn;
+
+    return () => {
+      conn.stop();
+      connectionRef.current = null;
+    };
+  }, [loggedInUser]);
+
+  // Inactivity timer for typing status
+  useEffect(() => {
+    if (contactIsTyping) {
+      const timer = setTimeout(() => {
+        setContactIsTyping(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [contactIsTyping]);
 
   // AI Assistant States
   const [showAiAssistant, setShowAiAssistant] = useState(false);
@@ -418,7 +505,7 @@ export default function App() {
     setSelectedServices([]);
   }, [loggedInUser]);
 
-  // Poll chat messages if selected contact is open
+  // Load chat messages when selected contact is open
   useEffect(() => {
     if (!loggedInUser || !selectedContact) return;
 
@@ -428,14 +515,6 @@ export default function App() {
     setContactIsTyping(false);
 
     loadChatDetails();
-    loadTypingStatus();
-
-    const interval = setInterval(() => {
-      loadChatMessagesOnly();
-      loadTypingStatus();
-    }, 3000);
-
-    return () => clearInterval(interval);
   }, [loggedInUser, selectedContact]);
 
   useEffect(() => {
@@ -454,21 +533,13 @@ export default function App() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Poll AI Chat Messages if AI Chat Widget is open
+  // Load AI Chat Messages once when AI Chat Widget is opened
   useEffect(() => {
     if (!loggedInUser || !isAiBubbleOpen) return;
 
     getChatHistory(loggedInUser.id, '9999999999')
       .then(setAiMessages)
       .catch(() => { });
-
-    const interval = setInterval(() => {
-      getChatHistory(loggedInUser.id, '9999999999')
-        .then(setAiMessages)
-        .catch(() => { });
-    }, 2000);
-
-    return () => clearInterval(interval);
   }, [loggedInUser, isAiBubbleOpen]);
 
   useEffect(() => {
@@ -700,11 +771,11 @@ export default function App() {
   };
 
   const handleTyping = () => {
-    if (!loggedInUser || !selectedContact) return;
+    if (!loggedInUser || !selectedContact || !connectionRef.current) return;
     const now = Date.now();
     if (now - lastTypingReportRef.current > 2000) {
       lastTypingReportRef.current = now;
-      reportTyping(selectedContact.contactNumber).catch(() => {});
+      connectionRef.current.invoke("SendTyping", selectedContact.contactNumber).catch(() => {});
     }
   };
 

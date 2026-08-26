@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Backend.Data;
@@ -18,11 +19,13 @@ namespace Backend.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IAiService _aiService;
+        private readonly Microsoft.AspNetCore.SignalR.IHubContext<Backend.Hubs.ChatHub> _hubContext;
 
-        public MessagesController(AppDbContext context, IAiService aiService)
+        public MessagesController(AppDbContext context, IAiService aiService, Microsoft.AspNetCore.SignalR.IHubContext<Backend.Hubs.ChatHub> hubContext)
         {
             _context = context;
             _aiService = aiService;
+            _hubContext = hubContext;
         }
 
         private int AuthenticatedUserId => 
@@ -242,6 +245,19 @@ namespace Backend.Controllers
                 _context.SMSLogs.Add(aiLog);
                 await _context.SaveChangesAsync();
 
+                // Push AI response via SignalR
+                await _hubContext.Clients.User(sender.UserId.ToString()).SendAsync("ReceiveMessage", new {
+                    id = aiMessage.MessageId,
+                    senderId = aiMessage.SenderId,
+                    senderMobileNumber = "9999999999",
+                    receiverId = aiMessage.ReceiverId,
+                    receiverNumber = aiMessage.ReceiverNumber,
+                    content = aiMessage.Content,
+                    isFreeFriendMsg = aiMessage.IsFreeFriendMsg,
+                    scheduledAt = aiMessage.ScheduledAt,
+                    sentTime = aiMessage.SentAt
+                });
+
                 return Ok(userMessage);
             }
 
@@ -314,6 +330,22 @@ namespace Backend.Controllers
             };
             _context.SMSLogs.Add(log);
             await _context.SaveChangesAsync();
+
+            // Push message via SignalR if receiver is a registered user
+            if (receiverId.HasValue && !isScheduled)
+            {
+                await _hubContext.Clients.User(receiverId.Value.ToString()).SendAsync("ReceiveMessage", new {
+                    id = message.MessageId,
+                    senderId = message.SenderId,
+                    senderMobileNumber = sender.MobileNumber,
+                    receiverId = message.ReceiverId,
+                    receiverNumber = message.ReceiverNumber,
+                    content = message.Content,
+                    isFreeFriendMsg = message.IsFreeFriendMsg,
+                    scheduledAt = message.ScheduledAt,
+                    sentTime = message.SentAt
+                });
+            }
 
             return Ok(message);
         }
@@ -434,6 +466,22 @@ namespace Backend.Controllers
                 };
                 _context.SMSLogs.Add(log);
                 await _context.SaveChangesAsync();
+
+                // Push bulk message via SignalR if receiver is a registered user
+                if (receiverId.HasValue && !isScheduled)
+                {
+                    await _hubContext.Clients.User(receiverId.Value.ToString()).SendAsync("ReceiveMessage", new {
+                        id = message.MessageId,
+                        senderId = message.SenderId,
+                        senderMobileNumber = sender.MobileNumber,
+                        receiverId = message.ReceiverId,
+                        receiverNumber = message.ReceiverNumber,
+                        content = message.Content,
+                        isFreeFriendMsg = message.IsFreeFriendMsg,
+                        scheduledAt = message.ScheduledAt,
+                        sentTime = message.SentAt
+                    });
+                }
 
                 sentCount++;
                 details.Add($"{number}: Successfully {(isScheduled ? "scheduled" : "sent")}");
