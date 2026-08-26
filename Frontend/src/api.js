@@ -61,6 +61,8 @@ export const sendFriendRequest = (senderId, recipientEmail) =>
   api.post('/friends/request', { senderId, recipientEmail }).then(res => res.data);
 export const respondFriendRequest = (connectionId, accept) => 
   api.post('/friends/respond', { connectionId, accept }).then(res => res.data);
+export const searchUsers = (query, page = 1, pageSize = 10) => 
+  api.get(`/friends/search?query=${encodeURIComponent(query)}&page=${page}&pageSize=${pageSize}`).then(res => res.data);
 
 // Contact Groups API
 export const getGroups = () => api.get('/groups').then(res => res.data);

@@ -169,6 +169,81 @@ namespace Backend.Controllers
                 return Ok(new { message = "Friend request rejected." });
             }
         }
+
+        // GET: api/friends/search?query=abc&page=1&pageSize=10
+        [HttpGet("search")]
+        public async Task<ActionResult<object>> SearchUsers([FromQuery] string query, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        {
+            int currentUserId = AuthenticatedUserId;
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return Ok(new { items = new List<object>(), totalCount = 0 });
+            }
+
+            query = query.Trim().ToLower();
+
+            // Query users matching name, mobile number, or username
+            // Exclude current user and the AI assistant (id = 999)
+            var usersQuery = _context.Users
+                .Include(u => u.Profile)
+                .Where(u => u.UserId != currentUserId && u.UserId != 999 &&
+                            (u.Username.ToLower().Contains(query) ||
+                             u.MobileNumber.Contains(query) ||
+                             (u.Profile != null && u.Profile.FullName != null && u.Profile.FullName.ToLower().Contains(query))));
+
+            int totalCount = await usersQuery.CountAsync();
+
+            var matchedUsers = await usersQuery
+                .OrderBy(u => u.Username)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            // Fetch friendships for these matched users relative to the current user
+            var userIds = matchedUsers.Select(u => u.UserId).ToList();
+            var friendships = await _context.Friendships
+                .Where(f => (f.RequesterId == currentUserId && userIds.Contains(f.AddresseeId)) ||
+                            (f.AddresseeId == currentUserId && userIds.Contains(f.RequesterId)))
+                .ToListAsync();
+
+            var items = matchedUsers.Select(u =>
+            {
+                var friendship = friendships.FirstOrDefault(f => f.RequesterId == u.UserId || f.AddresseeId == u.UserId);
+                string status = "none";
+                int friendshipId = 0;
+
+                if (friendship != null)
+                {
+                    friendshipId = friendship.FriendshipId;
+                    if (friendship.Status == "accepted")
+                    {
+                        status = "accepted";
+                    }
+                    else if (friendship.Status == "pending")
+                    {
+                        status = friendship.RequesterId == currentUserId ? "pending_sent" : "pending_received";
+                    }
+                    else if (friendship.Status == "rejected")
+                    {
+                        status = "rejected";
+                    }
+                }
+
+                return new
+                {
+                    id = u.UserId,
+                    username = u.Username,
+                    name = u.Name,
+                    mobileNumber = u.MobileNumber,
+                    email = u.Email,
+                    profilePhoto = u.ProfilePhoto,
+                    friendshipStatus = status,
+                    friendshipId = friendshipId
+                };
+            }).ToList();
+
+            return Ok(new { items, totalCount });
+        }
     }
 
     public class FriendRequestDto

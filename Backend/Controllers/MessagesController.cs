@@ -138,18 +138,39 @@ namespace Backend.Controllers
             // Check if the contact number belongs to a friend
             var contactUser = await _context.Users.FirstOrDefaultAsync(u => u.MobileNumber == contactNumber);
             bool isFriend = false;
+            string friendshipStatus = "none";
+            int friendshipId = 0;
+            string email = "";
 
             if (contactUser != null)
             {
-                isFriend = await _context.Friendships.AnyAsync(fc => 
-                    fc.Status == "accepted" && 
-                    ((fc.RequesterId == actualUserId && fc.AddresseeId == contactUser.UserId) || 
-                     (fc.RequesterId == contactUser.UserId && fc.AddresseeId == actualUserId)));
+                email = contactUser.Email;
+                var friendship = await _context.Friendships.FirstOrDefaultAsync(fc => 
+                    (fc.RequesterId == actualUserId && fc.AddresseeId == contactUser.UserId) || 
+                    (fc.RequesterId == contactUser.UserId && fc.AddresseeId == actualUserId));
+
+                if (friendship != null)
+                {
+                    friendshipId = friendship.FriendshipId;
+                    if (friendship.Status == "accepted")
+                    {
+                        isFriend = true;
+                        friendshipStatus = "accepted";
+                    }
+                    else if (friendship.Status == "pending")
+                    {
+                        friendshipStatus = friendship.RequesterId == actualUserId ? "pending_sent" : "pending_received";
+                    }
+                    else if (friendship.Status == "rejected")
+                    {
+                        friendshipStatus = "rejected";
+                    }
+                }
             }
 
             if (isFriend)
             {
-                return Ok(new { isFriend = true, remaining = -1, limit = -1, sentCount = 0 });
+                return Ok(new { isFriend = true, remaining = -1, limit = -1, sentCount = 0, friendshipStatus = "accepted", friendshipId, email, contactUserId = contactUser?.UserId ?? 0 });
             }
 
             // Global Quota check from UserQuotas table
@@ -158,7 +179,7 @@ namespace Backend.Controllers
             int limit = 5;
             int sentCount = limit - remaining;
 
-            return Ok(new { isFriend = false, remaining, limit, sentCount });
+            return Ok(new { isFriend = false, remaining, limit, sentCount, friendshipStatus, friendshipId, email, contactUserId = contactUser?.UserId ?? 0 });
         }
 
         // POST: api/messages

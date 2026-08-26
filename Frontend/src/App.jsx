@@ -11,6 +11,7 @@ import {
   getPendingRequests,
   sendFriendRequest,
   respondFriendRequest,
+  searchUsers,
   getChatHistory,
   getQuota,
   sendMessage,
@@ -80,6 +81,13 @@ export default function App() {
   const [friends, setFriends] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
 
+  // Search State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchPage, setSearchPage] = useState(1);
+  const [hasMoreSearchResults, setHasMoreSearchResults] = useState(false);
+  const [loadingMoreSearchResults, setLoadingMoreSearchResults] = useState(false);
+
   // Active Chat Session
   const [selectedContact, setSelectedContact] = useState(null); // { name, contactNumber, isFriend }
   const [chatMessages, setChatMessages] = useState([]);
@@ -112,6 +120,7 @@ export default function App() {
   const textareaRef = useRef(null);
   const connectionRef = useRef(null);
   const selectedContactRef = useRef(selectedContact);
+  const searchListRef = useRef(null);
 
   // Pagination states for chat history
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
@@ -787,6 +796,68 @@ export default function App() {
       .catch(() => { });
   };
 
+  // Debounce search effect
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setSearchPage(1);
+      setHasMoreSearchResults(false);
+      return;
+    }
+
+    const delayDebounceFn = setTimeout(() => {
+      setSearchPage(1);
+      setLoadingMoreSearchResults(true);
+      searchUsers(searchQuery.trim(), 1, 10)
+        .then(res => {
+          setSearchResults(res.items);
+          setHasMoreSearchResults(res.items.length < res.totalCount);
+          setLoadingMoreSearchResults(false);
+        })
+        .catch(() => {
+          setLoadingMoreSearchResults(false);
+        });
+    }, 400);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
+
+  const loadMoreSearchResults = () => {
+    if (loadingMoreSearchResults || !hasMoreSearchResults) return;
+
+    setLoadingMoreSearchResults(true);
+    const nextPage = searchPage + 1;
+
+    searchUsers(searchQuery.trim(), nextPage, 10)
+      .then(res => {
+        setSearchResults(prev => [...prev, ...res.items]);
+        setSearchPage(nextPage);
+        setHasMoreSearchResults(searchResults.length + res.items.length < res.totalCount);
+        setLoadingMoreSearchResults(false);
+      })
+      .catch(() => {
+        setLoadingMoreSearchResults(false);
+      });
+  };
+
+  const handleSearchScroll = (e) => {
+    const container = e.target;
+    if (
+      container.scrollHeight - container.scrollTop - container.clientHeight < 20 &&
+      hasMoreSearchResults &&
+      !loadingMoreSearchResults
+    ) {
+      loadMoreSearchResults();
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setSearchResults([]);
+    setSearchPage(1);
+    setHasMoreSearchResults(false);
+  };
+
   const refreshDashboardData = () => {
     getContacts(loggedInUser.id).then(setContacts).catch(() => { });
     getFriends(loggedInUser.id).then(setFriends).catch(() => { });
@@ -1342,6 +1413,69 @@ export default function App() {
 
   const getTotalSelectedPrice = () => {
     return selectedServices.reduce((sum, service) => sum + getServicePrice(service), 0).toFixed(2);
+  };
+
+  const renderSearchResultsList = () => {
+    if (loadingMoreSearchResults && searchResults.length === 0) {
+      return <div className="empty-list-message">Đang tìm kiếm...</div>;
+    }
+
+    if (searchResults.length === 0) {
+      return <div className="empty-list-message">Không tìm thấy người dùng phù hợp.</div>;
+    }
+
+    return (
+      <div 
+        ref={searchListRef}
+        onScroll={handleSearchScroll}
+        style={{ height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}
+      >
+        {searchResults.map(user => {
+          let statusText = '';
+          let badgeClass = 'non-friend';
+          if (user.friendshipStatus === 'accepted') {
+            statusText = 'Bạn bè';
+            badgeClass = 'friend';
+          } else if (user.friendshipStatus === 'pending_sent') {
+            statusText = 'Đã gửi lời mời';
+            badgeClass = 'pending-sent';
+          } else if (user.friendshipStatus === 'pending_received') {
+            statusText = 'Lời mời kết bạn';
+            badgeClass = 'pending-received';
+          }
+
+          return (
+            <div
+              key={user.id}
+              className={`sidebar-list-item`}
+              onClick={() => startChat(user.name || user.username, user.mobileNumber, user.friendshipStatus === 'accepted')}
+              style={{ cursor: 'pointer' }}
+            >
+              <img src={user.profilePhoto || 'https://via.placeholder.com/40'} alt={user.username} className="item-avatar" />
+              <div className="item-details">
+                <div className="item-row">
+                  <span className="item-name">{user.name || user.username}</span>
+                  <span className="item-meta">{user.mobileNumber}</span>
+                </div>
+                <div className="item-row">
+                  <span className="item-subtext">{user.email}</span>
+                  {statusText && (
+                    <span className={`item-status-badge ${badgeClass}`}>
+                      {statusText}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        {loadingMoreSearchResults && (
+          <div style={{ textAlign: 'center', padding: '10px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            Đang tải thêm...
+          </div>
+        )}
+      </div>
+    );
   };
 
   // Render Sidebar Content list
@@ -2572,9 +2706,51 @@ export default function App() {
           </button>
         </div>
 
+        {/* Search bar for friends/users */}
+        <div className="sidebar-search-container" style={{ padding: '8px 12px', borderBottom: '1px solid var(--border-light)' }}>
+          <div style={{ position: 'relative' }}>
+            <input
+              type="text"
+              placeholder="Tìm bạn bè bằng tên/SĐT..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px 32px 8px 12px',
+                borderRadius: '20px',
+                border: '1px solid var(--border-light)',
+                background: 'var(--bg-app)',
+                color: '#fff',
+                fontSize: '0.88rem',
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
+            />
+            {searchQuery && (
+              <button
+                onClick={clearSearch}
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  fontSize: '1rem',
+                  padding: '2px'
+                }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+
         <div className="sidebar-list-container">
-          {renderSidebarList()}
-          {['requests', 'services', 'profile', 'templates', 'groups', 'analytics', 'security'].includes(activeTab) && (
+          {searchQuery ? renderSearchResultsList() : renderSidebarList()}
+          {['requests', 'services', 'profile', 'templates', 'groups', 'analytics', 'security'].includes(activeTab) && !searchQuery && (
             <div className="empty-list-message" style={{ opacity: 0.7 }}>
               Content is open in the main panel.
             </div>
@@ -2613,16 +2789,90 @@ export default function App() {
             </div>
 
             {remainingQuota && !remainingQuota.isFriend && (
-              <div className="chat-quota-banner">
-                <span>
-                  <strong>SMS Quota:</strong> {remainingQuota.remaining} of {remainingQuota.limit} free messages left for this number.
-                </span>
-                <button onClick={() => {
-                  setActiveTab('requests');
-                  setRequestForm({ email: '' });
-                }}>
-                  Send Friend Request for Unlimited
-                </button>
+              <div className="chat-quota-banner" style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '12px 24px',
+                background: 'rgba(23, 33, 43, 0.95)',
+                borderBottom: '1px solid var(--border-light)',
+                fontSize: '0.88rem'
+              }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  <span>
+                    <strong>SMS Quota:</strong> {remainingQuota.remaining} of {remainingQuota.limit} free messages left for this number.
+                  </span>
+                  {remainingQuota.contactUserId === 0 && (
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                      ⚠️ Số điện thoại chưa đăng ký tài khoản Online SMS Hub.
+                    </span>
+                  )}
+                </div>
+
+                {remainingQuota.contactUserId > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {(remainingQuota.friendshipStatus === 'none' || remainingQuota.friendshipStatus === 'rejected') && (
+                      <button 
+                        className="btn btn-primary"
+                        onClick={() => {
+                          sendFriendRequest(loggedInUser.id, remainingQuota.email)
+                            .then(res => {
+                              triggerAlert('success', res.message);
+                              loadChatDetails();
+                              refreshDashboardData();
+                            })
+                            .catch(err => {
+                              triggerAlert('error', err.response?.data?.message || 'Không thể gửi lời mời kết bạn');
+                            });
+                        }}
+                        style={{ padding: '6px 14px', fontSize: '0.82rem', borderRadius: '20px' }}
+                      >
+                        🤝 Kết bạn
+                      </button>
+                    )}
+
+                    {remainingQuota.friendshipStatus === 'pending_sent' && (
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.82rem', fontStyle: 'italic' }}>
+                        ⏳ Đã gửi lời mời kết bạn
+                      </span>
+                    )}
+
+                    {remainingQuota.friendshipStatus === 'pending_received' && (
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          className="btn btn-accent"
+                          onClick={() => {
+                            respondFriendRequest(remainingQuota.friendshipId, true)
+                              .then(res => {
+                                triggerAlert('success', res.message);
+                                loadChatDetails();
+                                refreshDashboardData();
+                              })
+                              .catch(() => triggerAlert('error', 'Lỗi khi chấp nhận kết bạn'));
+                          }}
+                          style={{ padding: '6px 12px', fontSize: '0.82rem', borderRadius: '20px', background: 'var(--color-accent)' }}
+                        >
+                          ✓ Chấp nhận
+                        </button>
+                        <button
+                          className="btn btn-danger"
+                          onClick={() => {
+                            respondFriendRequest(remainingQuota.friendshipId, false)
+                              .then(res => {
+                                triggerAlert('success', res.message);
+                                loadChatDetails();
+                                refreshDashboardData();
+                              })
+                              .catch(() => triggerAlert('error', 'Lỗi khi từ chối kết bạn'));
+                          }}
+                          style={{ padding: '6px 12px', fontSize: '0.82rem', borderRadius: '20px', background: 'rgba(239, 68, 68, 0.2)', color: 'var(--color-danger)', border: '1px solid var(--color-danger)' }}
+                        >
+                          ✕ Từ chối
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 

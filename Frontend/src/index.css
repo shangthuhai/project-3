@@ -322,6 +322,16 @@ body {
   color: var(--color-warning);
 }
 
+.item-status-badge.pending-sent {
+  background: rgba(36, 129, 204, 0.15);
+  color: var(--color-primary-hover);
+}
+
+.item-status-badge.pending-received {
+  background: rgba(236, 72, 153, 0.15);
+  color: #ec4899;
+}
+
 .empty-list-message {
   text-align: center;
   color: var(--text-muted);
