@@ -1,0 +1,180 @@
+import React, { useEffect, useRef } from 'react';
+import { useChat } from '../../context/ChatContext';
+
+export default function UserAiChat() {
+  const {
+    aiPosition,
+    setAiPosition,
+    isAiBubbleOpen,
+    setIsAiBubbleOpen,
+    aiMessages,
+    aiNewMessage,
+    setAiNewMessage,
+    isAiLoading,
+    aiChatPosition,
+    setAiChatPosition,
+    aiMessagesEndRef,
+    handleAiSendMessage
+  } = useChat();
+
+  const aiDragRef = useRef({ isDragging: false, startX: 0, startY: 0, posX: 0, posY: 0 });
+  const aiChatDragRef = useRef({ isDragging: false, startX: 0, startY: 0, posX: 0, posY: 0 });
+
+  const handleAiBubbleMouseDown = (e) => {
+    if (e.button !== 0) return;
+    aiDragRef.current.isDragging = false;
+    aiDragRef.current.startX = e.clientX;
+    aiDragRef.current.startY = e.clientY;
+    aiDragRef.current.posX = aiPosition.x;
+    aiDragRef.current.posY = aiPosition.y;
+
+    document.addEventListener('mousemove', handleAiBubbleMouseMove);
+    document.addEventListener('mouseup', handleAiBubbleMouseUp);
+  };
+
+  const handleAiBubbleMouseMove = (e) => {
+    const dx = e.clientX - aiDragRef.current.startX;
+    const dy = e.clientY - aiDragRef.current.startY;
+
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+      aiDragRef.current.isDragging = true;
+    }
+
+    let newX = aiDragRef.current.posX + dx;
+    let newY = aiDragRef.current.posY + dy;
+
+    newX = Math.max(10, Math.min(window.innerWidth - 70, newX));
+    newY = Math.max(10, Math.min(window.innerHeight - 70, newY));
+
+    setAiPosition({ x: newX, y: newY });
+  };
+
+  const handleAiBubbleMouseUp = (e) => {
+    document.removeEventListener('mousemove', handleAiBubbleMouseMove);
+    document.removeEventListener('mouseup', handleAiBubbleMouseUp);
+
+    if (!aiDragRef.current.isDragging) {
+      setIsAiBubbleOpen(prev => !prev);
+    }
+  };
+
+  const handleAiChatMouseDown = (e) => {
+    if (e.button !== 0) return;
+    if (e.target.closest('.ai-mini-chat-close-btn')) return;
+
+    aiChatDragRef.current.isDragging = false;
+    aiChatDragRef.current.startX = e.clientX;
+    aiChatDragRef.current.startY = e.clientY;
+    aiChatDragRef.current.posX = aiChatPosition.x;
+    aiChatDragRef.current.posY = aiChatPosition.y;
+
+    document.addEventListener('mousemove', handleAiChatMouseMove);
+    document.addEventListener('mouseup', handleAiChatMouseUp);
+  };
+
+  const handleAiChatMouseMove = (e) => {
+    const dx = e.clientX - aiChatDragRef.current.startX;
+    const dy = e.clientY - aiChatDragRef.current.startY;
+
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+      aiChatDragRef.current.isDragging = true;
+    }
+
+    let newX = aiChatDragRef.current.posX + dx;
+    let newY = aiChatDragRef.current.posY + dy;
+
+    newX = Math.max(10, Math.min(window.innerWidth - 370, newX));
+    newY = Math.max(10, Math.min(window.innerHeight - 490, newY));
+
+    setAiChatPosition({ x: newX, y: newY });
+  };
+
+  const handleAiChatMouseUp = () => {
+    document.removeEventListener('mousemove', handleAiChatMouseMove);
+    document.removeEventListener('mouseup', handleAiChatMouseUp);
+  };
+
+  useEffect(() => {
+    const handleResize = () => {
+      setAiPosition(prev => ({
+        x: Math.max(10, Math.min(window.innerWidth - 70, prev.x)),
+        y: Math.max(10, Math.min(window.innerHeight - 70, prev.y))
+      }));
+      setAiChatPosition(prev => ({
+        x: Math.max(10, Math.min(window.innerWidth - 370, prev.x)),
+        y: Math.max(10, Math.min(window.innerHeight - 490, prev.y))
+      }));
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return (
+    <>
+      {/* AI Floating Chatbot Widget Bubble */}
+      {!isAiBubbleOpen && (
+        <div
+          className="ai-floating-bubble"
+          style={{ left: `${aiPosition.x}px`, top: `${aiPosition.y}px` }}
+          onMouseDown={handleAiBubbleMouseDown}
+        >
+          🤖
+        </div>
+      )}
+
+      {isAiBubbleOpen && (
+        <div
+          className="ai-mini-chat-window"
+          style={{
+            left: `${aiChatPosition.x}px`,
+            top: `${aiChatPosition.y}px`,
+            right: 'auto',
+            bottom: 'auto'
+          }}
+        >
+          <div className="ai-mini-chat-header" onMouseDown={handleAiChatMouseDown}>
+            <h3>🤖 Trợ lý AI Chatbot</h3>
+            <button className="ai-mini-chat-close-btn" onClick={() => setIsAiBubbleOpen(false)}>×</button>
+          </div>
+
+          <div className="ai-mini-chat-messages">
+            {aiMessages.length === 0 ? (
+              <div style={{ color: '#94a3b8', fontSize: '0.82rem', textAlign: 'center', marginTop: '20px' }}>
+                Hỏi mình bất cứ điều gì nhé! 💬
+              </div>
+            ) : (
+              aiMessages.map((msg, index) => {
+                const isBot = msg.senderId === 999;
+                return (
+                  <div key={index} className={`ai-mini-msg ${isBot ? 'bot' : 'user'}`}>
+                    {msg.content}
+                  </div>
+                );
+              })
+            )}
+            {isAiLoading && (
+              <div className="ai-mini-chat-loading">
+                <div className="spinner-small"></div>
+                <span>Trợ lý AI đang soạn câu trả lời...</span>
+              </div>
+            )}
+            <div ref={aiMessagesEndRef} />
+          </div>
+
+          <form className="ai-mini-chat-input-area" onSubmit={handleAiSendMessage}>
+            <input
+              type="text"
+              placeholder="Nhập câu hỏi..."
+              value={aiNewMessage}
+              onChange={(e) => setAiNewMessage(e.target.value)}
+              disabled={isAiLoading}
+            />
+            <button type="submit" className="ai-mini-chat-send-btn" disabled={!aiNewMessage.trim() || isAiLoading}>
+              ➡️
+            </button>
+          </form>
+        </div>
+      )}
+    </>
+  );
+}
