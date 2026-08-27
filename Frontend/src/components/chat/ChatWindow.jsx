@@ -242,146 +242,156 @@ export default function ChatWindow() {
       <form className={cx('chat-window__input-area')} onSubmit={handleSendMessageSubmit} style={{ position: 'relative' }}>
         {/* Composer Toolbar */}
         <div className={cx('chat-window__composer-tools')}>
-          <button
-            type="button"
-            className={cx('chat-window__composer-btn', { 'chat-window__composer-btn--active': showScheduler })}
-            onClick={() => {
-              setShowScheduler(!showScheduler);
-              setShowTemplatePicker(false);
-              setShowAiAssistant(false);
-            }}
-          >
-            ⏰ {language === 'en' ? 'Schedule' : 'Hẹn giờ'} {scheduleDate && '✓'}
-          </button>
-          <button
-            type="button"
-            className={cx('chat-window__composer-btn', { 'chat-window__composer-btn--active': showTemplatePicker })}
-            onClick={() => {
-              setShowTemplatePicker(!showTemplatePicker);
-              setShowScheduler(false);
-              setShowAiAssistant(false);
-            }}
-          >
-            📄 {language === 'en' ? 'Templates' : 'Mẫu tin nhắn'}
-          </button>
-          <button
-            type="button"
-            className={cx('chat-window__composer-btn', { 'chat-window__composer-btn--active': showAiAssistant })}
-            onClick={() => {
-              setShowAiAssistant(!showAiAssistant);
-              setShowScheduler(false);
-              setShowTemplatePicker(false);
-            }}
-          >
-            ✨ {language === 'en' ? 'AI Assistant' : 'Trợ lý AI'}
-          </button>
+          
+          <div className={cx('chat-window__composer-tool-container')}>
+            <button
+              type="button"
+              className={cx('chat-window__composer-btn', { 'chat-window__composer-btn--active': showScheduler })}
+              onClick={() => {
+                setShowScheduler(!showScheduler);
+                setShowTemplatePicker(false);
+                setShowAiAssistant(false);
+              }}
+            >
+              ⏰ {language === 'en' ? 'Schedule' : 'Hẹn giờ'} {scheduleDate && '✓'}
+            </button>
+
+            {/* Scheduler Popover */}
+            {showScheduler && (
+              <div className={cx('chat-window__scheduler-popover')}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>{language === 'en' ? 'Select Send Date/Time:' : 'Chọn Ngày/Giờ Gửi:'}</label>
+                <input
+                  type="datetime-local"
+                  value={scheduleDate}
+                  onChange={(e) => setScheduleDate(e.target.value)}
+                  min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
+                />
+                <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                  <button type="button" className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: '0.72rem' }} onClick={() => { setScheduleDate(''); setShowScheduler(false); }}>
+                    {language === 'en' ? 'Clear' : 'Xóa'}
+                  </button>
+                  <button type="button" className="btn btn-primary" style={{ padding: '2px 8px', fontSize: '0.72rem' }} onClick={() => setShowScheduler(false)}>
+                    {language === 'en' ? 'Confirm' : 'Xác nhận'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className={cx('chat-window__composer-tool-container')}>
+            <button
+              type="button"
+              className={cx('chat-window__composer-btn', { 'chat-window__composer-btn--active': showTemplatePicker })}
+              onClick={() => {
+                setShowTemplatePicker(!showTemplatePicker);
+                setShowScheduler(false);
+                setShowAiAssistant(false);
+              }}
+            >
+              📄 {language === 'en' ? 'Templates' : 'Mẫu tin nhắn'}
+            </button>
+
+            {/* Template Picker Popover */}
+            {showTemplatePicker && (
+              <div className={cx('chat-window__template-picker')}>
+                <div style={{ padding: '10px', fontWeight: 'bold', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>{language === 'en' ? 'Select Template' : 'Chọn tin nhắn mẫu'}</span>
+                  <button type="button" style={{ background: 'none', border: 'none', color: '#ff5555', cursor: 'pointer' }} onClick={() => setShowTemplatePicker(false)}>✕</button>
+                </div>
+                {templates.length === 0 ? (
+                  <div style={{ padding: '15px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>{language === 'en' ? 'No templates found.' : 'Không có mẫu tin nhắn.'}</div>
+                ) : (
+                  templates.map(tpl => (
+                    <div
+                      key={tpl.id}
+                      className={cx('chat-window__template-item')}
+                      onClick={() => {
+                        let text = tpl.body.replace('{Name}', selectedContact.name);
+                        setNewMessage(text.substring(0, 120));
+                        setShowTemplatePicker(false);
+                      }}
+                    >
+                      <h5 className={cx('chat-window__template-item-title')}>{tpl.title}</h5>
+                      <p className={cx('chat-window__template-item-body')}>{tpl.body}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className={cx('chat-window__composer-tool-container')}>
+            <button
+              type="button"
+              className={cx('chat-window__composer-btn', { 'chat-window__composer-btn--active': showAiAssistant })}
+              onClick={() => {
+                setShowAiAssistant(!showAiAssistant);
+                setShowScheduler(false);
+                setShowTemplatePicker(false);
+              }}
+            >
+              ✨ {language === 'en' ? 'AI Assistant' : 'Trợ lý AI'}
+            </button>
+
+            {/* AI Assistant Popover */}
+            {showAiAssistant && (
+              <div className={cx('chat-window__ai-popover')}>
+                <div style={{ padding: '4px 0px 8px 0px', fontWeight: 'bold', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-main)' }}>✨ {t('ai_assistant')}</span>
+                  <button type="button" style={{ background: 'none', border: 'none', color: '#ff5555', cursor: 'pointer', fontSize: '1rem' }} onClick={() => setShowAiAssistant(false)}>✕</button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+                  <label style={{ fontSize: '0.72rem', fontWeight: 'bold', color: 'var(--text-muted)', textAlign: 'left', display: 'block' }}>{language === 'en' ? 'Message Idea:' : 'Ý tưởng tin nhắn:'}</label>
+                  <textarea
+                    placeholder={t('prompt_placeholder')}
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    disabled={generatingAi}
+                    className={cx('chat-window__ai-textarea')}
+                    style={{ width: '100%', boxSizing: 'border-box' }}
+                  />
+
+                  <label style={{ fontSize: '0.72rem', fontWeight: 'bold', color: 'var(--text-muted)', textAlign: 'left', display: 'block' }}>{language === 'en' ? 'Tone:' : 'Văn phong:'}</label>
+                  <select
+                    value={aiTone}
+                    onChange={(e) => setAiTone(e.target.value)}
+                    disabled={generatingAi}
+                    className={cx('chat-window__ai-select')}
+                    style={{ width: '100%' }}
+                  >
+                    <option value="polite">{t('tone_polite')}</option>
+                    <option value="formal">{t('tone_formal')}</option>
+                    <option value="funny">{t('tone_funny')}</option>
+                    <option value="intimate">{t('tone_intimate')}</option>
+                  </select>
+
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    style={{ padding: '6px', fontSize: '0.8rem', marginTop: '4px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', width: '100%' }}
+                    onClick={handleGenerateAiMessage}
+                    disabled={generatingAi || !aiPrompt.trim()}
+                  >
+                    {generatingAi ? (
+                      <>
+                        <span className={cx('chat-window__spinner-small')}></span> {language === 'en' ? 'Generating...' : 'Đang tạo...'}
+                      </>
+                    ) : (
+                      t('generate')
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           {scheduleDate && (
             <span style={{ fontSize: '0.75rem', color: '#fbbf24', marginLeft: 'auto' }}>
               {language === 'en' ? 'Scheduled:' : 'Hẹn giờ:'} {new Date(scheduleDate).toLocaleString()}
             </span>
           )}
         </div>
-
-        {/* Scheduler Popover */}
-        {showScheduler && (
-          <div className={cx('chat-window__scheduler-popover')}>
-            <label style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>{language === 'en' ? 'Select Send Date/Time:' : 'Chọn Ngày/Giờ Gửi:'}</label>
-            <input
-              type="datetime-local"
-              value={scheduleDate}
-              onChange={(e) => setScheduleDate(e.target.value)}
-              min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
-            />
-            <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-              <button type="button" className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: '0.72rem' }} onClick={() => { setScheduleDate(''); setShowScheduler(false); }}>
-                {language === 'en' ? 'Clear' : 'Xóa'}
-              </button>
-              <button type="button" className="btn btn-primary" style={{ padding: '2px 8px', fontSize: '0.72rem' }} onClick={() => setShowScheduler(false)}>
-                {language === 'en' ? 'Confirm' : 'Xác nhận'}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Template Picker Popover */}
-        {showTemplatePicker && (
-          <div className={cx('chat-window__template-picker')}>
-            <div style={{ padding: '10px', fontWeight: 'bold', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>{language === 'en' ? 'Select Template' : 'Chọn tin nhắn mẫu'}</span>
-              <button type="button" style={{ background: 'none', border: 'none', color: '#ff5555', cursor: 'pointer' }} onClick={() => setShowTemplatePicker(false)}>✕</button>
-            </div>
-            {templates.length === 0 ? (
-              <div style={{ padding: '15px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>{language === 'en' ? 'No templates found.' : 'Không có mẫu tin nhắn.'}</div>
-            ) : (
-              templates.map(tpl => (
-                <div
-                  key={tpl.id}
-                  className={cx('chat-window__template-item')}
-                  onClick={() => {
-                    let text = tpl.body.replace('{Name}', selectedContact.name);
-                    setNewMessage(text.substring(0, 120));
-                    setShowTemplatePicker(false);
-                  }}
-                >
-                  <h5 className={cx('chat-window__template-item-title')}>{tpl.title}</h5>
-                  <p className={cx('chat-window__template-item-body')}>{tpl.body}</p>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        {/* AI Assistant Popover */}
-        {showAiAssistant && (
-          <div className={cx('chat-window__ai-popover')}>
-            <div style={{ padding: '4px 0px 8px 0px', fontWeight: 'bold', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-main)' }}>✨ {t('ai_assistant')}</span>
-              <button type="button" style={{ background: 'none', border: 'none', color: '#ff5555', cursor: 'pointer', fontSize: '1rem' }} onClick={() => setShowAiAssistant(false)}>✕</button>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
-              <label style={{ fontSize: '0.72rem', fontWeight: 'bold', color: 'var(--text-muted)', textAlign: 'left', display: 'block' }}>{language === 'en' ? 'Message Idea:' : 'Ý tưởng tin nhắn:'}</label>
-              <textarea
-                placeholder={t('prompt_placeholder')}
-                value={aiPrompt}
-                onChange={(e) => setAiPrompt(e.target.value)}
-                disabled={generatingAi}
-                className={cx('chat-window__ai-textarea')}
-                style={{ width: '100%', boxSizing: 'border-box' }}
-              />
-
-              <label style={{ fontSize: '0.72rem', fontWeight: 'bold', color: 'var(--text-muted)', textAlign: 'left', display: 'block' }}>{language === 'en' ? 'Tone:' : 'Văn phong:'}</label>
-              <select
-                value={aiTone}
-                onChange={(e) => setAiTone(e.target.value)}
-                disabled={generatingAi}
-                className={cx('chat-window__ai-select')}
-                style={{ width: '100%' }}
-              >
-                <option value="polite">{t('tone_polite')}</option>
-                <option value="formal">{t('tone_formal')}</option>
-                <option value="funny">{t('tone_funny')}</option>
-                <option value="intimate">{t('tone_intimate')}</option>
-              </select>
-
-              <button
-                type="button"
-                className="btn btn-primary"
-                style={{ padding: '6px', fontSize: '0.8rem', marginTop: '4px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', width: '100%' }}
-                onClick={handleGenerateAiMessage}
-                disabled={generatingAi || !aiPrompt.trim()}
-              >
-                {generatingAi ? (
-                  <>
-                    <span className={cx('chat-window__spinner-small')}></span> {language === 'en' ? 'Generating...' : 'Đang tạo...'}
-                  </>
-                ) : (
-                  t('generate')
-                )}
-              </button>
-            </div>
-          </div>
-        )}
 
         <div className={cx('chat-window__input-row')}>
           <div className={cx('chat-window__textarea-container')}>
