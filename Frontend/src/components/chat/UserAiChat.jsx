@@ -60,8 +60,36 @@ export default function UserAiChat() {
     document.removeEventListener('mouseup', handleAiBubbleMouseUp);
 
     if (!aiDragRef.current.isDragging) {
-      setIsAiBubbleOpen(prev => !prev);
+      const bubbleSize = 56;
+      const chatWidth = 360;
+      const chatHeight = 480;
+
+      // Align right edge of chat with right edge of bubble if bubble is on the right half of screen.
+      // Otherwise align left edge of chat with left edge of bubble.
+      let targetX;
+      if (aiPosition.x < window.innerWidth / 2) {
+        targetX = aiPosition.x;
+      } else {
+        targetX = aiPosition.x - chatWidth + bubbleSize;
+      }
+
+      // Position chat window above the bubble by default, or below if there isn't enough space above.
+      let targetY = aiPosition.y - chatHeight - 10;
+      if (targetY < 10) {
+        targetY = aiPosition.y + bubbleSize + 10;
+      }
+
+      // Constrain to viewport bounds
+      targetX = Math.max(10, Math.min(window.innerWidth - chatWidth - 10, targetX));
+      targetY = Math.max(10, Math.min(window.innerHeight - chatHeight - 10, targetY));
+
+      setAiChatPosition({ x: targetX, y: targetY });
+      setIsAiBubbleOpen(true);
     }
+  };
+
+  const handleCloseAiChat = () => {
+    setIsAiBubbleOpen(false);
   };
 
   const handleAiChatMouseDown = (e) => {
@@ -140,7 +168,7 @@ export default function UserAiChat() {
         >
           <div className={cx('ai-chat__header')} onMouseDown={handleAiChatMouseDown}>
             <h3>{t('ai_chatbot_title')}</h3>
-            <button className={cx('ai-chat__close-btn')} onClick={() => setIsAiBubbleOpen(false)}>×</button>
+            <button className={cx('ai-chat__close-btn')} onClick={handleCloseAiChat}>×</button>
           </div>
 
           <div className={cx('ai-chat__messages')}>

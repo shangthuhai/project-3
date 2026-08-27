@@ -110,8 +110,7 @@ export function ChatProvider({ children }) {
   const [aiTone, setAiTone] = useState('polite');
   const [generatingAi, setGeneratingAi] = useState(false);
 
-  // User AI floating bubble
-  const [aiPosition, setAiPosition] = useState({ x: window.innerWidth - 80, y: window.innerHeight - 150 });
+  const [aiPosition, setAiPosition] = useState({ x: 10, y: Math.floor((window.innerHeight - 56) / 2) });
   const [isAiBubbleOpen, setIsAiBubbleOpen] = useState(false);
   const [aiMessages, setAiMessages] = useState([]);
   const [aiNewMessage, setAiNewMessage] = useState('');
