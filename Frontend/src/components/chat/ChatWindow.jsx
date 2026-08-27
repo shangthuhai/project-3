@@ -14,6 +14,7 @@ export default function ChatWindow() {
 
   const {
     selectedContact,
+    setSelectedContact,
     remainingQuota,
     chatMessages,
     contactIsTyping,
@@ -84,6 +85,14 @@ export default function ChatWindow() {
   return (
     <>
       <div className={cx('chat-window__header')}>
+        <button 
+          type="button" 
+          className="mobile-back-btn" 
+          onClick={() => setSelectedContact(null)}
+          title={language === 'en' ? 'Back' : 'Quay lại'}
+        >
+          ←
+        </button>
         <div className={cx('chat-window__header-user')}>
           <img
             src={selectedContact.avatar || `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%237f91a4"/><text x="50%" y="50%" font-family="sans-serif" font-weight="bold" font-size="40" fill="white" text-anchor="middle" dominant-baseline="central">${selectedContact.name[0]}</text></svg>`}

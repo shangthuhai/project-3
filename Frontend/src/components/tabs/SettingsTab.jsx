@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useChat } from '../../context/ChatContext';
 import styles from './SettingsTab.module.css';
 import classNames from 'classnames/bind';
 
@@ -11,6 +12,7 @@ export default function SettingsTab() {
   const { language, setLanguage, t } = useLanguage();
   const { triggerAlert } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { setActiveTab } = useChat();
   
   const [selectedLang, setSelectedLang] = useState(language);
   const [selectedTheme, setSelectedTheme] = useState(theme);
@@ -29,8 +31,20 @@ export default function SettingsTab() {
   return (
     <div className="view-panel">
       <div className="view-header">
-        <h1>{t('settings_title')}</h1>
-        <p>{t('settings_desc')}</p>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <button 
+            type="button" 
+            className="mobile-back-btn" 
+            onClick={() => setActiveTab('chats')}
+            title={language === 'en' ? 'Back' : 'Quay lại'}
+          >
+            ←
+          </button>
+          <div>
+            <h1>{t('settings_title')}</h1>
+            <p>{t('settings_desc')}</p>
+          </div>
+        </div>
       </div>
 
       <form onSubmit={handleSave} className={cx('settings__container')}>

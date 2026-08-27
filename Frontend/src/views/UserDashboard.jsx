@@ -5,12 +5,10 @@ import { useLanguage } from '../context/LanguageContext';
 import Sidebar from '../components/chat/Sidebar';
 import ChatWindow from '../components/chat/ChatWindow';
 import UserAiChat from '../components/chat/UserAiChat';
-import RequestsTab from '../components/tabs/RequestsTab';
 import ServicesTab from '../components/tabs/ServicesTab';
 import ProfileTab from '../components/tabs/ProfileTab';
 import TemplatesTab from '../components/tabs/TemplatesTab';
 import GroupsTab from '../components/tabs/GroupsTab';
-import AnalyticsTab from '../components/tabs/AnalyticsTab';
 import SecurityTab from '../components/tabs/SecurityTab';
 import SettingsTab from '../components/tabs/SettingsTab';
 import styles from './UserDashboard.module.css';
@@ -24,13 +22,8 @@ export default function UserDashboard() {
   const {
     activeTab,
     selectedContact,
-    showAddContactModal,
-    setShowAddContactModal,
     showPaymentModal,
     setShowPaymentModal,
-    contactForm,
-    setContactForm,
-    handleAddContactSubmit,
     paymentForm,
     setPaymentForm,
     showPaymentOtpField,
@@ -49,8 +42,10 @@ export default function UserDashboard() {
     return selectedServices.reduce((sum, service) => sum + getServicePrice(service), 0).toFixed(2);
   };
 
+  const showDetails = (activeTab === 'chats' && selectedContact) || (activeTab !== 'chats');
+
   return (
-    <div className="app-container">
+    <div className={`app-container ${showDetails ? 'app-container--show-details' : ''}`}>
       {/* Sidebar Navigation */}
       <Sidebar />
 
@@ -68,70 +63,15 @@ export default function UserDashboard() {
           </div>
         ) : null}
 
-        {activeTab === 'requests' && <RequestsTab />}
         {activeTab === 'services' && <ServicesTab />}
         {activeTab === 'profile' && <ProfileTab />}
         {activeTab === 'templates' && <TemplatesTab />}
         {activeTab === 'groups' && <GroupsTab />}
-        {activeTab === 'analytics' && <AnalyticsTab />}
         {activeTab === 'security' && <SecurityTab />}
         {activeTab === 'settings' && <SettingsTab />}
       </div>
 
-      {/* Add Contact Modal Dialog */}
-      {showAddContactModal && (
-        <div className={cx('dashboard__modal-overlay')}>
-          <div className={cx('dashboard__modal-content')}>
-            <div className={cx('dashboard__modal-header')}>
-              <h3>{t('create_new_contact')}</h3>
-              <button className={cx('dashboard__modal-close-btn')} onClick={() => setShowAddContactModal(false)}>×</button>
-            </div>
-            <form onSubmit={handleAddContactSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>{t('first_name')}</label>
-                  <input
-                    type="text"
-                    placeholder={t('first_name')}
-                    value={contactForm.firstName}
-                    onChange={(e) => setContactForm({ ...contactForm, firstName: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>{t('last_name')}</label>
-                  <input
-                    type="text"
-                    placeholder={t('last_name')}
-                    value={contactForm.lastName}
-                    onChange={(e) => setContactForm({ ...contactForm, lastName: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
-              <div className="form-group">
-                <label>{t('mobile_number_label')}</label>
-                <input
-                  type="text"
-                  placeholder="e.g. 0944444444"
-                  value={contactForm.contactNumber}
-                  onChange={(e) => setContactForm({ ...contactForm, contactNumber: e.target.value.replace(/\D/g, '').substring(0, 10) })}
-                  maxLength={10}
-                  required
-                />
-              </div>
-              <div className="form-actions">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowAddContactModal(false)}>
-                  {t('btn_cancel')}
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  {t('btn_save_contact')}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+
 
       {/* Premium Service Credit Card Payment Modal */}
       {showPaymentModal && (

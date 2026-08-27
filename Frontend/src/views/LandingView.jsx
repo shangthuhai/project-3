@@ -337,6 +337,83 @@ export default function LandingView() {
             </form>
           </div>
         )}
+
+        {/* Mobile/Tablet actions moved below the auth card */}
+        <div className={cx('landing__mobile-actions')}>
+          {/* Quick Demo Swapper widget for easy evaluation */}
+          {users.length > 0 && (
+            <div className={cx('landing__user-switcher')} style={{ width: '100%', marginBottom: '15px' }}>
+              <div className={cx('landing__user-switcher-info')}>
+                <span className={cx('landing__user-switcher-label')}>{t('demo_login')}</span>
+                <select
+                  className={cx('landing__user-select')}
+                  defaultValue=""
+                  onChange={(e) => handleDemoUserSwitch(parseInt(e.target.value))}
+                >
+                  <option value="" disabled>{t('select_preseed')}</option>
+                  {users.map(u => (
+                    <option key={u.id} value={u.id}>{u.name} ({u.username})</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
+          <div className={cx('landing__mobile-controls')}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <button 
+                type="button" 
+                className={cx('landing__lang-btn', { 'landing__lang-btn--active': language === 'en' })}
+                onClick={() => setLanguage('en')}
+                style={{ background: language === 'en' ? 'var(--color-primary)' : 'rgba(255,255,255,0.08)', color: '#fff', border: 'none', borderRadius: '4px', padding: '6px 10px', fontSize: '0.8rem', cursor: 'pointer' }}
+              >
+                EN
+              </button>
+              <button 
+                type="button" 
+                className={cx('landing__lang-btn', { 'landing__lang-btn--active': language === 'vi' })}
+                onClick={() => setLanguage('vi')}
+                style={{ background: language === 'vi' ? 'var(--color-primary)' : 'rgba(255,255,255,0.08)', color: '#fff', border: 'none', borderRadius: '4px', padding: '6px 10px', fontSize: '0.8rem', cursor: 'pointer' }}
+              >
+                VI
+              </button>
+              
+              <button 
+                type="button" 
+                className={cx('landing__theme-btn')}
+                onClick={() => setTheme(theme === 'light' ? 'dark' : theme === 'dark' ? 'glass' : 'light')}
+                style={{ 
+                  background: 'rgba(255,255,255,0.08)', 
+                  color: 'var(--text-main)', 
+                  border: 'none', 
+                  borderRadius: '4px', 
+                  padding: '6px 10px', 
+                  fontSize: '0.8rem', 
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                title="Change Theme"
+              >
+                {theme === 'light' ? '☀️' : theme === 'glass' ? '✨' : '🌙'}
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                {authMode === 'login' ? t("dont_have_account") : t("already_registered")}
+              </span>
+              <button
+                className="btn btn-secondary"
+                style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
+              >
+                {authMode === 'login' ? t('signup') : t('login')}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
