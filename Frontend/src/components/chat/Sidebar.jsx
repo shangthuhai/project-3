@@ -2,6 +2,7 @@ import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useTheme } from '../../context/ThemeContext';
 import styles from './Sidebar.module.css';
 import classNames from 'classnames/bind';
 
@@ -9,6 +10,7 @@ const cx = classNames.bind(styles);
 
 export default function Sidebar() {
   const { t } = useLanguage();
+  const { theme, setTheme } = useTheme();
   const {
     loggedInUser,
     users,
@@ -276,8 +278,30 @@ export default function Sidebar() {
             <h2 className={cx('sidebar__title-text')}>{t('sms_workspace')}</h2>
           </div>
 
-          {/* Real Logout button */}
-          <button className={cx('sidebar__logout-btn')} onClick={handleLogout}>{t('logout')}</button>
+          {/* Real Logout button and Quick Theme Switcher */}
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <button 
+              type="button" 
+              onClick={() => setTheme(theme === 'light' ? 'dark' : theme === 'dark' ? 'glass' : 'light')}
+              style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: 'none',
+                borderRadius: '4px',
+                padding: '4px 8px',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--text-main)',
+                transition: 'var(--transition-fast)'
+              }}
+              title="Change Theme"
+            >
+              {theme === 'light' ? '☀️' : theme === 'glass' ? '✨' : '🌙'}
+            </button>
+            <button className={cx('sidebar__logout-btn')} onClick={handleLogout}>{t('logout')}</button>
+          </div>
         </div>
 
         {/* Switcher Context is kept for easy pair programming/evaluation */}

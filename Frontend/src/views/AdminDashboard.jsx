@@ -136,7 +136,7 @@ export default function AdminDashboard() {
         <div className="admin-sidebar-header" style={{ padding: '24px 20px', borderBottom: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div className="admin-logo" style={{ fontSize: '2rem' }}>🛡️</div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <h3 style={{ color: '#fff', fontSize: '1.05rem', fontWeight: '600' }}>Admin Workspace</h3>
+            <h3 style={{ color: 'var(--text-main)', fontSize: '1.05rem', fontWeight: '600' }}>Admin Workspace</h3>
             <span className="admin-role-badge" style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: '600', marginTop: '2px' }}>System Administrator</span>
           </div>
         </div>
@@ -145,35 +145,35 @@ export default function AdminDashboard() {
           <button
             className={`admin-nav-btn ${adminTab === 'overview' ? 'active' : ''}`}
             onClick={() => setAdminTab('overview')}
-            style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'overview' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'overview' ? '#fff' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '500', textAlign: 'left', transition: 'var(--transition-fast)' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'overview' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'overview' ? 'var(--color-primary)' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '600', textAlign: 'left', transition: 'var(--transition-fast)' }}
           >
             📊 Dashboard
           </button>
           <button
             className={`admin-nav-btn ${adminTab === 'users' ? 'active' : ''}`}
             onClick={() => setAdminTab('users')}
-            style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'users' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'users' ? '#fff' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '500', textAlign: 'left', transition: 'var(--transition-fast)' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'users' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'users' ? 'var(--color-primary)' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '600', textAlign: 'left', transition: 'var(--transition-fast)' }}
           >
             👥 User Accounts
           </button>
           <button
             className={`admin-nav-btn ${adminTab === 'logs' ? 'active' : ''}`}
             onClick={() => { setAdminTab('logs'); setSmsLogsPage(1); }}
-            style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'logs' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'logs' ? '#fff' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '500', textAlign: 'left', transition: 'var(--transition-fast)' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'logs' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'logs' ? 'var(--color-primary)' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '600', textAlign: 'left', transition: 'var(--transition-fast)' }}
           >
             📜 SMS Logs
           </button>
           <button
             className={`admin-nav-btn ${adminTab === 'transactions' ? 'active' : ''}`}
             onClick={() => setAdminTab('transactions')}
-            style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'transactions' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'transactions' ? '#fff' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '500', textAlign: 'left', transition: 'var(--transition-fast)' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'transactions' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'transactions' ? 'var(--color-primary)' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '600', textAlign: 'left', transition: 'var(--transition-fast)' }}
           >
             💳 Transactions
           </button>
           <button
             className={`admin-nav-btn ${adminTab === 'templates' ? 'active' : ''}`}
             onClick={() => setAdminTab('templates')}
-            style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'templates' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'templates' ? '#fff' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '500', textAlign: 'left', transition: 'var(--transition-fast)' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'templates' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'templates' ? 'var(--color-primary)' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '600', textAlign: 'left', transition: 'var(--transition-fast)' }}
           >
             📋 System Templates
           </button>
@@ -181,7 +181,7 @@ export default function AdminDashboard() {
 
         <div className="admin-sidebar-footer" style={{ padding: '20px', borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div className="admin-info" style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '0.88rem', fontWeight: '600', color: '#fff' }}>{loggedInUser.fullName || loggedInUser.name}</span>
+            <span style={{ fontSize: '0.88rem', fontWeight: '600', color: 'var(--text-main)' }}>{loggedInUser.fullName || loggedInUser.name}</span>
             <span className="admin-subtext" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>{loggedInUser.email}</span>
           </div>
           <button
@@ -223,7 +223,7 @@ export default function AdminDashboard() {
       {showQuotaModal && selectedUserForQuota && (
         <div className="admin-modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="admin-modal" style={{ background: 'var(--bg-sidebar)', padding: '30px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', width: '90%', maxWidth: '400px', boxShadow: 'var(--shadow-lg)' }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#fff', marginBottom: '10px' }}>Edit User Quota</h3>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: 'var(--text-main)', marginBottom: '10px' }}>Edit User Quota</h3>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: '20px' }}>Adjust SMS limit for user <strong>{selectedUserForQuota.username}</strong></p>
             <div className="form-group" style={{ margin: '20px 0', display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>Free SMS Messages Left</label>
@@ -232,11 +232,11 @@ export default function AdminDashboard() {
                 min="0"
                 value={newQuotaValue}
                 onChange={(e) => setNewQuotaValue(parseInt(e.target.value) || 0)}
-                style={{ width: '100%', padding: '10px', background: '#182533', border: '1px solid var(--border-light)', color: '#fff', borderRadius: '8px' }}
+                style={{ width: '100%', padding: '10px', background: 'var(--bg-app)', border: '1px solid var(--border-light)', color: 'var(--text-main)', borderRadius: '8px' }}
               />
             </div>
             <div className="admin-modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-              <button className="btn btn-secondary" onClick={() => { setShowQuotaModal(false); setSelectedUserForQuota(null); }} style={{ padding: '8px 16px', background: '#1a2432', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <button className="btn btn-secondary" onClick={() => { setShowQuotaModal(false); setSelectedUserForQuota(null); }} style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', border: '1px solid var(--border-light)' }}>
                 Cancel
               </button>
               <button className="btn btn-primary" onClick={handleSaveQuota} style={{ padding: '8px 16px' }}>

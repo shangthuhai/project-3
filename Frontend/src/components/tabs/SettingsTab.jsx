@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import styles from './SettingsTab.module.css';
 import classNames from 'classnames/bind';
 
@@ -9,15 +10,17 @@ const cx = classNames.bind(styles);
 export default function SettingsTab() {
   const { language, setLanguage, t } = useLanguage();
   const { triggerAlert } = useAuth();
+  const { theme, setTheme } = useTheme();
   
   const [selectedLang, setSelectedLang] = useState(language);
-  const [theme, setTheme] = useState('dark');
+  const [selectedTheme, setSelectedTheme] = useState(theme);
   const [notifications, setNotifications] = useState(true);
   const [autoDelete, setAutoDelete] = useState(false);
 
   const handleSave = (e) => {
     e.preventDefault();
     setLanguage(selectedLang);
+    setTheme(selectedTheme);
     if (triggerAlert) {
       triggerAlert('success', t('settings_saved'));
     }
@@ -33,8 +36,9 @@ export default function SettingsTab() {
       <form onSubmit={handleSave} className={cx('settings__container')}>
         {/* Active Settings Section */}
         <div className={cx('settings__card')}>
-          <h3 className={cx('settings__card-title')}>{t('language_settings')}</h3>
-          <div className="form-group">
+          <h3 className={cx('settings__card-title')}>{t('settings_title')}</h3>
+          
+          <div className="form-group" style={{ marginBottom: '15px' }}>
             <label htmlFor="language-select">{t('select_language')}</label>
             <select
               id="language-select"
@@ -46,29 +50,31 @@ export default function SettingsTab() {
               <option value="vi">Tiếng Việt (VN)</option>
             </select>
           </div>
-        </div>
 
-        {/* Future / Disabled Settings Section */}
-        <div className={cx('settings__card', 'settings__card--future')}>
-          <h3 className={cx('settings__card-title')}>{t('future_settings')}</h3>
-          
-          <div className={cx('settings__item')}>
+          <div className={cx('settings__item')} style={{ borderBottom: 'none', paddingBottom: 0 }}>
             <div className={cx('settings__item-info')}>
               <h4 className={cx('settings__item-label')}>{t('theme_mode')}</h4>
               <p className={cx('settings__item-desc')}>{t('theme_mode_desc')}</p>
             </div>
             <select
               className={cx('settings__select')}
-              value={theme}
-              onChange={(e) => setTheme(e.target.value)}
-              disabled
+              value={selectedTheme}
+              onChange={(e) => {
+                setSelectedTheme(e.target.value);
+                setTheme(e.target.value);
+              }}
             >
-              <option value="dark">Sleek Dark Mode (Default)</option>
-              <option value="light">Crisp Light Mode</option>
-              <option value="glass">Glassmorphism Aura</option>
+              <option value="dark">{t('theme_dark')}</option>
+              <option value="light">{t('theme_light')}</option>
+              <option value="glass">{t('theme_glass')}</option>
             </select>
           </div>
+        </div>
 
+        {/* Future / Disabled Settings Section */}
+        <div className={cx('settings__card', 'settings__card--future')}>
+          <h3 className={cx('settings__card-title')}>{t('future_settings')}</h3>
+          
           <div className={cx('settings__item')}>
             <div className={cx('settings__item-info')}>
               <h4 className={cx('settings__item-label')}>{t('push_notifications')}</h4>

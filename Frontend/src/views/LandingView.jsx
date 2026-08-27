@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 import styles from './LandingView.module.css';
 import classNames from 'classnames/bind';
 
@@ -8,6 +9,7 @@ const cx = classNames.bind(styles);
 
 export default function LandingView() {
   const { language, setLanguage, t } = useLanguage();
+  const { theme, setTheme } = useTheme();
   const {
     users,
     authMode,
@@ -92,8 +94,8 @@ export default function LandingView() {
       {/* Right Column: Auth forms */}
       <div className={cx('landing__right')}>
         <div className={cx('landing__header')}>
-          {/* Language Switcher */}
-          <div style={{ display: 'flex', gap: '8px', marginRight: 'auto' }}>
+          {/* Language & Theme Switcher */}
+          <div style={{ display: 'flex', gap: '8px', marginRight: 'auto', alignItems: 'center' }}>
             <button 
               type="button" 
               className={cx('landing__lang-btn', { 'landing__lang-btn--active': language === 'en' })}
@@ -109,6 +111,27 @@ export default function LandingView() {
               style={{ background: language === 'vi' ? 'var(--color-primary)' : 'rgba(255,255,255,0.08)', color: '#fff', border: 'none', borderRadius: '4px', padding: '4px 8px', fontSize: '0.75rem', cursor: 'pointer' }}
             >
               VI
+            </button>
+            
+            <button 
+              type="button" 
+              className={cx('landing__theme-btn')}
+              onClick={() => setTheme(theme === 'light' ? 'dark' : theme === 'dark' ? 'glass' : 'light')}
+              style={{ 
+                background: 'rgba(255,255,255,0.08)', 
+                color: 'var(--text-main)', 
+                border: 'none', 
+                borderRadius: '4px', 
+                padding: '4px 8px', 
+                fontSize: '0.75rem', 
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              title="Change Theme"
+            >
+              {theme === 'light' ? '☀️' : theme === 'glass' ? '✨' : '🌙'}
             </button>
           </div>
 
