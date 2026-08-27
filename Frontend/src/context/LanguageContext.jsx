@@ -41,6 +41,8 @@ const translations = {
     // Sidebar
     "sms_workspace": "SMS Workspace",
     "logout": "Log Out",
+    "logout_confirm_title": "Log Out",
+    "logout_confirm_msg": "Are you sure you want to log out?",
     "logged_in_as": "Logged In As",
     "tab_chats": "Chats",
     "tab_contacts": "Contacts",
@@ -302,6 +304,8 @@ const translations = {
     // Sidebar
     "sms_workspace": "SMS Workspace",
     "logout": "Đăng Xuất",
+    "logout_confirm_title": "Đăng xuất",
+    "logout_confirm_msg": "Bạn có chắc chắn muốn đăng xuất không?",
     "logged_in_as": "Đang đăng nhập dưới tên",
     "tab_chats": "Tin nhắn",
     "tab_contacts": "Danh bạ",

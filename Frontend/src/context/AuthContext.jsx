@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useLanguage } from './LanguageContext';
 import {
   login,
   register,
@@ -207,10 +208,17 @@ export function AuthProvider({ children }) {
       });
   };
 
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
   const handleLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const confirmLogout = () => {
     localStorage.removeItem('user');
     setLoggedInUser(null);
     triggerAlert('success', 'You have been logged out.');
+    setShowLogoutConfirm(false);
   };
 
   const handleDemoUserSwitch = (userId) => {
@@ -235,6 +243,75 @@ export function AuthProvider({ children }) {
       localStorage.setItem('user', JSON.stringify(updated));
       return updated;
     });
+  };
+
+  const LogoutConfirmModal = () => {
+    const { t } = useLanguage();
+    return (
+      <div 
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(14, 22, 33, 0.85)',
+          backdropFilter: 'blur(8px)',
+          zIndex: 100000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px',
+        }}
+        onClick={() => setShowLogoutConfirm(false)}
+      >
+        <div 
+          className="modal-content"
+          style={{
+            maxWidth: '380px',
+            textAlign: 'center',
+            padding: '30px',
+            animation: 'modalSlide 0.25s cubic-bezier(0.1, 0.8, 0.3, 1)',
+            background: 'var(--bg-sidebar)',
+            border: '1px solid var(--border-light)',
+            borderRadius: 'var(--radius-lg)',
+            boxShadow: 'var(--shadow-lg)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px'
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div style={{ fontSize: '3rem', margin: '10px 0 5px 0' }}>
+            🚪
+          </div>
+          <div>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '1.25rem', fontWeight: '700', color: 'var(--text-main)' }}>
+              {t('logout_confirm_title')}
+            </h3>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
+              {t('logout_confirm_msg')}
+            </p>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginTop: '10px' }}>
+            <button 
+              className="btn btn-secondary" 
+              onClick={() => setShowLogoutConfirm(false)}
+              style={{ flex: 1 }}
+            >
+              {t('btn_cancel')}
+            </button>
+            <button 
+              className="btn btn-danger" 
+              onClick={confirmLogout}
+              style={{ flex: 1 }}
+            >
+              {t('logout')}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -270,6 +347,7 @@ export function AuthProvider({ children }) {
       loadUsersList
     }}>
       {children}
+      {showLogoutConfirm && <LogoutConfirmModal />}
     </AuthContext.Provider>
   );
 }
