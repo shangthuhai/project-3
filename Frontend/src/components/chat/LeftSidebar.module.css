@@ -1,0 +1,184 @@
+.left-sidebar {
+  width: 70px;
+  min-width: 70px;
+  height: 100%;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 0;
+  z-index: 20;
+  box-sizing: border-box;
+}
+
+/* Avatar styling */
+.left-sidebar__avatar-wrapper {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  padding: 2px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.left-sidebar__avatar-wrapper:hover {
+  transform: scale(1.05);
+  border-color: var(--color-primary-hover);
+}
+
+.left-sidebar__avatar-wrapper--active {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 10px rgba(36, 129, 204, 0.4);
+}
+
+.left-sidebar__avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Top / Bottom container */
+.left-sidebar__top,
+.left-sidebar__bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+}
+
+/* Standard sidebar button */
+.left-sidebar__btn {
+  background: transparent;
+  border: none;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+  position: relative;
+}
+
+.left-sidebar__btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+  transform: translateY(-2px);
+}
+
+.left-sidebar__btn--active {
+  background: rgba(36, 129, 204, 0.15) !important;
+  color: var(--color-primary-hover) !important;
+}
+
+.left-sidebar__btn--active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 4px;
+  background: var(--color-primary);
+  border-radius: 0 4px 4px 0;
+}
+
+.left-sidebar__icon {
+  width: 24px;
+  height: 24px;
+  transition: transform var(--transition-fast);
+}
+
+.left-sidebar__icon--spin {
+  transform: rotate(45deg);
+}
+
+/* Theme / Logout special colors */
+.left-sidebar__btn--theme {
+  font-size: 1.3rem;
+}
+
+.left-sidebar__btn--logout:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ff8888;
+}
+
+/* Settings Dropdown menu */
+.left-sidebar__dropdown {
+  position: absolute;
+  left: 60px;
+  bottom: -40px;
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 8px;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 100;
+  animation: dropdownSlideIn 0.2s cubic-bezier(0.1, 0.9, 0.2, 1);
+  backdrop-filter: blur(12px);
+}
+
+@keyframes dropdownSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.left-sidebar__dropdown-item {
+  background: transparent;
+  border: none;
+  padding: 10px 14px;
+  text-align: left;
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.left-sidebar__dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-primary-hover);
+}
+
+.left-sidebar__dropdown-item--active {
+  background: rgba(36, 129, 204, 0.1) !important;
+  color: var(--color-primary-hover) !important;
+  font-weight: 600;
+}
+
+/* Theme support tweaks */
+:global(.theme-light) .left-sidebar__btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+:global(.theme-light) .left-sidebar__dropdown-item:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+:global(.theme-glass) .left-sidebar {
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(20px);
+}
+:global(.theme-glass) .left-sidebar__dropdown {
+  background: rgba(15, 23, 42, 0.8);
+}

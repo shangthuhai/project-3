@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useChat } from '../context/ChatContext';
 import { useLanguage } from '../context/LanguageContext';
 import Sidebar from '../components/chat/Sidebar';
+import LeftSidebar from '../components/chat/LeftSidebar';
 import ChatWindow from '../components/chat/ChatWindow';
 import UserAiChat from '../components/chat/UserAiChat';
 import ServicesTab from '../components/tabs/ServicesTab';
@@ -46,8 +47,11 @@ export default function UserDashboard() {
 
   return (
     <div className={`app-container ${showDetails ? 'app-container--show-details' : ''}`}>
+      {/* Left Navigation Sidebar */}
+      <LeftSidebar />
+
       {/* Sidebar Navigation */}
-      <Sidebar />
+      {activeTab === 'chats' && <Sidebar />}
 
       {/* Main Panel Content Router */}
       <div className="main-workspace">

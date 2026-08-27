@@ -597,16 +597,16 @@ body {
   }
   .app-container.app-container--show-details .main-workspace {
     display: flex !important;
-    width: 100% !important;
-    min-width: 100% !important;
+    width: calc(100% - 60px) !important;
+    min-width: calc(100% - 60px) !important;
     height: 100vh !important;
   }
 
   /* Khi ở trạng thái xem danh sách (chưa chọn chat hoặc đang ở tab chính) */
   .app-container:not(.app-container--show-details) .sidebar {
     display: flex !important;
-    width: 100% !important;
-    min-width: 100% !important;
+    width: calc(100% - 60px) !important;
+    min-width: calc(100% - 60px) !important;
     height: 100vh !important;
   }
   .app-container:not(.app-container--show-details) .main-workspace {

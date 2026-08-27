@@ -203,36 +203,9 @@ export default function Sidebar() {
   return (
     <div className={cx('sidebar')}>
       <div className={cx('sidebar__header')}>
-        <div className={cx('sidebar__title-area')} style={{ justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div className={cx('sidebar__logo')}>💬</div>
-            <h2 className={cx('sidebar__title-text')}>{t('sms_workspace')}</h2>
-          </div>
-
-          {/* Real Logout button and Quick Theme Switcher */}
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-            <button 
-              type="button" 
-              onClick={() => setTheme(theme === 'light' ? 'dark' : theme === 'dark' ? 'glass' : 'light')}
-              style={{
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: 'none',
-                borderRadius: '4px',
-                padding: '4px 8px',
-                fontSize: '0.85rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--text-main)',
-                transition: 'var(--transition-fast)'
-              }}
-              title="Change Theme"
-            >
-              {theme === 'light' ? '☀️' : theme === 'glass' ? '✨' : '🌙'}
-            </button>
-            <button className={cx('sidebar__logout-btn')} onClick={handleLogout}>{t('logout')}</button>
-          </div>
+        <div className={cx('sidebar__title-area')}>
+          <div className={cx('sidebar__logo')}>💬</div>
+          <h2 className={cx('sidebar__title-text')}>{t('sms_workspace')}</h2>
         </div>
 
         {/* Switcher Context is kept for easy pair programming/evaluation */}
@@ -253,32 +226,6 @@ export default function Sidebar() {
             </div>
           </div>
         )}
-      </div>
-
-      {/* Tab Buttons */}
-      <div className={cx('sidebar__tabs')} style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px', padding: '8px' }}>
-        <button className={cx('sidebar__tab-btn', { 'sidebar__tab-btn--active': activeTab === 'chats' })} onClick={() => { setActiveTab('chats'); setSelectedContact(null); }}>
-          {t('tab_chats')}
-        </button>
-        <button className={cx('sidebar__tab-btn', { 'sidebar__tab-btn--active': activeTab === 'services' })} onClick={() => setActiveTab('services')}>
-          {t('tab_services')}
-        </button>
-        <button className={cx('sidebar__tab-btn', { 'sidebar__tab-btn--active': activeTab === 'templates' })} onClick={() => { setActiveTab('templates'); loadTemplates(); }}>
-          {t('tab_templates')}
-        </button>
-        <button className={cx('sidebar__tab-btn', { 'sidebar__tab-btn--active': activeTab === 'groups' })} onClick={() => { setActiveTab('groups'); loadGroups(); setSelectedGroup(null); setGroupMembers([]); setBulkResultsLog(null); }}>
-          {t('tab_groups')}
-        </button>
-        <button className={cx('sidebar__tab-btn', { 'sidebar__tab-btn--active': activeTab === 'security' })} onClick={() => { setActiveTab('security'); loadBlocklist(); }}>
-          {t('tab_security')}
-        </button>
-        <button className={cx('sidebar__tab-btn', { 'sidebar__tab-btn--active': activeTab === 'profile' })} onClick={() => setActiveTab('profile')}>
-          {t('tab_profile')}
-        </button>
-        {/* Settings button spanning 3 columns at the bottom of the grid */}
-        <button className={cx('sidebar__tab-btn', { 'sidebar__tab-btn--active': activeTab === 'settings' })} onClick={() => setActiveTab('settings')} style={{ gridColumn: 'span 3' }}>
-          ⚙️ {t('tab_settings')}
-        </button>
       </div>
 
       {/* Search bar for friends/users */}
