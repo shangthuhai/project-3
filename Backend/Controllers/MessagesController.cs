@@ -297,11 +297,17 @@ namespace Backend.Controllers
                 return Ok(new { isFriend = true, remaining = -1, limit = -1, sentCount = 0, friendshipStatus = "accepted", friendshipId, email, contactUserId = contactUser?.UserId ?? 0 });
             }
 
-            // Global Quota check from UserQuotas table
+            // Per-stranger Quota check (limit from User_Quotas table, remaining calculated dynamically)
             var quota = await _context.UserQuotas.FirstOrDefaultAsync(q => q.UserId == actualUserId);
-            int remaining = quota?.FreeMessagesLeft ?? 0;
-            int limit = 5;
-            int sentCount = limit - remaining;
+            int limit = quota?.FreeMessagesLeft ?? 5;
+
+            // Count stranger messages (IsFreeFriendMsg == false) sent by actualUserId to contactNumber
+            int sentCount = await _context.Messages.CountAsync(m => 
+                m.SenderId == actualUserId && 
+                m.ReceiverNumber == contactNumber && 
+                !m.IsFreeFriendMsg);
+
+            int remaining = Math.Max(0, limit - sentCount);
 
             return Ok(new { isFriend = false, remaining, limit, sentCount, friendshipStatus, friendshipId, email, contactUserId = contactUser?.UserId ?? 0 });
         }
@@ -451,16 +457,20 @@ namespace Backend.Controllers
 
             if (!isFriend)
             {
-                // Enforce global quota limit
+                // Retrieve user's stranger SMS limit
                 var quota = await _context.UserQuotas.FirstOrDefaultAsync(q => q.UserId == sender.UserId);
-                if (quota == null || quota.FreeMessagesLeft <= 0)
-                {
-                    return BadRequest(new { message = "You have reached your limit of 5 free messages for non-friends. Add them as a friend for unlimited free messaging." });
-                }
+                int limit = quota?.FreeMessagesLeft ?? 5;
 
-                // Decrement free messages left (scheduled messages also occupy quota)
-                quota.FreeMessagesLeft--;
-                quota.UpdatedAt = DateTime.UtcNow;
+                // Count how many stranger messages the sender has already sent to this specific number
+                int sentCount = await _context.Messages.CountAsync(m => 
+                    m.SenderId == sender.UserId && 
+                    m.ReceiverNumber == dto.ReceiverNumber && 
+                    !m.IsFreeFriendMsg);
+
+                if (sentCount >= limit)
+                {
+                    return BadRequest(new { message = $"You have reached your limit of {limit} free messages for this stranger. Add them as a friend for unlimited free messaging." });
+                }
             }
 
             var message = new Message
@@ -587,15 +597,19 @@ namespace Backend.Controllers
                 if (!isFriend)
                 {
                     var quota = await _context.UserQuotas.FirstOrDefaultAsync(q => q.UserId == sender.UserId);
-                    if (quota == null || quota.FreeMessagesLeft <= 0)
+                    int limit = quota?.FreeMessagesLeft ?? 5;
+
+                    int strangerSentCount = await _context.Messages.CountAsync(m => 
+                        m.SenderId == sender.UserId && 
+                        m.ReceiverNumber == number && 
+                        !m.IsFreeFriendMsg);
+
+                    if (strangerSentCount >= limit)
                     {
                         failedCount++;
                         details.Add($"{number}: Out of free message quota");
                         continue;
                     }
-
-                    quota.FreeMessagesLeft--;
-                    quota.UpdatedAt = DateTime.UtcNow;
                 }
 
                 // Create message
