@@ -792,6 +792,7 @@ export function ChatProvider({ children }) {
       paymentOtpCode,
       setPaymentOtpCode,
       blocklist,
+      setBlocklist,
       blockNumberInput,
       setBlockNumberInput,
       privacySettings,

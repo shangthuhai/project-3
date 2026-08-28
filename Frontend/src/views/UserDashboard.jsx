@@ -12,6 +12,7 @@ import TemplatesTab from '../components/tabs/TemplatesTab';
 import GroupsTab from '../components/tabs/GroupsTab';
 import SecurityTab from '../components/tabs/SecurityTab';
 import SettingsTab from '../components/tabs/SettingsTab';
+import FriendsTab from '../components/tabs/FriendsTab';
 import styles from './UserDashboard.module.css';
 import classNames from 'classnames/bind';
 
@@ -73,6 +74,7 @@ export default function UserDashboard() {
         {activeTab === 'groups' && <GroupsTab />}
         {activeTab === 'security' && <SecurityTab />}
         {activeTab === 'settings' && <SettingsTab />}
+        {activeTab === 'friends' && <FriendsTab />}
       </div>
 
 
