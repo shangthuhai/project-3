@@ -114,7 +114,7 @@
 .left-sidebar__dropdown {
   position: absolute;
   left: 60px;
-  bottom: -40px;
+  top: 0;
   background: var(--bg-sidebar);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-md);
@@ -182,3 +182,71 @@
 :global(.theme-glass) .left-sidebar__dropdown {
   background: rgba(15, 23, 42, 0.8);
 }
+
+/* Toggles and sections inside Settings dropdown */
+.left-sidebar__dropdown-divider {
+  height: 1px;
+  background: var(--border-light);
+  margin: 6px 4px;
+}
+
+.left-sidebar__dropdown-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 8px;
+}
+
+.left-sidebar__dropdown-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.left-sidebar__toggle-group {
+  display: flex;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+:global(.theme-light) .left-sidebar__toggle-group {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.left-sidebar__toggle-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 6px 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: calc(var(--radius-sm) - 1px);
+  text-align: center;
+  transition: all var(--transition-fast);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.left-sidebar__toggle-btn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+:global(.theme-light) .left-sidebar__toggle-btn:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.left-sidebar__toggle-btn--active {
+  background: var(--color-primary) !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
