@@ -73,6 +73,10 @@ const translations = {
     "status_friend": "Friend",
     "status_sent": "Request Sent",
     "status_received": "Friend Request",
+    "tooltip_pin": "Pin",
+    "tooltip_unpin": "Unpin",
+    "tooltip_delete": "Delete Conversation",
+    "delete_confirm": "Are you sure you want to delete this conversation?",
 
     // Chat Window
     "select_chat_placeholder": "Select a chat from the sidebar or go to the Contacts tab to start a new thread.",
@@ -338,6 +342,10 @@ const translations = {
     "status_friend": "Bạn bè",
     "status_sent": "Đã gửi lời mời",
     "status_received": "Lời mời kết bạn",
+    "tooltip_pin": "Ghim",
+    "tooltip_unpin": "Bỏ ghim",
+    "tooltip_delete": "Xóa hội thoại",
+    "delete_confirm": "Bạn có chắc chắn muốn xóa cuộc trò chuyện này?",
 
     // Chat Window
     "select_chat_placeholder": "Chọn một cuộc trò chuyện từ thanh bên hoặc truy cập tab Danh bạ để bắt đầu.",

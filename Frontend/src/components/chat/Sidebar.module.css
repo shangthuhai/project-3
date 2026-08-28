@@ -395,3 +395,103 @@
   }
 }
 
+.sidebar__item-actions-btn {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--transition-fast), background-color var(--transition-fast);
+  z-index: 5;
+}
+
+.sidebar__list-item:hover .sidebar__item-actions-btn,
+.sidebar__item-actions-btn--active {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.sidebar__item-actions-btn:hover {
+  color: var(--text-main);
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.sidebar__item-actions-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.sidebar__item-dropdown {
+  position: absolute;
+  right: 45px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 100;
+  min-width: 160px;
+  animation: sidebarItemDropdownFadeIn 0.15s ease-out;
+  backdrop-filter: blur(8px);
+}
+
+.sidebar__item-dropdown-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  padding: 8px 12px;
+  text-align: left;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color var(--transition-fast);
+  width: 100%;
+}
+
+.sidebar__item-dropdown-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.sidebar__item-dropdown-btn--danger {
+  color: #ff6b6b !important;
+}
+
+.sidebar__item-dropdown-btn--danger:hover {
+  background: rgba(239, 68, 68, 0.15) !important;
+}
+
+.sidebar__item-pin-icon {
+  margin-left: 6px;
+  font-size: 0.8rem;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+@keyframes sidebarItemDropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+}
+

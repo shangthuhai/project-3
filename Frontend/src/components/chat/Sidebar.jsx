@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -40,6 +40,77 @@ export default function Sidebar() {
     setBulkResultsLog
   } = useChat();
 
+  const [deletedChats, setDeletedChats] = useState({});
+  const [pinnedChats, setPinnedChats] = useState([]);
+  const [activeMenuContact, setActiveMenuContact] = useState(null);
+  const activeMenuRef = useRef(null);
+
+  // Sync state with localStorage when user changes
+  useEffect(() => {
+    if (loggedInUser) {
+      try {
+        setDeletedChats(JSON.parse(localStorage.getItem(`deleted_chats_${loggedInUser.id}`) || '{}'));
+      } catch (e) {
+        setDeletedChats({});
+      }
+      try {
+        setPinnedChats(JSON.parse(localStorage.getItem(`pinned_chats_${loggedInUser.id}`) || '[]'));
+      } catch (e) {
+        setPinnedChats([]);
+      }
+    } else {
+      setDeletedChats({});
+      setPinnedChats([]);
+    }
+    setActiveMenuContact(null);
+  }, [loggedInUser]);
+
+  // Click outside to close active tooltip
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (activeMenuRef.current && !activeMenuRef.current.contains(event.target)) {
+        setActiveMenuContact(null);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handlePinToggle = (contactNumber) => {
+    if (!loggedInUser) return;
+    let updated;
+    if (pinnedChats.includes(contactNumber)) {
+      updated = pinnedChats.filter(num => num !== contactNumber);
+    } else {
+      updated = [...pinnedChats, contactNumber];
+    }
+    setPinnedChats(updated);
+    localStorage.setItem(`pinned_chats_${loggedInUser.id}`, JSON.stringify(updated));
+    setActiveMenuContact(null);
+  };
+
+  const handleDeleteConversation = (contactNumber) => {
+    if (!loggedInUser) return;
+    const confirmMsg = t('delete_confirm') || 'Bạn có chắc chắn muốn xóa cuộc trò chuyện này?';
+    if (window.confirm(confirmMsg)) {
+      const updated = {
+        ...deletedChats,
+        [contactNumber]: new Date().toISOString()
+      };
+      setDeletedChats(updated);
+      localStorage.setItem(`deleted_chats_${loggedInUser.id}`, JSON.stringify(updated));
+
+      // If currently chatting with this contact, deselect them
+      if (selectedContact && selectedContact.contactNumber === contactNumber) {
+        setSelectedContact(null);
+      }
+
+      setActiveMenuContact(null);
+    }
+  };
+
   const startChat = (contactName, contactNumber, isFriend) => {
     setSelectedContact({ name: contactName, contactNumber, isFriend });
     setActiveTab('chats');
@@ -65,7 +136,7 @@ export default function Sidebar() {
     }
 
     return (
-      <div 
+      <div
         ref={searchListRef}
         onScroll={handleSearchScroll}
         style={{ height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}
@@ -124,6 +195,16 @@ export default function Sidebar() {
 
       conversations.forEach(conv => {
         if (conv.contactNumber === '9999999999') return;
+
+        // Filter out deleted chats
+        const deleteTimeStr = deletedChats[conv.contactNumber];
+        if (deleteTimeStr) {
+          const deleteTime = new Date(deleteTimeStr);
+          if (!conv.lastMessageTime || new Date(conv.lastMessageTime) <= deleteTime) {
+            return;
+          }
+        }
+
         chatItems.push({
           id: conv.userId ? conv.userId : `conv_${conv.contactNumber}`,
           name: conv.name,
@@ -137,6 +218,13 @@ export default function Sidebar() {
 
       friends.forEach(f => {
         if (f.mobileNumber === '9999999999') return;
+
+        // Filter out deleted chats
+        const deleteTimeStr = deletedChats[f.mobileNumber];
+        if (deleteTimeStr) {
+          return;
+        }
+
         const alreadyAdded = chatItems.some(i => i.contactNumber === f.mobileNumber);
         if (!alreadyAdded) {
           chatItems.push({
@@ -151,13 +239,18 @@ export default function Sidebar() {
         }
       });
 
-
-
       if (chatItems.length === 0) {
         return <div className={cx('sidebar__empty-list-message')}>{t('no_active_chats')}</div>;
       }
 
+      // Sort chats with pinned first, then by lastMessageTime/name
       chatItems.sort((a, b) => {
+        const aPinned = pinnedChats.includes(a.contactNumber);
+        const bPinned = pinnedChats.includes(b.contactNumber);
+
+        if (aPinned && !bPinned) return -1;
+        if (!aPinned && bPinned) return 1;
+
         if (a.lastMessageTime && b.lastMessageTime) {
           return new Date(b.lastMessageTime) - new Date(a.lastMessageTime);
         }
@@ -166,36 +259,78 @@ export default function Sidebar() {
         return a.name.localeCompare(b.name);
       });
 
-      return chatItems.map(item => (
-        <div
-          key={item.contactNumber}
-          className={cx('sidebar__list-item', { 'sidebar__list-item--selected': selectedContact?.contactNumber === item.contactNumber })}
-          onClick={() => setSelectedContact(item)}
-        >
-          <img src={item.avatar} alt={item.name} className={cx('sidebar__item-avatar')} />
-          <div className={cx('sidebar__item-details')}>
-            <div className={cx('sidebar__item-row')}>
-              <span className={cx('sidebar__item-name')}>{item.name}</span>
-              <span className={cx('sidebar__item-meta')}>
-                {item.lastMessageTime ? formatMessageTime(item.lastMessageTime) : item.contactNumber}
-              </span>
+      return chatItems.map(item => {
+        const isPinned = pinnedChats.includes(item.contactNumber);
+        const isMenuOpen = activeMenuContact === item.contactNumber;
+
+        return (
+          <div
+            key={item.contactNumber}
+            className={cx('sidebar__list-item', { 'sidebar__list-item--selected': selectedContact?.contactNumber === item.contactNumber })}
+            onClick={() => setSelectedContact(item)}
+          >
+            <img src={item.avatar} alt={item.name} className={cx('sidebar__item-avatar')} />
+            <div className={cx('sidebar__item-details')}>
+              <div className={cx('sidebar__item-row')}>
+                <span className={cx('sidebar__item-name')}>
+                  {item.name}
+                  {isPinned && <span className={cx('sidebar__item-pin-icon')} title={t('tooltip_pinned') || 'Pinned'}>📌</span>}
+                </span>
+                <span className={cx('sidebar__item-meta')}>
+                  {item.lastMessageTime ? formatMessageTime(item.lastMessageTime) : item.contactNumber}
+                </span>
+              </div>
+              <div className={cx('sidebar__item-row')}>
+                <span className={cx('sidebar__item-subtext')} title={item.subtext}>{item.subtext}</span>
+                <span className={cx('sidebar__item-meta')} style={{ fontSize: '0.7rem' }}>
+                  {item.lastMessageTime ? item.contactNumber : (
+                    <span className={cx('sidebar__item-status-badge', item.isFriend ? 'sidebar__item-status-badge--friend' : 'sidebar__item-status-badge--non-friend')}>
+                      {item.isFriend ? t('free_badge') : t('free_limit_badge')}
+                    </span>
+                  )}
+                </span>
+              </div>
             </div>
-            <div className={cx('sidebar__item-row')}>
-              <span className={cx('sidebar__item-subtext')} title={item.subtext}>{item.subtext}</span>
-              <span className={cx('sidebar__item-meta')} style={{ fontSize: '0.7rem' }}>
-                {item.lastMessageTime ? item.contactNumber : (
-                  <span className={cx('sidebar__item-status-badge', item.isFriend ? 'sidebar__item-status-badge--friend' : 'sidebar__item-status-badge--non-friend')}>
-                    {item.isFriend ? t('free_badge') : t('free_limit_badge')}
-                  </span>
-                )}
-              </span>
-            </div>
+
+            {/* Three dots Actions Button */}
+            <button
+              className={cx('sidebar__item-actions-btn', { 'sidebar__item-actions-btn--active': isMenuOpen })}
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveMenuContact(prev => prev === item.contactNumber ? null : item.contactNumber);
+              }}
+              title={t('tab_settings')}
+            >
+              <svg className={cx('sidebar__item-actions-icon')} fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+              </svg>
+            </button>
+
+            {/* Action Tooltip / Dropdown Menu */}
+            {isMenuOpen && (
+              <div
+                ref={activeMenuRef}
+                className={cx('sidebar__item-dropdown')}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  className={cx('sidebar__item-dropdown-btn')}
+                  onClick={() => handlePinToggle(item.contactNumber)}
+                >
+                  📌 {isPinned ? t('tooltip_unpin') : t('tooltip_pin')}
+                </button>
+                <button
+                  className={cx('sidebar__item-dropdown-btn', 'sidebar__item-dropdown-btn--danger')}
+                  onClick={() => handleDeleteConversation(item.contactNumber)}
+                >
+                  🗑️ {t('tooltip_delete')}
+                </button>
+              </div>
+            )}
           </div>
-        </div>
-      ));
+        );
+      });
     }
-
-
 
     return null;
   };
@@ -214,9 +349,9 @@ export default function Sidebar() {
             <img src={loggedInUser.profilePhoto} alt={loggedInUser.name} className={cx('sidebar__user-avatar')} />
             <div className={cx('sidebar__user-info')}>
               <span className={cx('sidebar__user-label')}>{t('logged_in_as')}</span>
-              <select 
-                className={cx('sidebar__user-select')} 
-                value={loggedInUser.id} 
+              <select
+                className={cx('sidebar__user-select')}
+                value={loggedInUser.id}
                 onChange={(e) => handleDemoUserSwitch(parseInt(e.target.value))}
               >
                 {users.map(u => (
@@ -260,8 +395,8 @@ export default function Sidebar() {
 
       {/* Mobile Bottom Navigation Bar */}
       <div className={cx('sidebar__mobile-bottom-nav')}>
-        <button 
-          type="button" 
+        <button
+          type="button"
           className={cx('sidebar__mobile-nav-btn')}
           onClick={() => setTheme(theme === 'light' ? 'dark' : theme === 'dark' ? 'glass' : 'light')}
         >
@@ -271,8 +406,8 @@ export default function Sidebar() {
           <span className={cx('sidebar__mobile-nav-text')}>{t('theme')}</span>
         </button>
 
-        <button 
-          type="button" 
+        <button
+          type="button"
           className={cx('sidebar__mobile-nav-btn', { 'sidebar__mobile-nav-btn--active': activeTab === 'settings' })}
           onClick={() => setActiveTab('settings')}
         >
@@ -280,8 +415,8 @@ export default function Sidebar() {
           <span className={cx('sidebar__mobile-nav-text')}>{t('tab_settings')}</span>
         </button>
 
-        <button 
-          type="button" 
+        <button
+          type="button"
           className={cx('sidebar__mobile-nav-btn', 'sidebar__mobile-nav-btn--logout')}
           onClick={handleLogout}
         >

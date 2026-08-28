@@ -218,7 +218,7 @@ export function ChatProvider({ children }) {
       if (active) {
         const isAiChat = active.contactNumber === "9999999999";
         const isAiMessage = message.senderId === 999;
-        
+
         if (isAiChat && isAiMessage) {
           setChatMessages(prev => {
             if (prev.some(m => m.id === message.id)) return prev;
@@ -234,7 +234,7 @@ export function ChatProvider({ children }) {
           });
         }
       }
-      
+
       if (message.senderId === 999) {
         setAiMessages(prev => {
           if (prev.some(m => m.id === message.id)) return prev;
@@ -283,7 +283,18 @@ export function ChatProvider({ children }) {
     setLoadingMoreMessages(false);
     getChatHistory(loggedInUser.id, selectedContact.contactNumber, null, 20)
       .then(msgs => {
-        setChatMessages(msgs);
+        let filtered = msgs;
+        try {
+          const deletedChats = JSON.parse(localStorage.getItem(`deleted_chats_${loggedInUser.id}`) || '{}');
+          const deleteTimeStr = deletedChats[selectedContact.contactNumber];
+          if (deleteTimeStr) {
+            const deleteTime = new Date(deleteTimeStr);
+            filtered = msgs.filter(m => new Date(m.sentTime) > deleteTime);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+        setChatMessages(filtered);
         if (msgs.length < 20) {
           setHasMoreMessages(false);
         }
@@ -369,7 +380,7 @@ export function ChatProvider({ children }) {
     const now = Date.now();
     if (now - lastTypingReportRef.current > 2000) {
       lastTypingReportRef.current = now;
-      connectionRef.current.invoke("SendTyping", selectedContact.contactNumber).catch(() => {});
+      connectionRef.current.invoke("SendTyping", selectedContact.contactNumber).catch(() => { });
     }
   };
 

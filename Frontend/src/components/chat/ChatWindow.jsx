@@ -65,7 +65,7 @@ export default function ChatWindow() {
 
     const firstId = chatMessages[0]?.id;
     const isPrepend = prevChatMessagesFirstIdRef.current !== null && firstId !== prevChatMessagesFirstIdRef.current;
-    
+
     if (!isPrepend) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
@@ -85,9 +85,9 @@ export default function ChatWindow() {
   return (
     <>
       <div className={cx('chat-window__header')}>
-        <button 
-          type="button" 
-          className="mobile-back-btn" 
+        <button
+          type="button"
+          className="mobile-back-btn"
           onClick={() => setSelectedContact(null)}
           title={language === 'en' ? 'Back' : 'Quay lại'}
         >
@@ -130,7 +130,7 @@ export default function ChatWindow() {
           {remainingQuota.contactUserId > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               {(remainingQuota.friendshipStatus === 'none' || remainingQuota.friendshipStatus === 'rejected') && (
-                <button 
+                <button
                   className="btn btn-primary"
                   onClick={() => {
                     sendFriendRequest(loggedInUser.id, remainingQuota.email)
@@ -194,7 +194,7 @@ export default function ChatWindow() {
         </div>
       )}
 
-      <div 
+      <div
         ref={chatMessagesAreaRef}
         onScroll={handleScroll}
         className={cx('chat-window__messages')}
@@ -242,7 +242,7 @@ export default function ChatWindow() {
       <form className={cx('chat-window__input-area')} onSubmit={handleSendMessageSubmit} style={{ position: 'relative' }}>
         {/* Composer Toolbar */}
         <div className={cx('chat-window__composer-tools')}>
-          
+
           <div className={cx('chat-window__composer-tool-container')}>
             <button
               type="button"
