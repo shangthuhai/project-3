@@ -65,6 +65,19 @@ export default function Sidebar() {
     setActiveMenuContact(null);
   }, [loggedInUser]);
 
+  // Automatically undelete chat when selected
+  useEffect(() => {
+    if (selectedContact && loggedInUser) {
+      const num = selectedContact.contactNumber;
+      if (deletedChats[num]) {
+        const updated = { ...deletedChats };
+        delete updated[num];
+        setDeletedChats(updated);
+        localStorage.setItem(`deleted_chats_${loggedInUser.id}`, JSON.stringify(updated));
+      }
+    }
+  }, [selectedContact, loggedInUser, deletedChats]);
+
   // Click outside to close active tooltip
   useEffect(() => {
     function handleClickOutside(event) {
@@ -102,6 +115,13 @@ export default function Sidebar() {
       setDeletedChats(updated);
       localStorage.setItem(`deleted_chats_${loggedInUser.id}`, JSON.stringify(updated));
 
+      // Also clean up from local chats in localStorage
+      try {
+        const localChats = JSON.parse(localStorage.getItem(`local_chats_${loggedInUser.id}`) || '[]');
+        const updatedLocalChats = localChats.filter(lc => lc.contactNumber !== contactNumber);
+        localStorage.setItem(`local_chats_${loggedInUser.id}`, JSON.stringify(updatedLocalChats));
+      } catch (e) {}
+
       // If currently chatting with this contact, deselect them
       if (selectedContact && selectedContact.contactNumber === contactNumber) {
         setSelectedContact(null);
@@ -111,9 +131,10 @@ export default function Sidebar() {
     }
   };
 
-  const startChat = (contactName, contactNumber, isFriend) => {
-    setSelectedContact({ name: contactName, contactNumber, isFriend });
+  const startChat = (contactName, contactNumber, isFriend, avatar, userId) => {
+    setSelectedContact({ name: contactName, contactNumber, isFriend, avatar, id: userId });
     setActiveTab('chats');
+    clearSearch();
   };
 
   const formatMessageTime = (timeStr) => {
@@ -159,7 +180,7 @@ export default function Sidebar() {
             <div
               key={user.id}
               className={cx('sidebar__list-item')}
-              onClick={() => startChat(user.name || user.username, user.mobileNumber, user.friendshipStatus === 'accepted')}
+              onClick={() => startChat(user.name || user.username, user.mobileNumber, user.friendshipStatus === 'accepted', user.profilePhoto, user.id)}
               style={{ cursor: 'pointer' }}
             >
               <img src={user.profilePhoto || 'https://via.placeholder.com/40'} alt={user.username} className={cx('sidebar__item-avatar')} />
@@ -211,7 +232,7 @@ export default function Sidebar() {
           contactNumber: conv.contactNumber,
           avatar: conv.avatar,
           isFriend: conv.isFriend,
-          subtext: conv.lastMessageContent,
+          subtext: conv.lastMessageContent || t('friend_no_msg'),
           lastMessageTime: conv.lastMessageTime
         });
       });
@@ -238,6 +259,21 @@ export default function Sidebar() {
           });
         }
       });
+
+      if (selectedContact && selectedContact.contactNumber !== '9999999999') {
+        const alreadyAdded = chatItems.some(i => i.contactNumber === selectedContact.contactNumber);
+        if (!alreadyAdded) {
+          chatItems.push({
+            id: selectedContact.id || selectedContact.userId || `conv_${selectedContact.contactNumber}`,
+            name: selectedContact.name,
+            contactNumber: selectedContact.contactNumber,
+            avatar: selectedContact.avatar || `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%237f91a4"/><text x="50%" y="50%" font-family="sans-serif" font-weight="bold" font-size="40" fill="white" text-anchor="middle" dominant-baseline="central">${selectedContact.name?.substring(0, 1).toUpperCase() || '?'}</text></svg>`,
+            isFriend: selectedContact.isFriend,
+            subtext: selectedContact.lastMessageContent || t('friend_no_msg') || 'Chưa có tin nhắn',
+            lastMessageTime: selectedContact.lastMessageTime || null
+          });
+        }
+      }
 
       if (chatItems.length === 0) {
         return <div className={cx('sidebar__empty-list-message')}>{t('no_active_chats')}</div>;

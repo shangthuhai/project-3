@@ -59,7 +59,54 @@ export function ChatProvider({ children }) {
   const [loadingMoreSearchResults, setLoadingMoreSearchResults] = useState(false);
 
   // Active Chat Session
-  const [selectedContact, setSelectedContact] = useState(null);
+  const [selectedContact, setSelectedContactInternal] = useState(null);
+
+  const mergeAndSetConversations = (dbConvs, localConvs) => {
+    const merged = [...dbConvs];
+    localConvs.forEach(lc => {
+      if (!merged.some(dc => dc.contactNumber === lc.contactNumber)) {
+        merged.push({
+          userId: lc.userId,
+          name: lc.name,
+          contactNumber: lc.contactNumber,
+          avatar: lc.avatar,
+          isFriend: lc.isFriend,
+          lastMessageContent: lc.lastMessageContent || null,
+          lastMessageTime: lc.lastMessageTime || null
+        });
+      }
+    });
+    setConversations(merged);
+  };
+
+  const setSelectedContact = (contact) => {
+    setSelectedContactInternal(contact);
+    if (contact && contact.contactNumber && contact.contactNumber !== '9999999999' && loggedInUser) {
+      try {
+        const localChats = JSON.parse(localStorage.getItem(`local_chats_${loggedInUser.id}`) || '[]');
+        const isAlreadyInLocal = localChats.some(c => c.contactNumber === contact.contactNumber);
+        const inConversationsList = conversations.some(c => c.contactNumber === contact.contactNumber && c.lastMessageTime);
+
+        if (!isAlreadyInLocal && !inConversationsList) {
+          const newLocalChat = {
+            userId: contact.id || contact.userId,
+            name: contact.name,
+            contactNumber: contact.contactNumber,
+            avatar: contact.avatar || contact.profilePhoto,
+            isFriend: contact.isFriend,
+            lastMessageContent: contact.lastMessageContent,
+            lastMessageTime: contact.lastMessageTime
+          };
+          const updatedLocalChats = [...localChats, newLocalChat];
+          localStorage.setItem(`local_chats_${loggedInUser.id}`, JSON.stringify(updatedLocalChats));
+          mergeAndSetConversations(conversations, updatedLocalChats);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
   const [chatMessages, setChatMessages] = useState([]);
   const [contactIsTyping, setContactIsTyping] = useState(false);
   const [newMessage, setNewMessage] = useState('');
@@ -163,7 +210,22 @@ export function ChatProvider({ children }) {
   const loadConversations = () => {
     if (!loggedInUser) return;
     getConversations()
-      .then(setConversations)
+      .then(dbConvs => {
+        let localChats = [];
+        try {
+          localChats = JSON.parse(localStorage.getItem(`local_chats_${loggedInUser.id}`) || '[]');
+        } catch (e) {}
+        
+        // Clean up local chats that are now returned in dbConvs
+        const filteredLocalChats = localChats.filter(lc => 
+          !dbConvs.some(dc => dc.contactNumber === lc.contactNumber)
+        );
+        try {
+          localStorage.setItem(`local_chats_${loggedInUser.id}`, JSON.stringify(filteredLocalChats));
+        } catch (e) {}
+
+        mergeAndSetConversations(dbConvs, filteredLocalChats);
+      })
       .catch(() => { });
   };
 

@@ -138,13 +138,14 @@ export default function FriendsTab() {
         triggerAlert('error', errorMsg);
       });
   };
-  // Start chat with a friend
-  const handleStartChat = (friend) => {
+  const handleStartChat = (userOrFriend) => {
+    const isFriend = friends.some(f => f.id === userOrFriend.id || f.mobileNumber === userOrFriend.mobileNumber) || userOrFriend.friendshipStatus === 'accepted';
     setSelectedContact({
-      id: friend.id || friend.userId,
-      name: friend.name || friend.username,
-      contactNumber: friend.mobileNumber,
-      isFriend: true
+      id: userOrFriend.id || userOrFriend.userId,
+      name: userOrFriend.name || userOrFriend.username,
+      contactNumber: userOrFriend.mobileNumber || userOrFriend.contactNumber,
+      isFriend: isFriend,
+      avatar: userOrFriend.profilePhoto || userOrFriend.avatar
     });
     setActiveTab('chats');
   };
