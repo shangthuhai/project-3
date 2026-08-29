@@ -1,3 +1,17 @@
+.templates-tab__container {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 25px;
+}
+
+.templates-tab__create-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  height: fit-content;
+}
+
 .templates-tab__grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -69,4 +83,11 @@
   display: flex;
   justify-content: flex-end;
   margin-top: 15px;
+}
+
+@media (max-width: 768px) {
+  .templates-tab__container {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
 }

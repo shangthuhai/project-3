@@ -40,7 +40,7 @@ export default function GroupsTab() {
         <p>{t('groups_desc')}</p>
       </div>
 
-      <div className={cx('groups-tab__container')}>
+      <div className={cx('groups-tab__container', { 'groups-tab__container--has-selected': !!selectedGroup })}>
         <div className={cx('groups-tab__sidebar')}>
           <h3 style={{ fontSize: '1rem', fontWeight: 'bold' }}>{t('tab_groups')}</h3>
           <form onSubmit={handleCreateGroup} style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
@@ -88,9 +88,21 @@ export default function GroupsTab() {
         <div className={cx('groups-tab__details-pane')}>
           {selectedGroup ? (
             <>
+              <button
+                type="button"
+                className={cx('groups-tab__back-btn')}
+                onClick={() => {
+                  setSelectedGroup(null);
+                  setGroupMembers([]);
+                  setBulkResultsLog(null);
+                }}
+              >
+                ← {t('back_to_list')}
+              </button>
+
               <div className={cx('groups-tab__pane-header')}>
                 <h3 className={cx('groups-tab__pane-title')}>{t('members_in_group')}: {selectedGroup.name}</h3>
-                <form onSubmit={handleAddGroupMember} style={{ display: 'flex', gap: '8px' }}>
+                <form onSubmit={handleAddGroupMember} className={cx('groups-tab__add-member-form')}>
                   <select
                     value={newGroupMemberId}
                     onChange={(e) => setNewGroupMemberId(e.target.value)}

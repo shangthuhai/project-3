@@ -123,3 +123,77 @@
   margin-top: 12px;
   color: #34d399;
 }
+
+.groups-tab__back-btn {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-light);
+  color: var(--text-main);
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 15px;
+  width: fit-content;
+  transition: var(--transition-fast);
+}
+
+.groups-tab__back-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary-hover);
+}
+
+.groups-tab__add-member-form {
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .groups-tab__container {
+    grid-template-columns: 1fr;
+    height: calc(100vh - 220px);
+    gap: 15px;
+  }
+
+  /* When no group is selected: show sidebar, hide details pane */
+  .groups-tab__container:not(.groups-tab__container--has-selected) .groups-tab__sidebar {
+    display: flex;
+    width: 100%;
+  }
+  .groups-tab__container:not(.groups-tab__container--has-selected) .groups-tab__details-pane {
+    display: none;
+  }
+
+  /* When a group is selected: hide sidebar, show details pane */
+  .groups-tab__container.groups-tab__container--has-selected .groups-tab__sidebar {
+    display: none;
+  }
+  .groups-tab__container.groups-tab__container--has-selected .groups-tab__details-pane {
+    display: flex;
+    width: 100%;
+    padding: 16px;
+  }
+
+  .groups-tab__back-btn {
+    display: inline-flex;
+  }
+
+  .groups-tab__pane-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .groups-tab__add-member-form {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .groups-tab__add-member-form select,
+  .groups-tab__add-member-form button {
+    width: 100%;
+  }
+}

@@ -23,8 +23,8 @@ export default function TemplatesTab() {
         <p>{t('templates_desc')}</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '25px' }}>
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', padding: '20px', height: 'fit-content' }}>
+      <div className={cx('templates-tab__container')}>
+        <div className={cx('templates-tab__create-box')}>
           <h3 style={{ marginBottom: '15px', color: 'var(--color-primary)' }}>{t('create_template')}</h3>
           <form onSubmit={handleCreateTemplate} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
             <div className="form-group">
