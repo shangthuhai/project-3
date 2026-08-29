@@ -612,6 +612,10 @@ body {
   .app-container:not(.app-container--show-details) .main-workspace {
     display: none !important;
   }
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
 }
 
 
