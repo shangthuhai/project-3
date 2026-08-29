@@ -13,7 +13,9 @@ export default function ProfileTab() {
   const {
     profileForm,
     setProfileForm,
-    handleProfileSubmit
+    handleProfileSubmit,
+    setActiveTab,
+    setSelectedContact
   } = useChat();
 
   const handleProfileFormChange = (e) => {
@@ -35,8 +37,23 @@ export default function ProfileTab() {
   return (
     <div className="view-panel">
       <div className="view-header">
-        <h1>{t('edit_profile')}</h1>
-        <p>{t('edit_profile_desc')}</p>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <button 
+            type="button" 
+            className="mobile-back-btn" 
+            onClick={() => {
+              setActiveTab('chats');
+              setSelectedContact(null);
+            }}
+            title={language === 'en' ? 'Back' : 'Quay lại'}
+          >
+            ←
+          </button>
+          <div>
+            <h1>{t('edit_profile')}</h1>
+            <p>{t('edit_profile_desc')}</p>
+          </div>
+        </div>
       </div>
 
       <form onSubmit={handleProfileSubmit} className={cx('profile__grid')}>

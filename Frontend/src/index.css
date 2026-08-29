@@ -623,6 +623,9 @@ body {
     grid-template-columns: 1fr;
     gap: 12px;
   }
+  .view-panel {
+    padding: 20px 15px !important;
+  }
 }
 
 

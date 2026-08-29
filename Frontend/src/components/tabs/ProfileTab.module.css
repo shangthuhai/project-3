@@ -56,3 +56,14 @@
   margin-bottom: 16px;
   color: var(--color-primary-hover);
 }
+
+@media (max-width: 1024px) {
+  .profile__grid {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+
+  .profile__avatar-column {
+    margin-bottom: 10px !important;
+  }
+}
