@@ -372,36 +372,31 @@ export default function Sidebar() {
   };
 
   return (
-    <div className={cx('sidebar')}>
+    <div className={`sidebar ${cx('sidebar')}`}>
       <div className={cx('sidebar__header')}>
         <div className={cx('sidebar__title-area')}>
           <div className={cx('sidebar__logo')}>💬</div>
           <h2 className={cx('sidebar__title-text')}>{t('sms_workspace')}</h2>
         </div>
-
-        {/* Switcher Context is kept for easy pair programming/evaluation */}
-        {users.length > 0 && loggedInUser && (
-          <div className={cx('sidebar__user-switcher')}>
-            <img src={loggedInUser.profilePhoto} alt={loggedInUser.name} className={cx('sidebar__user-avatar')} />
-            <div className={cx('sidebar__user-info')}>
-              <span className={cx('sidebar__user-label')}>{t('logged_in_as')}</span>
-              <select
-                className={cx('sidebar__user-select')}
-                value={loggedInUser.id}
-                onChange={(e) => handleDemoUserSwitch(parseInt(e.target.value))}
-              >
-                {users.map(u => (
-                  <option key={u.id} value={u.id}>{u.name} ({u.mobileNumber})</option>
-                ))}
-              </select>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Search bar for friends/users */}
       <div className={cx('sidebar__search-container')}>
-        <div style={{ position: 'relative' }}>
+        {/* User Profile Avatar Link */}
+        {loggedInUser && (
+          <div 
+            className={cx('sidebar__user-switcher-compact')} 
+            onClick={() => {
+              setActiveTab('profile');
+              setSelectedContact(null);
+            }}
+            title={t('tab_profile')}
+          >
+            <img src={loggedInUser.profilePhoto} alt={loggedInUser.name} className={cx('sidebar__user-avatar-compact')} />
+          </div>
+        )}
+
+        <div className={cx('sidebar__search-input-wrapper')}>
           <input
             type="text"
             placeholder={t('search_placeholder')}

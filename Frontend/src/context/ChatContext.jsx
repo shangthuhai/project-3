@@ -157,7 +157,21 @@ export function ChatProvider({ children }) {
   const [aiTone, setAiTone] = useState('polite');
   const [generatingAi, setGeneratingAi] = useState(false);
 
-  const [aiPosition, setAiPosition] = useState({ x: 10, y: Math.floor((window.innerHeight - 56) / 2) });
+  const [aiPosition, setAiPosition] = useState(() => {
+    const bubbleSize = 56;
+    if (window.innerWidth <= 1024) {
+      // Mobile/Tablet responsive bottom bar: center of bottom bar (left sidebar is at the bottom)
+      const barHeight = 60;
+      const x = Math.floor((window.innerWidth - bubbleSize) / 2);
+      const y = window.innerHeight - barHeight + Math.floor((barHeight - bubbleSize) / 2);
+      return { x, y };
+    }
+    // Desktop vertical sidebar: center of left sidebar (70px wide)
+    const sidebarWidth = 70;
+    const x = Math.floor((sidebarWidth - bubbleSize) / 2);
+    const y = Math.floor((window.innerHeight - bubbleSize) / 2);
+    return { x, y };
+  });
   const [isAiBubbleOpen, setIsAiBubbleOpen] = useState(false);
   const [aiMessages, setAiMessages] = useState([]);
   const [aiNewMessage, setAiNewMessage] = useState('');

@@ -587,6 +587,13 @@ body {
 }
 
 @media (max-width: 1024px) {
+  .app-container {
+    flex-direction: column-reverse !important;
+    height: 100vh !important;
+    width: 100vw !important;
+    overflow: hidden !important;
+  }
+
   .mobile-back-btn {
     display: inline-flex;
   }
@@ -597,17 +604,17 @@ body {
   }
   .app-container.app-container--show-details .main-workspace {
     display: flex !important;
-    width: calc(100% - 60px) !important;
-    min-width: calc(100% - 60px) !important;
-    height: 100vh !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    height: calc(100vh - 60px) !important;
   }
 
   /* Khi ở trạng thái xem danh sách (chưa chọn chat hoặc đang ở tab chính) */
   .app-container:not(.app-container--show-details) .sidebar {
     display: flex !important;
-    width: calc(100% - 60px) !important;
-    min-width: calc(100% - 60px) !important;
-    height: 100vh !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    height: calc(100vh - 60px) !important;
   }
   .app-container:not(.app-container--show-details) .main-workspace {
     display: none !important;
