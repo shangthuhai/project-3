@@ -10,7 +10,7 @@ const cx = classNames.bind(styles);
 
 export default function SettingsTab() {
   const { language, setLanguage, t } = useLanguage();
-  const { triggerAlert } = useAuth();
+  const { triggerAlert, handleLogout } = useAuth();
   const { theme, setTheme } = useTheme();
   const { setActiveTab } = useChat();
   
@@ -123,6 +123,25 @@ export default function SettingsTab() {
               />
               <label htmlFor="auto-delete-toggle" className={cx('settings__toggle-label')}></label>
             </div>
+          </div>
+        </div>
+
+        {/* Account / Session Settings */}
+        <div className={cx('settings__card')}>
+          <h3 className={cx('settings__card-title')}>{t('logout_confirm_title')}</h3>
+          <div className={cx('settings__item')} style={{ borderBottom: 'none', paddingBottom: 0 }}>
+            <div className={cx('settings__item-info')}>
+              <h4 className={cx('settings__item-label')}>{t('logout')}</h4>
+              <p className={cx('settings__item-desc')}>{t('logout_confirm_msg')}</p>
+            </div>
+            <button
+              type="button"
+              className="btn btn-danger"
+              onClick={handleLogout}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
+              🚪 {t('logout')}
+            </button>
           </div>
         </div>
 

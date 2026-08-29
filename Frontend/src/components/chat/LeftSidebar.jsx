@@ -2,15 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { useTheme } from '../../context/ThemeContext';
 import styles from './LeftSidebar.module.css';
 import classNames from 'classnames/bind';
 
 const cx = classNames.bind(styles);
 
 export default function LeftSidebar() {
-  const { language, setLanguage, t } = useLanguage();
-  const { theme, setTheme } = useTheme();
+  const { t } = useLanguage();
   const { loggedInUser, handleLogout } = useAuth();
   const {
     activeTab,
@@ -85,7 +83,7 @@ export default function LeftSidebar() {
   };
 
   // Determine if settings category is active
-  const isSettingsActive = ['services', 'groups', 'security', 'templates'].includes(activeTab);
+  const isSettingsActive = ['services', 'groups', 'security', 'templates', 'settings'].includes(activeTab);
 
   return (
     <div className={cx('left-sidebar')}>
@@ -143,6 +141,12 @@ export default function LeftSidebar() {
           {dropdownOpen && (
             <div ref={dropdownRef} className={cx('left-sidebar__dropdown')}>
               <button
+                className={cx('left-sidebar__dropdown-item', { 'left-sidebar__dropdown-item--active': activeTab === 'settings' })}
+                onClick={() => handleDropdownItemClick('settings')}
+              >
+                ⚙️ {t('tab_settings')}
+              </button>
+              <button
                 className={cx('left-sidebar__dropdown-item', { 'left-sidebar__dropdown-item--active': activeTab === 'services' })}
                 onClick={() => handleDropdownItemClick('services')}
               >
@@ -166,75 +170,12 @@ export default function LeftSidebar() {
               >
                 📄 {t('tab_templates')}
               </button>
-
-              <div className={cx('left-sidebar__dropdown-divider')}></div>
-
-              {/* Language Switcher */}
-              <div className={cx('left-sidebar__dropdown-section')}>
-                <span className={cx('left-sidebar__dropdown-label')}>🌐 {t('language_settings') || 'Language'}</span>
-                <div className={cx('left-sidebar__toggle-group')}>
-                  <button
-                    className={cx('left-sidebar__toggle-btn', { 'left-sidebar__toggle-btn--active': language === 'en' })}
-                    onClick={() => setLanguage('en')}
-                    title="English"
-                  >
-                    EN
-                  </button>
-                  <button
-                    className={cx('left-sidebar__toggle-btn', { 'left-sidebar__toggle-btn--active': language === 'vi' })}
-                    onClick={() => setLanguage('vi')}
-                    title="Tiếng Việt"
-                  >
-                    VI
-                  </button>
-                </div>
-              </div>
-
-              {/* Theme Switcher */}
-              <div className={cx('left-sidebar__dropdown-section')}>
-                <span className={cx('left-sidebar__dropdown-label')}>🎨 {t('theme_mode') || 'Background'}</span>
-                <div className={cx('left-sidebar__toggle-group')}>
-                  <button
-                    className={cx('left-sidebar__toggle-btn', { 'left-sidebar__toggle-btn--active': theme === 'light' })}
-                    onClick={() => setTheme('light')}
-                    title={t('theme_light') || 'Light Mode'}
-                  >
-                    ☀️
-                  </button>
-                  <button
-                    className={cx('left-sidebar__toggle-btn', { 'left-sidebar__toggle-btn--active': theme === 'dark' })}
-                    onClick={() => setTheme('dark')}
-                    title={t('theme_dark') || 'Dark Mode'}
-                  >
-                    🌙
-                  </button>
-                  <button
-                    className={cx('left-sidebar__toggle-btn', { 'left-sidebar__toggle-btn--active': theme === 'glass' })}
-                    onClick={() => setTheme('glass')}
-                    title={t('theme_glass') || 'Glassmorphic Aura'}
-                  >
-                    ✨
-                  </button>
-                </div>
-              </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Bottom Section - Utilities */}
-      <div className={cx('left-sidebar__bottom')}>
-        {/* Logout Button */}
-        <button
-          className={cx('left-sidebar__btn', 'left-sidebar__btn--logout')}
-          onClick={handleLogout}
-          title={t('logout')}
-        >
-          <svg className={cx('left-sidebar__icon')} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
-        </button>
-      </div>
+
     </div>
   );
 }
