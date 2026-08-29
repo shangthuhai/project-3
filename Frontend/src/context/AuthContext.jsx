@@ -110,6 +110,10 @@ export function AuthProvider({ children }) {
   // Real-time mobile number check
   useEffect(() => {
     const mobile = registerForm.mobileNumber;
+    if (!mobile) {
+      setMobileValidation({ checking: false, available: null, message: '' });
+      return;
+    }
     if (mobile.length !== 10) {
       setMobileValidation({ checking: false, available: null, message: 'Mobile must be exactly 10 digits.' });
       return;

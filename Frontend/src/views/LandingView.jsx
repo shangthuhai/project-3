@@ -297,7 +297,15 @@ export default function LandingView() {
                   <span className={cx('landing__validation', mobileValidation.available === true ? 'landing__validation--success' : mobileValidation.available === false ? 'landing__validation--error' : 'landing__validation--checking')}>
                     {mobileValidation.available === true && <span style={{ marginRight: '4px' }}>✓</span>}
                     {mobileValidation.available === false && <span style={{ marginRight: '4px' }}>✗</span>}
-                    <span>{mobileValidation.message === 'Checking availability...' ? t('checking_availability') : mobileValidation.available === true ? t('username_available') : t('username_taken')}</span>
+                    <span>
+                      {mobileValidation.message === 'Checking mobile number...' || mobileValidation.message === 'Checking availability...'
+                        ? t('checking_availability')
+                        : mobileValidation.available === true
+                        ? t('mobile_available')
+                        : mobileValidation.available === false
+                        ? t('mobile_taken')
+                        : t('mobile_invalid')}
+                    </span>
                   </span>
                 )}
               </div>

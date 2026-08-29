@@ -37,6 +37,9 @@ const translations = {
     "username_available": "Username is available!",
     "username_taken": "Username is already taken.",
     "checking_availability": "Checking availability...",
+    "mobile_available": "Mobile number is available!",
+    "mobile_taken": "This mobile number is already registered.",
+    "mobile_invalid": "Mobile number must be exactly 10 digits.",
 
     // Sidebar
     "sms_workspace": "SMS Workspace",
@@ -306,6 +309,9 @@ const translations = {
     "username_available": "Tên đăng nhập hợp lệ!",
     "username_taken": "Tên đăng nhập đã tồn tại.",
     "checking_availability": "Đang kiểm tra...",
+    "mobile_available": "Số điện thoại hợp lệ!",
+    "mobile_taken": "Số điện thoại này đã được đăng ký.",
+    "mobile_invalid": "Số điện thoại phải có đúng 10 chữ số.",
 
     // Sidebar
     "sms_workspace": "SMS Workspace",
