@@ -302,7 +302,7 @@ export default function Sidebar() {
         return (
           <div
             key={item.contactNumber}
-            className={cx('sidebar__list-item', { 'sidebar__list-item--selected': selectedContact?.contactNumber === item.contactNumber })}
+            className={cx('sidebar__list-item', 'sidebar__list-item--chat', { 'sidebar__list-item--selected': selectedContact?.contactNumber === item.contactNumber })}
             onClick={() => setSelectedContact(item)}
           >
             <img src={item.avatar} alt={item.name} className={cx('sidebar__item-avatar')} />

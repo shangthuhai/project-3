@@ -300,6 +300,11 @@
 .sidebar__item-meta {
   font-size: 0.75rem;
   color: var(--text-muted);
+  transition: opacity var(--transition-fast);
+}
+
+.sidebar__list-item--chat:hover .sidebar__item-meta {
+  opacity: 0;
 }
 
 .sidebar__item-subtext {
