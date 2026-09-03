@@ -3,6 +3,7 @@ import { useChat } from '../../context/ChatContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { searchUsers, sendFriendRequest, blockNumber } from '../../api';
+import CustomSelect from '../common/CustomSelect';
 import styles from './FriendsTab.module.css';
 import classNames from 'classnames/bind';
 
@@ -11,6 +12,12 @@ const cx = classNames.bind(styles);
 export default function FriendsTab() {
   const { t } = useLanguage();
   const { loggedInUser, triggerAlert } = useAuth();
+
+  const searchFilterOptions = [
+    { value: 'friends', label: 'Bạn bè' },
+    { value: 'strangers', label: 'Người lạ' },
+    { value: 'all', label: 'Tất cả' }
+  ];
   const {
     friends,
     pendingRequests,
@@ -186,15 +193,13 @@ export default function FriendsTab() {
                 </button>
               )}
             </div>
-            <select
-              value={searchFilter}
-              onChange={(e) => setSearchFilter(e.target.value)}
-              className={cx('friends-tab__search-filter-select')}
-            >
-              <option value="friends">Bạn bè</option>
-              <option value="strangers">Người lạ</option>
-              <option value="all">Tất cả</option>
-            </select>
+            <div style={{ minWidth: '120px' }}>
+              <CustomSelect
+                options={searchFilterOptions}
+                value={searchFilter}
+                onChange={setSearchFilter}
+              />
+            </div>
           </div>
 
           <div className={cx('friends-tab__list-wrapper')}>

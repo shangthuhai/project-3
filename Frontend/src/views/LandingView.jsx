@@ -2,6 +2,7 @@ import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
+import CustomSelect from '../components/common/CustomSelect';
 import styles from './LandingView.module.css';
 import classNames from 'classnames/bind';
 
@@ -76,16 +77,17 @@ export default function LandingView() {
           <div className={cx('landing__user-switcher')} style={{ width: 'fit-content', marginTop: '30px' }}>
             <div className={cx('landing__user-switcher-info')}>
               <span className={cx('landing__user-switcher-label')}>{t('demo_login')}</span>
-              <select
-                className={cx('landing__user-select')}
-                defaultValue=""
-                onChange={(e) => handleDemoUserSwitch(parseInt(e.target.value))}
-              >
-                <option value="" disabled>{t('select_preseed')}</option>
-                {users.map(u => (
-                  <option key={u.id} value={u.id}>{u.name} ({u.username})</option>
-                ))}
-              </select>
+              <div style={{ minWidth: '240px' }}>
+                <CustomSelect
+                  options={[
+                    { value: '', label: t('select_preseed') },
+                    ...users.map(u => ({ value: String(u.id), label: `${u.name} (${u.username})` }))
+                  ]}
+                  value=""
+                  onChange={(val) => val && handleDemoUserSwitch(parseInt(val))}
+                  placeholder={t('select_preseed')}
+                />
+              </div>
             </div>
           </div>
         )}

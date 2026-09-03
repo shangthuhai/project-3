@@ -2,6 +2,7 @@ import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
 import { useLanguage } from '../../context/LanguageContext';
+import CustomSelect from '../common/CustomSelect';
 import styles from './ProfileTab.module.css';
 import classNames from 'classnames/bind';
 
@@ -17,6 +18,24 @@ export default function ProfileTab() {
     setActiveTab,
     setSelectedContact
   } = useChat();
+
+  const genderOptions = [
+    { value: 'Male', label: language === 'en' ? 'Male' : 'Nam' },
+    { value: 'Female', label: language === 'en' ? 'Female' : 'Nữ' },
+    { value: 'Other', label: language === 'en' ? 'Other' : 'Khác' }
+  ];
+
+  const maritalOptions = [
+    { value: 'Single', label: language === 'en' ? 'Single' : 'Độc thân' },
+    { value: 'Married', label: language === 'en' ? 'Married' : 'Đã kết hôn' },
+    { value: 'Divorced', label: language === 'en' ? 'Divorced' : 'Ly hôn' }
+  ];
+
+  const workStatusOptions = [
+    { value: 'Employed', label: language === 'en' ? 'Employed' : 'Đang đi làm' },
+    { value: 'Student', label: language === 'en' ? 'Student' : 'Học sinh / Sinh viên' },
+    { value: 'Unemployed', label: language === 'en' ? 'Unemployed' : 'Thất nghiệp' }
+  ];
 
   const handleProfileFormChange = (e) => {
     const { name, value } = e.target;
@@ -85,11 +104,11 @@ export default function ProfileTab() {
               </div>
               <div className="form-group">
                 <label>{t('gender')}</label>
-                <select name="gender" value={profileForm.gender || ''} onChange={handleProfileFormChange}>
-                  <option value="Male">{language === 'en' ? 'Male' : 'Nam'}</option>
-                  <option value="Female">{language === 'en' ? 'Female' : 'Nữ'}</option>
-                  <option value="Other">{language === 'en' ? 'Other' : 'Khác'}</option>
-                </select>
+                <CustomSelect
+                  options={genderOptions}
+                  value={profileForm.gender || 'Male'}
+                  onChange={(val) => setProfileForm({ ...profileForm, gender: val })}
+                />
               </div>
             </div>
 
@@ -105,11 +124,11 @@ export default function ProfileTab() {
               </div>
               <div className="form-group">
                 <label>{t('marital_status')}</label>
-                <select name="maritalStatus" value={profileForm.maritalStatus || ''} onChange={handleProfileFormChange}>
-                  <option value="Single">{language === 'en' ? 'Single' : 'Độc thân'}</option>
-                  <option value="Married">{language === 'en' ? 'Married' : 'Đã kết hôn'}</option>
-                  <option value="Divorced">{language === 'en' ? 'Divorced' : 'Ly hôn'}</option>
-                </select>
+                <CustomSelect
+                  options={maritalOptions}
+                  value={profileForm.maritalStatus || 'Single'}
+                  onChange={(val) => setProfileForm({ ...profileForm, maritalStatus: val })}
+                />
               </div>
             </div>
 
@@ -190,11 +209,11 @@ export default function ProfileTab() {
               </div>
               <div className="form-group">
                 <label>{t('work_status')}</label>
-                <select name="workStatus" value={profileForm.workStatus || ''} onChange={handleProfileFormChange}>
-                  <option value="Employed">{language === 'en' ? 'Employed' : 'Đang đi làm'}</option>
-                  <option value="Student">{language === 'en' ? 'Student' : 'Học sinh / Sinh viên'}</option>
-                  <option value="Unemployed">{language === 'en' ? 'Unemployed' : 'Thất nghiệp'}</option>
-                </select>
+                <CustomSelect
+                  options={workStatusOptions}
+                  value={profileForm.workStatus || 'Employed'}
+                  onChange={(val) => setProfileForm({ ...profileForm, workStatus: val })}
+                />
               </div>
             </div>
 

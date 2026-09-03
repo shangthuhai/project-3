@@ -333,6 +333,12 @@ body {
   box-shadow: 0 0 0 2px rgba(36, 129, 204, 0.2);
 }
 
+select option {
+  background-color: var(--bg-sidebar);
+  color: var(--text-main);
+  padding: 8px 12px;
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;

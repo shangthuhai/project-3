@@ -3,6 +3,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useChat } from '../../context/ChatContext';
+import CustomSelect from '../common/CustomSelect';
 import styles from './SettingsTab.module.css';
 import classNames from 'classnames/bind';
 
@@ -16,6 +17,17 @@ export default function SettingsTab() {
   
   const [notifications, setNotifications] = useState(true);
   const [autoDelete, setAutoDelete] = useState(false);
+
+  const languageOptions = [
+    { value: 'en', label: 'English (US)' },
+    { value: 'vi', label: 'Tiếng Việt (VN)' }
+  ];
+
+  const themeOptions = [
+    { value: 'dark', label: t('theme_dark') },
+    { value: 'light', label: t('theme_light') },
+    { value: 'glass', label: t('theme_glass') }
+  ];
 
   return (
     <div className="view-panel">
@@ -43,15 +55,12 @@ export default function SettingsTab() {
           
           <div className="form-group" style={{ marginBottom: '15px' }}>
             <label htmlFor="language-select">{t('select_language')}</label>
-            <select
+            <CustomSelect
               id="language-select"
-              className={cx('settings__select')}
+              options={languageOptions}
               value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-            >
-              <option value="en">English (US)</option>
-              <option value="vi">Tiếng Việt (VN)</option>
-            </select>
+              onChange={setLanguage}
+            />
           </div>
 
           <div className={cx('settings__item')} style={{ borderBottom: 'none', paddingBottom: 0 }}>
@@ -59,15 +68,11 @@ export default function SettingsTab() {
               <h4 className={cx('settings__item-label')}>{t('theme_mode')}</h4>
               <p className={cx('settings__item-desc')}>{t('theme_mode_desc')}</p>
             </div>
-            <select
-              className={cx('settings__select')}
+            <CustomSelect
+              options={themeOptions}
               value={theme}
-              onChange={(e) => setTheme(e.target.value)}
-            >
-              <option value="dark">{t('theme_dark')}</option>
-              <option value="light">{t('theme_light')}</option>
-              <option value="glass">{t('theme_glass')}</option>
-            </select>
+              onChange={setTheme}
+            />
           </div>
         </div>
 

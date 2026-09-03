@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { sendFriendRequest, respondFriendRequest } from '../../api';
+import CustomSelect from '../common/CustomSelect';
 import styles from './ChatWindow.module.css';
 import classNames from 'classnames/bind';
 
@@ -353,18 +354,17 @@ export default function ChatWindow() {
                   />
 
                   <label style={{ fontSize: '0.72rem', fontWeight: 'bold', color: 'var(--text-muted)', textAlign: 'left', display: 'block' }}>{language === 'en' ? 'Tone:' : 'Văn phong:'}</label>
-                  <select
+                  <CustomSelect
+                    options={[
+                      { value: 'polite', label: t('tone_polite') },
+                      { value: 'formal', label: t('tone_formal') },
+                      { value: 'funny', label: t('tone_funny') },
+                      { value: 'intimate', label: t('tone_intimate') }
+                    ]}
                     value={aiTone}
-                    onChange={(e) => setAiTone(e.target.value)}
+                    onChange={setAiTone}
                     disabled={generatingAi}
-                    className={cx('chat-window__ai-select')}
-                    style={{ width: '100%' }}
-                  >
-                    <option value="polite">{t('tone_polite')}</option>
-                    <option value="formal">{t('tone_formal')}</option>
-                    <option value="funny">{t('tone_funny')}</option>
-                    <option value="intimate">{t('tone_intimate')}</option>
-                  </select>
+                  />
 
                   <button
                     type="button"

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useChat } from '../../context/ChatContext';
 import { useLanguage } from '../../context/LanguageContext';
+import CustomSelect from '../common/CustomSelect';
 import styles from './GroupsTab.module.css';
 import classNames from 'classnames/bind';
 
@@ -103,21 +104,18 @@ export default function GroupsTab() {
               <div className={cx('groups-tab__pane-header')}>
                 <h3 className={cx('groups-tab__pane-title')}>{t('members_in_group')}: {selectedGroup.name}</h3>
                 <form onSubmit={handleAddGroupMember} className={cx('groups-tab__add-member-form')}>
-                  <select
-                    value={newGroupMemberId}
-                    onChange={(e) => setNewGroupMemberId(e.target.value)}
-                    style={{ background: 'var(--bg-app)', border: '1px solid var(--border-light)', color: 'var(--text-main)', padding: '6px 10px', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', outline: 'none' }}
-                    required
-                  >
-                    <option value="">-- {t('add_member_to_group')} --</option>
-                    {contacts.map(c => {
-                      const inGroup = groupMembers.some(m => m.id === c.id);
-                      if (inGroup) return null;
-                      return (
-                        <option key={c.id} value={c.id}>{c.firstName} {c.lastName} ({c.contactNumber})</option>
-                      );
-                    })}
-                  </select>
+                  <div style={{ minWidth: '220px' }}>
+                    <CustomSelect
+                      options={[
+                        { value: '', label: `-- ${t('add_member_to_group')} --` },
+                        ...contacts
+                          .filter(c => !groupMembers.some(m => m.id === c.id))
+                          .map(c => ({ value: String(c.id), label: `${c.firstName} ${c.lastName} (${c.contactNumber})` }))
+                      ]}
+                      value={newGroupMemberId}
+                      onChange={setNewGroupMemberId}
+                    />
+                  </div>
                   <button type="submit" className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>{t('add_btn')}</button>
                 </form>
               </div>
