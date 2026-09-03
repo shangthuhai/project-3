@@ -44,10 +44,11 @@ export default function UserDashboard() {
     return selectedServices.reduce((sum, service) => sum + getServicePrice(service), 0).toFixed(2);
   };
 
-  const showDetails = (activeTab === 'chats' && selectedContact) || (activeTab !== 'chats');
+  const inChatWindow = activeTab === 'chats' && Boolean(selectedContact);
+  const showDetails = inChatWindow || (activeTab !== 'chats');
 
   return (
-    <div className={`app-container ${showDetails ? 'app-container--show-details' : ''}`}>
+    <div className={`app-container ${showDetails ? 'app-container--show-details' : ''} ${inChatWindow ? 'app-container--in-chat' : ''}`}>
       {/* Left Navigation Sidebar */}
       <LeftSidebar />
 

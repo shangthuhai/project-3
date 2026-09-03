@@ -618,6 +618,15 @@ select option {
     height: calc(100vh - 60px) !important;
   }
 
+  /* Khi ở trong chat window (ẩn left side bar đi, main-workspace chiếm 100% chiều cao) */
+  .app-container.app-container--in-chat div[class*="left-sidebar"] {
+    display: none !important;
+  }
+  .app-container.app-container--in-chat .main-workspace {
+    height: 100vh !important;
+    height: 100dvh !important;
+  }
+
   /* Khi ở trạng thái xem danh sách (chưa chọn chat hoặc đang ở tab chính) */
   .app-container:not(.app-container--show-details) .sidebar {
     display: flex !important;

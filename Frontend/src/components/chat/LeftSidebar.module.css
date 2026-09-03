@@ -198,6 +198,10 @@
     border-top: 1px solid var(--border-light) !important;
   }
 
+  :global(.app-container--in-chat) .left-sidebar {
+    display: none !important;
+  }
+
   .left-sidebar__top,
   .left-sidebar__bottom {
     flex-direction: row !important;
