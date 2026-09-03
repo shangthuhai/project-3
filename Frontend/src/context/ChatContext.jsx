@@ -177,8 +177,8 @@ export function ChatProvider({ children }) {
   const [aiNewMessage, setAiNewMessage] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiChatPosition, setAiChatPosition] = useState({
-    x: window.innerWidth - 384,
-    y: window.innerHeight - 576
+    x: Math.max(10, window.innerWidth - 384),
+    y: Math.max(10, window.innerHeight - 520)
   });
 
   // Refs for tracking active values inside async events / timeouts

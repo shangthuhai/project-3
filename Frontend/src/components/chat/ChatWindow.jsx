@@ -30,6 +30,7 @@ export default function ChatWindow() {
     setShowTemplatePicker,
     showAiAssistant,
     setShowAiAssistant,
+    setIsAiBubbleOpen,
     aiPrompt,
     setAiPrompt,
     aiTone,
@@ -343,6 +344,33 @@ export default function ChatWindow() {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{
+                      padding: '7px 12px',
+                      fontSize: '0.82rem',
+                      fontWeight: '600',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.18), rgba(139, 92, 246, 0.18))',
+                      border: '1px solid rgba(236, 72, 153, 0.35)',
+                      color: 'var(--text-main)',
+                      borderRadius: '8px',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => {
+                      setIsAiBubbleOpen(true);
+                      setShowAiAssistant(false);
+                    }}
+                  >
+                    🤖 💬 {language === 'en' ? 'Chat with Bot' : 'Trò chuyện'}
+                  </button>
+
+                  <div style={{ height: '1px', background: 'var(--border-light)', margin: '2px 0' }} />
+
                   <label style={{ fontSize: '0.72rem', fontWeight: 'bold', color: 'var(--text-muted)', textAlign: 'left', display: 'block' }}>{language === 'en' ? 'Message Idea:' : 'Ý tưởng tin nhắn:'}</label>
                   <textarea
                     placeholder={t('prompt_placeholder')}

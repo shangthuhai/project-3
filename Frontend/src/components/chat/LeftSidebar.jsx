@@ -19,7 +19,9 @@ export default function LeftSidebar() {
     loadBlocklist,
     setSelectedGroup,
     setGroupMembers,
-    setBulkResultsLog
+    setBulkResultsLog,
+    isAiBubbleOpen,
+    setIsAiBubbleOpen
   } = useChat();
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -120,6 +122,22 @@ export default function LeftSidebar() {
         >
           <svg className={cx('left-sidebar__icon')} fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+        </button>
+
+        {/* AI Chatbot Icon */}
+        <button
+          className={cx('left-sidebar__btn', { 'left-sidebar__btn--active': isAiBubbleOpen })}
+          onClick={() => setIsAiBubbleOpen(prev => !prev)}
+          title={t('ai_chatbot_title') || 'AI Chatbot'}
+        >
+          <svg className={cx('left-sidebar__icon')} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="11" width="18" height="10" rx="2" />
+            <circle cx="8.5" cy="15.5" r="1.25" fill="currentColor" />
+            <circle cx="15.5" cy="15.5" r="1.25" fill="currentColor" />
+            <path d="M12 2v5" />
+            <circle cx="12" cy="2" r="1" fill="currentColor" />
+            <path d="M7 11V8a5 5 0 0 1 10 0v3" />
           </svg>
         </button>
 
