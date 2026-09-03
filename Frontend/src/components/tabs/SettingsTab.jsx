@@ -10,23 +10,12 @@ const cx = classNames.bind(styles);
 
 export default function SettingsTab() {
   const { language, setLanguage, t } = useLanguage();
-  const { triggerAlert, handleLogout } = useAuth();
+  const { handleLogout } = useAuth();
   const { theme, setTheme } = useTheme();
   const { setActiveTab } = useChat();
   
-  const [selectedLang, setSelectedLang] = useState(language);
-  const [selectedTheme, setSelectedTheme] = useState(theme);
   const [notifications, setNotifications] = useState(true);
   const [autoDelete, setAutoDelete] = useState(false);
-
-  const handleSave = (e) => {
-    e.preventDefault();
-    setLanguage(selectedLang);
-    setTheme(selectedTheme);
-    if (triggerAlert) {
-      triggerAlert('success', t('settings_saved'));
-    }
-  };
 
   return (
     <div className="view-panel">
@@ -47,7 +36,7 @@ export default function SettingsTab() {
         </div>
       </div>
 
-      <form onSubmit={handleSave} className={cx('settings__container')}>
+      <div className={cx('settings__container')}>
         {/* Active Settings Section */}
         <div className={cx('settings__card')}>
           <h3 className={cx('settings__card-title')}>{t('settings_title')}</h3>
@@ -57,8 +46,8 @@ export default function SettingsTab() {
             <select
               id="language-select"
               className={cx('settings__select')}
-              value={selectedLang}
-              onChange={(e) => setSelectedLang(e.target.value)}
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
             >
               <option value="en">English (US)</option>
               <option value="vi">Tiếng Việt (VN)</option>
@@ -72,11 +61,8 @@ export default function SettingsTab() {
             </div>
             <select
               className={cx('settings__select')}
-              value={selectedTheme}
-              onChange={(e) => {
-                setSelectedTheme(e.target.value);
-                setTheme(e.target.value);
-              }}
+              value={theme}
+              onChange={(e) => setTheme(e.target.value)}
             >
               <option value="dark">{t('theme_dark')}</option>
               <option value="light">{t('theme_light')}</option>
@@ -144,13 +130,7 @@ export default function SettingsTab() {
             </button>
           </div>
         </div>
-
-        <div className={cx('settings__actions')}>
-          <button type="submit" className="btn btn-primary">
-            {t('save_settings')}
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   );
 }
