@@ -5,10 +5,11 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+var databaseFile = Environment.GetEnvironmentVariable("SMSCHAT_DB") ?? "smschat-v2.db";
 
 // Add DB context
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite("Data Source=smschat.db"));
+    options.UseSqlite($"Data Source={databaseFile}"));
 
 // Register background scheduled message processor
 builder.Services.AddHostedService<Backend.Services.SMSBackgroundService>();
@@ -61,6 +62,12 @@ if (app.Environment.IsDevelopment())
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var databasePath = Path.Combine(builder.Environment.ContentRootPath, databaseFile);
+    if (File.Exists(databasePath) && !HasCurrentSchema(dbContext))
+    {
+        dbContext.Database.CloseConnection();
+        File.Delete(databasePath);
+    }
     dbContext.Database.EnsureCreated();
 }
 
@@ -72,3 +79,23 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+static bool HasCurrentSchema(AppDbContext dbContext)
+{
+    var connection = dbContext.Database.GetDbConnection();
+    try
+    {
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name IN ('User_Quotas', 'SMS_Logs')";
+        return Convert.ToInt32(command.ExecuteScalar()) == 2;
+    }
+    catch (Exception)
+    {
+        return false;
+    }
+    finally
+    {
+        connection.Close();
+    }
+}
