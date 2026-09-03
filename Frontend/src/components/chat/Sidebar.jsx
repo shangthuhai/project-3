@@ -373,13 +373,6 @@ export default function Sidebar() {
 
   return (
     <div className={`sidebar ${cx('sidebar')}`}>
-      <div className={cx('sidebar__header')}>
-        <div className={cx('sidebar__title-area')}>
-          <div className={cx('sidebar__logo')}>💬</div>
-          <h2 className={cx('sidebar__title-text')}>{t('sms_workspace')}</h2>
-        </div>
-      </div>
-
       {/* Search bar for friends/users */}
       <div className={cx('sidebar__search-container')}>
         {/* User Profile Avatar Link */}

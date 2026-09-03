@@ -169,6 +169,7 @@
 }
 
 .sidebar__user-switcher-compact {
+  display: none;
   position: relative;
   width: 34px;
   height: 34px;
@@ -371,6 +372,10 @@
 }
 
 @media (max-width: 1024px) {
+  .sidebar__user-switcher-compact {
+    display: block;
+  }
+
   .sidebar__header {
     display: none !important;
   }
