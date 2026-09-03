@@ -55,6 +55,29 @@ export default function ChatWindow() {
     return cx('chat-window__char-counter', 'chat-window__char-counter--safe');
   };
 
+  const [showScrollBottom, setShowScrollBottom] = React.useState(false);
+
+  const scrollToBottom = (behavior = 'smooth') => {
+    if (chatMessagesAreaRef.current) {
+      chatMessagesAreaRef.current.scrollTo({
+        top: chatMessagesAreaRef.current.scrollHeight,
+        behavior
+      });
+    } else {
+      messagesEndRef.current?.scrollIntoView({ behavior });
+    }
+  };
+
+  // Instant auto-scroll to bottom when selected contact changes (chat entered)
+  useEffect(() => {
+    if (selectedContact) {
+      setShowScrollBottom(false);
+      scrollToBottom('auto');
+      const timer = setTimeout(() => scrollToBottom('auto'), 60);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedContact?.contactNumber]);
+
   // Auto-scroll to bottom of messages thread when chat messages update
   const prevChatMessagesLengthRef = React.useRef(0);
   const prevChatMessagesFirstIdRef = React.useRef(null);
@@ -70,12 +93,31 @@ export default function ChatWindow() {
     const isPrepend = prevChatMessagesFirstIdRef.current !== null && firstId !== prevChatMessagesFirstIdRef.current;
 
     if (!isPrepend) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      const container = chatMessagesAreaRef.current;
+      if (container) {
+        const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 200;
+        if (isNearBottom || prevChatMessagesLengthRef.current === 0) {
+          scrollToBottom(prevChatMessagesLengthRef.current === 0 ? 'auto' : 'smooth');
+        }
+      } else {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }
     }
 
     prevChatMessagesLengthRef.current = chatMessages.length;
     prevChatMessagesFirstIdRef.current = firstId;
   }, [chatMessages]);
+
+  const handleMessagesScroll = (e) => {
+    const container = e.target;
+    if (!container) return;
+    const scrollBottomDistance = container.scrollHeight - container.scrollTop - container.clientHeight;
+    setShowScrollBottom(scrollBottomDistance > 120);
+
+    if (typeof handleScroll === 'function') {
+      handleScroll(e);
+    }
+  };
 
   // Auto-resize chat textarea to fit content
   useEffect(() => {
@@ -197,49 +239,65 @@ export default function ChatWindow() {
         </div>
       )}
 
-      <div
-        ref={chatMessagesAreaRef}
-        onScroll={handleScroll}
-        className={cx('chat-window__messages')}
-      >
-        {chatMessages.length === 0 ? (
-          <div style={{ margin: 'auto', textAlign: 'center', opacity: 0.3, fontSize: '0.9rem' }}>
-            {language === 'en' ? 'No messages yet. Say hello!' : 'Chưa có tin nhắn. Hãy chào nhau nào!'}
-          </div>
-        ) : (
-          chatMessages.map(msg => {
-            const isSentByMe = msg.senderId === loggedInUser.id;
-            const date = new Date(msg.sentTime);
-            const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            const isPending = msg.scheduledAt && new Date(msg.scheduledAt) > new Date();
-            return (
-              <div key={msg.id} className={cx('chat-window__message-row', isSentByMe ? 'chat-window__message-row--sent' : 'chat-window__message-row--received')}>
-                <div className={cx('chat-window__message-bubble', isSentByMe ? 'chat-window__message-bubble--sent' : 'chat-window__message-bubble--received')}>
-                  <span className={cx('chat-window__message-text')}>{msg.content}</span>
-                  <span className={cx('chat-window__message-time')}>
-                    {formattedTime}
-                    {isPending && (
-                      <span className={cx('chat-window__msg-scheduled-badge')}>⏰ {language === 'en' ? 'Scheduled' : 'Hẹn giờ'}: {new Date(msg.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                    )}
-                  </span>
-                </div>
-              </div>
-            );
-          })
-        )}
-        {contactIsTyping && (
-          <div className={cx('chat-window__message-row', 'chat-window__message-row--received')}>
-            <div className={cx('chat-window__message-bubble', 'chat-window__message-bubble--received', 'chat-window__typing-bubble')}>
-              <div className={cx('chat-window__typing-dots')}>
-                <span className={cx('chat-window__typing-dot')}></span>
-                <span className={cx('chat-window__typing-dot')}></span>
-                <span className={cx('chat-window__typing-dot')}></span>
-              </div>
-              <span className={cx('chat-window__typing-text')}>{selectedContact.name} {language === 'en' ? 'is typing...' : 'đang nhập...'}</span>
+      <div className={cx('chat-window__messages-wrapper')}>
+        <div
+          ref={chatMessagesAreaRef}
+          onScroll={handleMessagesScroll}
+          className={cx('chat-window__messages')}
+        >
+          {chatMessages.length === 0 ? (
+            <div style={{ margin: 'auto', textAlign: 'center', opacity: 0.3, fontSize: '0.9rem' }}>
+              {language === 'en' ? 'No messages yet. Say hello!' : 'Chưa có tin nhắn. Hãy chào nhau nào!'}
             </div>
-          </div>
+          ) : (
+            chatMessages.map(msg => {
+              const isSentByMe = msg.senderId === loggedInUser.id;
+              const date = new Date(msg.sentTime);
+              const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              const isPending = msg.scheduledAt && new Date(msg.scheduledAt) > new Date();
+              return (
+                <div key={msg.id} className={cx('chat-window__message-row', isSentByMe ? 'chat-window__message-row--sent' : 'chat-window__message-row--received')}>
+                  <div className={cx('chat-window__message-bubble', isSentByMe ? 'chat-window__message-bubble--sent' : 'chat-window__message-bubble--received')}>
+                    <span className={cx('chat-window__message-text')}>{msg.content}</span>
+                    <span className={cx('chat-window__message-time')}>
+                      {formattedTime}
+                      {isPending && (
+                        <span className={cx('chat-window__msg-scheduled-badge')}>⏰ {language === 'en' ? 'Scheduled' : 'Hẹn giờ'}: {new Date(msg.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      )}
+                    </span>
+                  </div>
+                </div>
+              );
+            })
+          )}
+          {contactIsTyping && (
+            <div className={cx('chat-window__message-row', 'chat-window__message-row--received')}>
+              <div className={cx('chat-window__message-bubble', 'chat-window__message-bubble--received', 'chat-window__typing-bubble')}>
+                <div className={cx('chat-window__typing-dots')}>
+                  <span className={cx('chat-window__typing-dot')}></span>
+                  <span className={cx('chat-window__typing-dot')}></span>
+                  <span className={cx('chat-window__typing-dot')}></span>
+                </div>
+                <span className={cx('chat-window__typing-text')}>{selectedContact.name} {language === 'en' ? 'is typing...' : 'đang nhập...'}</span>
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {showScrollBottom && (
+          <button
+            type="button"
+            className={cx('chat-window__scroll-bottom-btn')}
+            onClick={() => scrollToBottom('smooth')}
+            title={language === 'en' ? 'Scroll to newest message' : 'Cuộn xuống tin nhắn mới nhất'}
+            aria-label="Scroll to bottom"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
         )}
-        <div ref={messagesEndRef} />
       </div>
 
       {remainingQuota?.iAmBlocked ? (

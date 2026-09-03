@@ -43,9 +43,35 @@ export default function AdminAiCopilot({ triggerAlert }) {
     window.addEventListener('mouseup', stopResize);
   };
 
+  const [showScrollBottom, setShowScrollBottom] = useState(false);
+  const adminChatAreaRef = useRef(null);
+
+  const scrollToBottom = (behavior = 'smooth') => {
+    if (adminChatAreaRef.current) {
+      adminChatAreaRef.current.scrollTo({
+        top: adminChatAreaRef.current.scrollHeight,
+        behavior
+      });
+    } else {
+      adminChatEndRef.current?.scrollIntoView({ behavior });
+    }
+  };
+
   useEffect(() => {
-    adminChatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [adminChatMessages, isAdminChatOpen]);
+    if (isAdminChatOpen) {
+      setShowScrollBottom(false);
+      scrollToBottom('auto');
+      const timer = setTimeout(() => scrollToBottom('auto'), 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isAdminChatOpen, adminChatMessages.length]);
+
+  const handleMessagesScroll = (e) => {
+    const container = e.target;
+    if (!container) return;
+    const scrollBottomDistance = container.scrollHeight - container.scrollTop - container.clientHeight;
+    setShowScrollBottom(scrollBottomDistance > 80);
+  };
 
   const handleAdminChatSend = (e, customPrompt = '') => {
     if (e) e.preventDefault();
@@ -174,40 +200,58 @@ export default function AdminAiCopilot({ triggerAlert }) {
         </div>
 
         {/* Chat Messages */}
-        <div className={cx('admin-copilot__messages')}>
-          {adminChatMessages.map((msg, index) => (
-            <div
-              key={index}
-              className={cx('admin-copilot__message-wrapper', {
-                'admin-copilot__message-wrapper--user': msg.role === 'user',
-                'admin-copilot__message-wrapper--assistant': msg.role !== 'user'
-              })}
-            >
+        <div className={cx('admin-copilot__messages-wrapper')}>
+          <div
+            ref={adminChatAreaRef}
+            onScroll={handleMessagesScroll}
+            className={cx('admin-copilot__messages')}
+          >
+            {adminChatMessages.map((msg, index) => (
               <div
-                className={cx('admin-copilot__message-bubble', {
-                  'admin-copilot__message-bubble--user': msg.role === 'user',
-                  'admin-copilot__message-bubble--assistant': msg.role !== 'user'
+                key={index}
+                className={cx('admin-copilot__message-wrapper', {
+                  'admin-copilot__message-wrapper--user': msg.role === 'user',
+                  'admin-copilot__message-wrapper--assistant': msg.role !== 'user'
                 })}
               >
-                {msg.content}
+                <div
+                  className={cx('admin-copilot__message-bubble', {
+                    'admin-copilot__message-bubble--user': msg.role === 'user',
+                    'admin-copilot__message-bubble--assistant': msg.role !== 'user'
+                  })}
+                >
+                  {msg.content}
+                </div>
+                <span
+                  className={cx('admin-copilot__message-meta', {
+                    'admin-copilot__message-meta--user': msg.role === 'user',
+                    'admin-copilot__message-meta--assistant': msg.role !== 'user'
+                  })}
+                >
+                  {msg.role === 'user' ? 'Bạn' : 'Copilot'}
+                </span>
               </div>
-              <span
-                className={cx('admin-copilot__message-meta', {
-                  'admin-copilot__message-meta--user': msg.role === 'user',
-                  'admin-copilot__message-meta--assistant': msg.role !== 'user'
-                })}
-              >
-                {msg.role === 'user' ? 'Bạn' : 'Copilot'}
-              </span>
-            </div>
-          ))}
-          {isAdminChatLoading && (
-            <div className={cx('admin-copilot__loading-indicator')}>
-              <div className={cx('admin-copilot__spinner')}></div>
-              <span className={cx('admin-copilot__status-text')}>Copilot đang phân tích dữ liệu...</span>
-            </div>
+            ))}
+            {isAdminChatLoading && (
+              <div className={cx('admin-copilot__loading-indicator')}>
+                <div className={cx('admin-copilot__spinner')}></div>
+                <span className={cx('admin-copilot__status-text')}>Copilot đang phân tích dữ liệu...</span>
+              </div>
+            )}
+            <div ref={adminChatEndRef} />
+          </div>
+
+          {showScrollBottom && (
+            <button
+              type="button"
+              className={cx('admin-copilot__scroll-bottom-btn')}
+              onClick={() => scrollToBottom('smooth')}
+              title="Cuộn xuống tin nhắn mới nhất"
+              aria-label="Scroll to bottom"
+            >
+              ↓
+            </button>
           )}
-          <div ref={adminChatEndRef} />
         </div>
 
         {/* Suggested Quick Prompt Chips */}

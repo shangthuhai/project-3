@@ -74,6 +74,36 @@ export default function UserAiChat() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const [showScrollBottom, setShowScrollBottom] = React.useState(false);
+  const aiMessagesAreaRef = useRef(null);
+
+  const scrollToBottom = (behavior = 'smooth') => {
+    if (aiMessagesAreaRef.current) {
+      aiMessagesAreaRef.current.scrollTo({
+        top: aiMessagesAreaRef.current.scrollHeight,
+        behavior
+      });
+    } else {
+      aiMessagesEndRef.current?.scrollIntoView({ behavior });
+    }
+  };
+
+  useEffect(() => {
+    if (isAiBubbleOpen) {
+      setShowScrollBottom(false);
+      scrollToBottom('auto');
+      const timer = setTimeout(() => scrollToBottom('auto'), 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isAiBubbleOpen, aiMessages.length]);
+
+  const handleMessagesScroll = (e) => {
+    const container = e.target;
+    if (!container) return;
+    const scrollBottomDistance = container.scrollHeight - container.scrollTop - container.clientHeight;
+    setShowScrollBottom(scrollBottomDistance > 80);
+  };
+
   if (!isAiBubbleOpen) return null;
 
   return (
@@ -91,28 +121,46 @@ export default function UserAiChat() {
         <button className={cx('ai-chat__close-btn')} onClick={handleCloseAiChat}>×</button>
       </div>
 
-      <div className={cx('ai-chat__messages')}>
-        {aiMessages.length === 0 ? (
-          <div style={{ color: '#94a3b8', fontSize: '0.82rem', textAlign: 'center', marginTop: '20px' }}>
-            {t('ask_anything')}
-          </div>
-        ) : (
-          aiMessages.map((msg, index) => {
-            const isBot = msg.senderId === 999;
-            return (
-              <div key={index} className={cx('ai-chat__msg', isBot ? 'ai-chat__msg--bot' : 'ai-chat__msg--user')}>
-                {msg.content}
-              </div>
-            );
-          })
+      <div className={cx('ai-chat__messages-wrapper')}>
+        <div
+          ref={aiMessagesAreaRef}
+          onScroll={handleMessagesScroll}
+          className={cx('ai-chat__messages')}
+        >
+          {aiMessages.length === 0 ? (
+            <div style={{ color: '#94a3b8', fontSize: '0.82rem', textAlign: 'center', marginTop: '20px' }}>
+              {t('ask_anything')}
+            </div>
+          ) : (
+            aiMessages.map((msg, index) => {
+              const isBot = msg.senderId === 999;
+              return (
+                <div key={index} className={cx('ai-chat__msg', isBot ? 'ai-chat__msg--bot' : 'ai-chat__msg--user')}>
+                  {msg.content}
+                </div>
+              );
+            })
+          )}
+          {isAiLoading && (
+            <div className={cx('ai-chat__loading')}>
+              <div className={cx('ai-chat__spinner')}></div>
+              <span>{t('ai_typing')}</span>
+            </div>
+          )}
+          <div ref={aiMessagesEndRef} />
+        </div>
+
+        {showScrollBottom && (
+          <button
+            type="button"
+            className={cx('ai-chat__scroll-bottom-btn')}
+            onClick={() => scrollToBottom('smooth')}
+            title="Cuộn xuống tin nhắn mới nhất"
+            aria-label="Scroll to bottom"
+          >
+            ↓
+          </button>
         )}
-        {isAiLoading && (
-          <div className={cx('ai-chat__loading')}>
-            <div className={cx('ai-chat__spinner')}></div>
-            <span>{t('ai_typing')}</span>
-          </div>
-        )}
-        <div ref={aiMessagesEndRef} />
       </div>
 
       <form className={cx('ai-chat__input-area')} onSubmit={handleAiSendMessage}>
