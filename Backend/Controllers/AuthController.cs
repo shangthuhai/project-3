@@ -5,6 +5,8 @@ using Backend.Models;
 using System;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Backend.Controllers
 {
@@ -74,11 +76,11 @@ namespace Backend.Controllers
 
             var newUser = new User
             {
-                Username = dto.Username,
-                Password = dto.Password,
-                Email = dto.Email,
-                MobileNumber = dto.MobileNumber,
-                Name = dto.Name,
+                Username = dto.Username.Trim(),
+                Password = HashPassword(dto.Password),
+                Email = dto.Email.Trim(),
+                MobileNumber = dto.MobileNumber.Trim(),
+                Name = dto.Name.Trim(),
                 ProfilePhoto = defaultAvatar,
                 Gender = "Male",
                 WorkStatus = "Employed",
@@ -100,13 +102,54 @@ namespace Backend.Controllers
                 return BadRequest(new { message = "Username and Password are required." });
             }
 
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == dto.Username.ToLower());
-            if (user == null || user.Password != dto.Password)
+            var username = dto.Username.Trim();
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
+            if (user == null || !VerifyPassword(dto.Password, user.Password))
             {
                 return Unauthorized(new { message = "Invalid Username or Password." });
             }
 
+            // Upgrade old seeded/plaintext passwords after a successful login.
+            if (!user.Password.StartsWith("PBKDF2$", StringComparison.Ordinal))
+            {
+                user.Password = HashPassword(dto.Password);
+                await _context.SaveChangesAsync();
+            }
+
             return Ok(user);
+        }
+
+        private static string HashPassword(string password)
+        {
+            var salt = RandomNumberGenerator.GetBytes(16);
+            var hash = Rfc2898DeriveBytes.Pbkdf2(password, salt, 100_000, HashAlgorithmName.SHA256, 32);
+            return $"PBKDF2$100000${Convert.ToBase64String(salt)}${Convert.ToBase64String(hash)}";
+        }
+
+        private static bool VerifyPassword(string password, string storedPassword)
+        {
+            if (!storedPassword.StartsWith("PBKDF2$", StringComparison.Ordinal))
+            {
+                return storedPassword == password;
+            }
+
+            var parts = storedPassword.Split('$');
+            if (parts.Length != 4 || !int.TryParse(parts[1], out var iterations))
+            {
+                return false;
+            }
+
+            try
+            {
+                var salt = Convert.FromBase64String(parts[2]);
+                var expectedHash = Convert.FromBase64String(parts[3]);
+                var actualHash = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA256, expectedHash.Length);
+                return CryptographicOperations.FixedTimeEquals(actualHash, expectedHash);
+            }
+            catch (FormatException)
+            {
+                return false;
+            }
         }
     }
 
