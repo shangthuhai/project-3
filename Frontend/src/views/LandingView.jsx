@@ -73,7 +73,7 @@ export default function LandingView() {
         </div>
 
         {/* Quick Demo Swapper widget for easy evaluation */}
-        {users.length > 0 && (
+        {/* {users.length > 0 && (
           <div className={cx('landing__user-switcher')} style={{ width: 'fit-content', marginTop: '30px' }}>
             <div className={cx('landing__user-switcher-info')}>
               <span className={cx('landing__user-switcher-label')}>{t('demo_login')}</span>
@@ -90,7 +90,7 @@ export default function LandingView() {
               </div>
             </div>
           </div>
-        )}
+        )} */}
       </div>
 
       {/* Right Column: Auth forms */}
@@ -98,34 +98,34 @@ export default function LandingView() {
         <div className={cx('landing__header')}>
           {/* Language & Theme Switcher */}
           <div style={{ display: 'flex', gap: '8px', marginRight: 'auto', alignItems: 'center' }}>
-            <button 
-              type="button" 
+            <button
+              type="button"
               className={cx('landing__lang-btn', { 'landing__lang-btn--active': language === 'en' })}
               onClick={() => setLanguage('en')}
               style={{ background: language === 'en' ? 'var(--color-primary)' : 'rgba(255,255,255,0.08)', color: '#fff', border: 'none', borderRadius: '4px', padding: '4px 8px', fontSize: '0.75rem', cursor: 'pointer' }}
             >
               EN
             </button>
-            <button 
-              type="button" 
+            <button
+              type="button"
               className={cx('landing__lang-btn', { 'landing__lang-btn--active': language === 'vi' })}
               onClick={() => setLanguage('vi')}
               style={{ background: language === 'vi' ? 'var(--color-primary)' : 'rgba(255,255,255,0.08)', color: '#fff', border: 'none', borderRadius: '4px', padding: '4px 8px', fontSize: '0.75rem', cursor: 'pointer' }}
             >
               VI
             </button>
-            
-            <button 
-              type="button" 
+
+            <button
+              type="button"
               className={cx('landing__theme-btn')}
               onClick={() => setTheme(theme === 'light' ? 'dark' : theme === 'dark' ? 'glass' : 'light')}
-              style={{ 
-                background: 'rgba(255,255,255,0.08)', 
-                color: 'var(--text-main)', 
-                border: 'none', 
-                borderRadius: '4px', 
-                padding: '4px 8px', 
-                fontSize: '0.75rem', 
+              style={{
+                background: 'rgba(255,255,255,0.08)',
+                color: 'var(--text-main)',
+                border: 'none',
+                borderRadius: '4px',
+                padding: '4px 8px',
+                fontSize: '0.75rem',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -303,10 +303,10 @@ export default function LandingView() {
                       {mobileValidation.message === 'Checking mobile number...' || mobileValidation.message === 'Checking availability...'
                         ? t('checking_availability')
                         : mobileValidation.available === true
-                        ? t('mobile_available')
-                        : mobileValidation.available === false
-                        ? t('mobile_taken')
-                        : t('mobile_invalid')}
+                          ? t('mobile_available')
+                          : mobileValidation.available === false
+                            ? t('mobile_taken')
+                            : t('mobile_invalid')}
                     </span>
                   </span>
                 )}
@@ -365,34 +365,34 @@ export default function LandingView() {
 
           <div className={cx('landing__mobile-utils')}>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className={cx('landing__lang-btn', { 'landing__lang-btn--active': language === 'en' })}
                 onClick={() => setLanguage('en')}
                 style={{ background: language === 'en' ? 'var(--color-primary)' : 'rgba(255,255,255,0.08)', color: '#fff', border: 'none', borderRadius: '4px', padding: '6px 12px', fontSize: '0.8rem', cursor: 'pointer' }}
               >
                 EN
               </button>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className={cx('landing__lang-btn', { 'landing__lang-btn--active': language === 'vi' })}
                 onClick={() => setLanguage('vi')}
                 style={{ background: language === 'vi' ? 'var(--color-primary)' : 'rgba(255,255,255,0.08)', color: '#fff', border: 'none', borderRadius: '4px', padding: '6px 12px', fontSize: '0.8rem', cursor: 'pointer' }}
               >
                 VI
               </button>
-              
-              <button 
-                type="button" 
+
+              <button
+                type="button"
                 className={cx('landing__theme-btn')}
                 onClick={() => setTheme(theme === 'light' ? 'dark' : theme === 'dark' ? 'glass' : 'light')}
-                style={{ 
-                  background: 'rgba(255,255,255,0.08)', 
-                  color: 'var(--text-main)', 
-                  border: 'none', 
-                  borderRadius: '4px', 
-                  padding: '6px 12px', 
-                  fontSize: '0.8rem', 
+                style={{
+                  background: 'rgba(255,255,255,0.08)',
+                  color: 'var(--text-main)',
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '6px 12px',
+                  fontSize: '0.8rem',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
