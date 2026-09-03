@@ -72,7 +72,7 @@ export default function AdminUsers({
   return (
     <div className="admin-tab-content">
       <div className="admin-header" style={{ marginBottom: '20px' }}>
-        <h2 style={{ fontSize: '1.8rem', fontWeight: '600', color: '#fff', marginBottom: '6px' }}>User Accounts Management</h2>
+        <h2 style={{ fontSize: '1.8rem', fontWeight: '600', color: 'var(--text-main)', marginBottom: '6px' }}>User Accounts Management</h2>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>Block/unlock user accounts, verify verification records, and configure free message quotas.</p>
       </div>
 
@@ -101,10 +101,10 @@ export default function AdminUsers({
                 width: '100%',
                 padding: '9px 12px',
                 paddingRight: searchQuery ? '32px' : '12px',
-                background: '#182533',
+                background: 'var(--bg-app)',
                 border: '1px solid var(--border-light)',
                 borderRadius: '8px',
-                color: '#fff',
+                color: 'var(--text-main)',
                 fontSize: '0.88rem',
                 outline: 'none'
               }}
@@ -244,7 +244,7 @@ export default function AdminUsers({
                     <td style={{ padding: '12px 20px' }}>
                       <img src={user.profilePhoto || 'https://via.placeholder.com/38'} alt={user.name} style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover' }} />
                     </td>
-                    <td style={{ padding: '12px 20px', color: '#fff' }}><strong>{user.username}</strong></td>
+                    <td style={{ padding: '12px 20px', color: 'var(--text-main)' }}><strong>{user.username}</strong></td>
                     <td style={{ padding: '12px 20px', color: 'var(--text-main)' }}>{user.name || 'N/A'}</td>
                     <td style={{ padding: '12px 20px', color: 'var(--text-main)' }}><code>{user.mobileNumber}</code></td>
                     <td style={{ padding: '12px 20px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>{user.email}</td>
@@ -265,7 +265,7 @@ export default function AdminUsers({
                             setNewQuotaValue(quotaVal);
                             setShowQuotaModal(true);
                           }}
-                          style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#1a2432', border: '1px solid rgba(255,255,255,0.06)' }}
+                          style={{ padding: '6px 12px', fontSize: '0.78rem', background: 'var(--bg-app)', color: 'var(--text-main)', border: '1px solid var(--border-light)' }}
                         >
                           ⚙️ Quota
                         </button>

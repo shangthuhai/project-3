@@ -22,7 +22,7 @@ export default function AdminSmsLogs({
   return (
     <div className="admin-tab-content">
       <div className="admin-header" style={{ marginBottom: '20px' }}>
-        <h2 style={{ fontSize: '1.8rem', fontWeight: '600', color: '#fff', marginBottom: '6px' }}>System SMS Delivery Logs</h2>
+        <h2 style={{ fontSize: '1.8rem', fontWeight: '600', color: 'var(--text-main)', marginBottom: '6px' }}>System SMS Delivery Logs</h2>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>Comprehensive database audit trail for all outbound text messages and gateway delivery status codes.</p>
       </div>
 
@@ -54,10 +54,10 @@ export default function AdminSmsLogs({
                 width: '100%',
                 padding: '9px 12px',
                 paddingRight: smsLogsSearch ? '32px' : '12px',
-                background: '#182533',
+                background: 'var(--bg-app)',
                 border: '1px solid var(--border-light)',
                 borderRadius: '8px',
-                color: '#fff',
+                color: 'var(--text-main)',
                 fontSize: '0.88rem',
                 outline: 'none'
               }}
@@ -187,7 +187,7 @@ export default function AdminSmsLogs({
                     <td style={{ padding: '12px 20px', color: 'var(--text-muted)', fontSize: '0.88rem' }}>#{log.logId}</td>
                     <td style={{ padding: '12px 20px' }}>
                       <div className="sender-cell" style={{ display: 'flex', flexDirection: 'column' }}>
-                        <strong style={{ color: '#fff' }}>{log.senderUsername}</strong>
+                        <strong style={{ color: 'var(--text-main)' }}>{log.senderUsername}</strong>
                         <span className="sender-cell-name" style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{log.senderName}</span>
                       </div>
                     </td>

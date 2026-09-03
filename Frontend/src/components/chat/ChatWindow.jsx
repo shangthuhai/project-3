@@ -152,15 +152,7 @@ export default function ChatWindow() {
       </div>
 
       {remainingQuota && !remainingQuota.isFriend && (
-        <div className={cx('chat-window__quota-banner')} style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '12px 24px',
-          background: 'rgba(23, 33, 43, 0.95)',
-          borderBottom: '1px solid var(--border-light)',
-          fontSize: '0.88rem'
-        }}>
+        <div className={cx('chat-window__quota-banner')}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
             <span>
               <strong>{language === 'en' ? 'SMS Quota:' : 'Hạn ngạch SMS:'}</strong> {remainingQuota.remaining} of {remainingQuota.limit} {language === 'en' ? 'free messages left for this number.' : 'tin nhắn miễn phí còn lại.'}

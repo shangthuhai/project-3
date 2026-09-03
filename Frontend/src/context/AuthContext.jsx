@@ -341,6 +341,7 @@ export function AuthProvider({ children }) {
       otpInput,
       setOtpInput,
       alert,
+      setAlert,
       triggerAlert,
       handleLoginSubmit,
       handle2FaVerifySubmit,

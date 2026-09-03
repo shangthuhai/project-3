@@ -163,14 +163,15 @@
 }
 
 .chat-window__quota-banner {
-  background: rgba(245, 158, 11, 0.1);
-  border-bottom: 1px solid rgba(245, 158, 11, 0.2);
-  color: var(--color-warning);
-  padding: 8px 24px;
-  font-size: 0.8rem;
+  background: var(--alert-bg-warning);
+  border-bottom: 1px solid var(--alert-border-warning);
+  color: var(--alert-text-warning);
+  padding: 10px 24px;
+  font-size: 0.88rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  transition: var(--transition-normal);
 }
 
 .chat-window__quota-btn {

@@ -60,7 +60,7 @@ export default function AdminTransactions({ adminTransactions }) {
   return (
     <div className="admin-tab-content">
       <div className="admin-header" style={{ marginBottom: '20px' }}>
-        <h2 style={{ fontSize: '1.8rem', fontWeight: '600', color: '#fff', marginBottom: '6px' }}>Payment & Subscription Ledger</h2>
+        <h2 style={{ fontSize: '1.8rem', fontWeight: '600', color: 'var(--text-main)', marginBottom: '6px' }}>Payment & Subscription Ledger</h2>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>Monitor payment transactions generated from subscribers activating premium Value-Added Services (VAS).</p>
       </div>
 
@@ -89,10 +89,10 @@ export default function AdminTransactions({ adminTransactions }) {
                 width: '100%',
                 padding: '9px 12px',
                 paddingRight: searchQuery ? '32px' : '12px',
-                background: '#182533',
+                background: 'var(--bg-app)',
                 border: '1px solid var(--border-light)',
                 borderRadius: '8px',
-                color: '#fff',
+                color: 'var(--text-main)',
                 fontSize: '0.88rem',
                 outline: 'none'
               }}
@@ -230,7 +230,7 @@ export default function AdminTransactions({ adminTransactions }) {
                 return (
                   <tr key={t.transactionId} style={{ borderBottom: '1px solid var(--border-light)' }} className="table-row-hover">
                     <td style={{ padding: '12px 20px', color: 'var(--text-muted)' }}>#{t.transactionId}</td>
-                    <td style={{ padding: '12px 20px', color: '#fff' }}><strong>{t.username}</strong></td>
+                    <td style={{ padding: '12px 20px', color: 'var(--text-main)' }}><strong>{t.username}</strong></td>
                     <td style={{ padding: '12px 20px', color: 'var(--text-main)' }}>{t.userFullName}</td>
                     <td style={{ padding: '12px 20px' }}>
                       <span className="service-tag" style={{ background: 'rgba(139, 92, 246, 0.12)', color: '#a78bfa', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '500' }}>{t.serviceName}</span>

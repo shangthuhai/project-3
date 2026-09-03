@@ -122,8 +122,8 @@ export default function UserDashboard() {
               </div>
 
               {showPaymentOtpField && (
-                <div className="form-group" style={{ background: 'rgba(245, 158, 11, 0.08)', padding: '12px', borderRadius: '4px', border: '1px dashed rgba(245, 158, 11, 0.3)' }}>
-                  <label style={{ color: '#fbbf24', fontWeight: 'bold' }}>{t('enter_otp_payment')}</label>
+                <div className="form-group" style={{ background: 'var(--alert-bg-warning)', padding: '12px', borderRadius: '8px', border: '1px solid var(--alert-border-warning)' }}>
+                  <label style={{ color: 'var(--alert-text-warning)', fontWeight: 'bold' }}>{t('enter_otp_payment')}</label>
                   <input
                     type="text"
                     placeholder={t('enter_6_digit_otp')}

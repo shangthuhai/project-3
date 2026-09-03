@@ -12,7 +12,7 @@ export default function AdminOverview({ adminStats }) {
   return (
     <div className="admin-tab-content">
       <div className="admin-header" style={{ marginBottom: '30px' }}>
-        <h2 style={{ fontSize: '1.8rem', fontWeight: '600', color: '#fff', marginBottom: '6px' }}>System Dashboard Overview</h2>
+        <h2 style={{ fontSize: '1.8rem', fontWeight: '600', color: 'var(--text-main)', marginBottom: '6px' }}>System Dashboard Overview</h2>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>Monitor real-time system stats, registered users, gateways, and platform revenue.</p>
       </div>
 
@@ -21,7 +21,7 @@ export default function AdminOverview({ adminStats }) {
         <div className="admin-stat-card" style={{ background: 'var(--bg-sidebar)', padding: '24px', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', gap: '20px', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
           <div className="stat-icon" style={{ width: '56px', height: '56px', borderRadius: '12px', background: 'rgba(36, 129, 204, 0.15)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>👥</div>
           <div className="stat-details" style={{ display: 'flex', flexDirection: 'column' }}>
-            <span className="stat-value" style={{ fontSize: '1.75rem', fontWeight: '700', color: '#fff', lineHeight: '1.2' }}>{adminStats.totalUsers}</span>
+            <span className="stat-value" style={{ fontSize: '1.75rem', fontWeight: '700', color: 'var(--text-main)', lineHeight: '1.2' }}>{adminStats.totalUsers}</span>
             <span className="stat-label" style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>Registered Users</span>
           </div>
         </div>
@@ -29,7 +29,7 @@ export default function AdminOverview({ adminStats }) {
         <div className="admin-stat-card" style={{ background: 'var(--bg-sidebar)', padding: '24px', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', gap: '20px', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
           <div className="stat-icon" style={{ width: '56px', height: '56px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--color-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>💬</div>
           <div className="stat-details" style={{ display: 'flex', flexDirection: 'column' }}>
-            <span className="stat-value" style={{ fontSize: '1.75rem', fontWeight: '700', color: '#fff', lineHeight: '1.2' }}>{adminStats.totalMessages}</span>
+            <span className="stat-value" style={{ fontSize: '1.75rem', fontWeight: '700', color: 'var(--text-main)', lineHeight: '1.2' }}>{adminStats.totalMessages}</span>
             <span className="stat-label" style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>SMS Sent (Standard)</span>
           </div>
         </div>
@@ -37,7 +37,7 @@ export default function AdminOverview({ adminStats }) {
         <div className="admin-stat-card" style={{ background: 'var(--bg-sidebar)', padding: '24px', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', gap: '20px', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
           <div className="stat-icon" style={{ width: '56px', height: '56px', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.15)', color: 'var(--color-warning)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>💰</div>
           <div className="stat-details" style={{ display: 'flex', flexDirection: 'column' }}>
-            <span className="stat-value" style={{ fontSize: '1.75rem', fontWeight: '700', color: '#fff', lineHeight: '1.2' }}>${adminStats.totalRevenue.toFixed(2)}</span>
+            <span className="stat-value" style={{ fontSize: '1.75rem', fontWeight: '700', color: 'var(--text-main)', lineHeight: '1.2' }}>${adminStats.totalRevenue.toFixed(2)}</span>
             <span className="stat-label" style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>Gross Revenue</span>
           </div>
         </div>
@@ -45,7 +45,7 @@ export default function AdminOverview({ adminStats }) {
         <div className="admin-stat-card" style={{ background: 'var(--bg-sidebar)', padding: '24px', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', gap: '20px', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
           <div className="stat-icon" style={{ width: '56px', height: '56px', borderRadius: '12px', background: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>🔔</div>
           <div className="stat-details" style={{ display: 'flex', flexDirection: 'column' }}>
-            <span className="stat-value" style={{ fontSize: '1.75rem', fontWeight: '700', color: '#fff', lineHeight: '1.2' }}>{adminStats.activeServicesCount}</span>
+            <span className="stat-value" style={{ fontSize: '1.75rem', fontWeight: '700', color: 'var(--text-main)', lineHeight: '1.2' }}>{adminStats.activeServicesCount}</span>
             <span className="stat-label" style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>Paid Subscriptions</span>
           </div>
         </div>
@@ -53,7 +53,7 @@ export default function AdminOverview({ adminStats }) {
         <div className="admin-stat-card" style={{ background: 'var(--bg-sidebar)', padding: '24px', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', gap: '20px', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
           <div className="stat-icon" style={{ width: '56px', height: '56px', borderRadius: '12px', background: 'rgba(236, 72, 153, 0.15)', color: '#ec4899', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>🤖</div>
           <div className="stat-details" style={{ display: 'flex', flexDirection: 'column' }}>
-            <span className="stat-value" style={{ fontSize: '1.75rem', fontWeight: '700', color: '#fff', lineHeight: '1.2' }}>{adminStats.aiInteractionsCount}</span>
+            <span className="stat-value" style={{ fontSize: '1.75rem', fontWeight: '700', color: 'var(--text-main)', lineHeight: '1.2' }}>{adminStats.aiInteractionsCount}</span>
             <span className="stat-label" style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>AI Assist Count</span>
           </div>
         </div>
@@ -62,7 +62,7 @@ export default function AdminOverview({ adminStats }) {
       {/* Message Status breakdown & Chart area */}
       <div className="admin-charts-section" style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', marginBottom: '30px' }}>
         <div className="admin-chart-card" style={{ flex: '1', minWidth: '300px', background: 'var(--bg-sidebar)', padding: '24px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '20px', color: '#fff' }}>SMS Gateway Delivery Ratios</h3>
+          <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '20px', color: 'var(--text-main)' }}>SMS Gateway Delivery Ratios</h3>
           <div className="delivery-status-bars" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div className="status-bar-item">
               <div className="status-header" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', marginBottom: '6px', color: 'var(--text-main)' }}>
@@ -97,7 +97,7 @@ export default function AdminOverview({ adminStats }) {
         </div>
 
         <div className="admin-chart-card flex-2" style={{ flex: '2', minWidth: '400px', background: 'var(--bg-sidebar)', padding: '24px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '20px', color: '#fff' }}>Sms Traffic Load (Last 7 Days)</h3>
+          <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '20px', color: 'var(--text-main)' }}>Sms Traffic Load (Last 7 Days)</h3>
           <div className="admin-bar-chart" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', height: '180px', paddingTop: '20px', paddingBottom: '10px' }}>
             {adminStats.dailyStats && adminStats.dailyStats.map((day, idx) => {
               const maxVal = Math.max(...adminStats.dailyStats.map(d => d.count), 1);
