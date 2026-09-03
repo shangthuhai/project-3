@@ -1,11 +1,159 @@
 import React from 'react';
 
-export default function AdminSmsLogs({ adminSmsLogs, setSmsLogsPage }) {
+export default function AdminSmsLogs({
+  adminSmsLogs,
+  setSmsLogsPage,
+  smsLogsSearch = '',
+  setSmsLogsSearch = () => {},
+  smsLogsStatus = 'all',
+  setSmsLogsStatus = () => {},
+  smsLogsType = 'all',
+  setSmsLogsType = () => {}
+}) {
+  const hasActiveFilters = smsLogsSearch !== '' || smsLogsStatus !== 'all' || smsLogsType !== 'all';
+
+  const handleResetFilters = () => {
+    setSmsLogsSearch('');
+    setSmsLogsStatus('all');
+    setSmsLogsType('all');
+    setSmsLogsPage(1);
+  };
+
   return (
     <div className="admin-tab-content">
-      <div className="admin-header" style={{ marginBottom: '25px' }}>
+      <div className="admin-header" style={{ marginBottom: '20px' }}>
         <h2 style={{ fontSize: '1.8rem', fontWeight: '600', color: '#fff', marginBottom: '6px' }}>System SMS Delivery Logs</h2>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>Comprehensive database audit trail for all outbound text messages and gateway delivery status codes.</p>
+      </div>
+
+      {/* Filter and Search Controls Bar */}
+      <div className="admin-filter-bar" style={{
+        background: 'var(--bg-sidebar)',
+        padding: '16px 20px',
+        borderRadius: 'var(--radius-lg)',
+        border: '1px solid var(--border-light)',
+        marginBottom: '20px',
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '12px',
+        alignItems: 'center',
+        justifyContent: 'space-between'
+      }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', flex: '1', minWidth: '300px' }}>
+          {/* Search Box */}
+          <div style={{ position: 'relative', flex: '1', minWidth: '240px' }}>
+            <input
+              type="text"
+              placeholder="🔍 Search log ID, sender, receiver, content, gateway code..."
+              value={smsLogsSearch}
+              onChange={(e) => {
+                setSmsLogsSearch(e.target.value);
+                setSmsLogsPage(1);
+              }}
+              style={{
+                width: '100%',
+                padding: '9px 12px',
+                paddingRight: smsLogsSearch ? '32px' : '12px',
+                background: '#182533',
+                border: '1px solid var(--border-light)',
+                borderRadius: '8px',
+                color: '#fff',
+                fontSize: '0.88rem',
+                outline: 'none'
+              }}
+            />
+            {smsLogsSearch && (
+              <button
+                onClick={() => {
+                  setSmsLogsSearch('');
+                  setSmsLogsPage(1);
+                }}
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem'
+                }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Delivery Status Filter */}
+          <select
+            value={smsLogsStatus}
+            onChange={(e) => {
+              setSmsLogsStatus(e.target.value);
+              setSmsLogsPage(1);
+            }}
+            style={{
+              padding: '9px 12px',
+              background: '#182533',
+              border: '1px solid var(--border-light)',
+              borderRadius: '8px',
+              color: smsLogsStatus !== 'all' ? 'var(--color-primary)' : 'var(--text-muted)',
+              fontSize: '0.88rem',
+              cursor: 'pointer'
+            }}
+          >
+            <option value="all">⚡ All Delivery Statuses</option>
+            <option value="delivered">🟢 Delivered / Sent</option>
+            <option value="failed">🔴 Failed</option>
+            <option value="pending">🟡 Pending</option>
+          </select>
+
+          {/* SMS Type Filter */}
+          <select
+            value={smsLogsType}
+            onChange={(e) => {
+              setSmsLogsType(e.target.value);
+              setSmsLogsPage(1);
+            }}
+            style={{
+              padding: '9px 12px',
+              background: '#182533',
+              border: '1px solid var(--border-light)',
+              borderRadius: '8px',
+              color: smsLogsType !== 'all' ? 'var(--color-primary)' : 'var(--text-muted)',
+              fontSize: '0.88rem',
+              cursor: 'pointer'
+            }}
+          >
+            <option value="all">✉️ All Message Types</option>
+            <option value="friend">👥 Friend Free SMS</option>
+            <option value="normal">🌐 Normal SMS</option>
+          </select>
+        </div>
+
+        {/* Filter Stats & Reset */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+            Total logs found: <strong>{adminSmsLogs.totalCount || 0}</strong>
+          </span>
+          {hasActiveFilters && (
+            <button
+              onClick={handleResetFilters}
+              style={{
+                padding: '6px 12px',
+                background: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid var(--color-danger)',
+                color: 'var(--color-danger)',
+                borderRadius: '6px',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                fontWeight: '500'
+              }}
+            >
+              🔄 Reset Filters
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="admin-table-container" style={{ background: 'var(--bg-sidebar)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', overflowX: 'auto' }}>

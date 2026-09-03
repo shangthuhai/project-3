@@ -27,6 +27,9 @@ export default function AdminDashboard() {
   const [adminTransactions, setAdminTransactions] = useState([]);
   const [adminSmsLogs, setAdminSmsLogs] = useState({ items: [], totalCount: 0, page: 1, pageSize: 10, totalPages: 1 });
   const [smsLogsPage, setSmsLogsPage] = useState(1);
+  const [smsLogsSearch, setSmsLogsSearch] = useState('');
+  const [smsLogsStatus, setSmsLogsStatus] = useState('all');
+  const [smsLogsType, setSmsLogsType] = useState('all');
   const [adminTemplates, setAdminTemplates] = useState([]);
 
   // Quota Modal Form
@@ -49,7 +52,7 @@ export default function AdminDashboard() {
         .then(setAdminUsers)
         .catch(() => triggerAlert('error', 'Cannot load users.'));
     } else if (adminTab === 'logs') {
-      getAdminSmsLogs(smsLogsPage, 10)
+      getAdminSmsLogs(smsLogsPage, 10, smsLogsSearch, smsLogsStatus, smsLogsType)
         .then(setAdminSmsLogs)
         .catch(() => triggerAlert('error', 'Cannot load SMS logs.'));
     } else if (adminTab === 'transactions') {
@@ -67,7 +70,7 @@ export default function AdminDashboard() {
     if (loggedInUser && loggedInUser.isAdmin) {
       loadAdminDashboardData();
     }
-  }, [adminTab, smsLogsPage]);
+  }, [adminTab, smsLogsPage, smsLogsSearch, smsLogsStatus, smsLogsType]);
 
   const handleToggleUserStatus = (id, currentActive) => {
     const newActive = !currentActive;
@@ -206,7 +209,18 @@ export default function AdminDashboard() {
             handleToggleUserStatus={handleToggleUserStatus}
           />
         )}
-        {adminTab === 'logs' && <AdminSmsLogs adminSmsLogs={adminSmsLogs} setSmsLogsPage={setSmsLogsPage} />}
+        {adminTab === 'logs' && (
+          <AdminSmsLogs
+            adminSmsLogs={adminSmsLogs}
+            setSmsLogsPage={setSmsLogsPage}
+            smsLogsSearch={smsLogsSearch}
+            setSmsLogsSearch={setSmsLogsSearch}
+            smsLogsStatus={smsLogsStatus}
+            setSmsLogsStatus={setSmsLogsStatus}
+            smsLogsType={smsLogsType}
+            setSmsLogsType={setSmsLogsType}
+          />
+        )}
         {adminTab === 'transactions' && <AdminTransactions adminTransactions={adminTransactions} />}
         {adminTab === 'templates' && (
           <AdminTemplates

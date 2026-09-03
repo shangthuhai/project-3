@@ -127,8 +127,13 @@ export const updateUserQuota = (id, freeMessagesLeft) =>
 export const getAdminTransactions = () => 
   api.get('/admin/transactions').then(res => res.data);
 
-export const getAdminSmsLogs = (page = 1, pageSize = 10) => 
-  api.get(`/admin/sms-logs?page=${page}&pageSize=${pageSize}`).then(res => res.data);
+export const getAdminSmsLogs = (page = 1, pageSize = 10, search = '', status = '', type = '') => {
+  let url = `/admin/sms-logs?page=${page}&pageSize=${pageSize}`;
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+  if (status) url += `&status=${encodeURIComponent(status)}`;
+  if (type) url += `&type=${encodeURIComponent(type)}`;
+  return api.get(url).then(res => res.data);
+};
 
 export const createAdminTemplate = (title, body) => 
   api.post('/admin/templates', { title, body }).then(res => res.data);

@@ -169,7 +169,12 @@ namespace Backend.Controllers
 
         // GET: api/admin/sms-logs
         [HttpGet("sms-logs")]
-        public async Task<IActionResult> GetSmsLogs([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> GetSmsLogs(
+            [FromQuery] int page = 1, 
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null,
+            [FromQuery] string? status = null,
+            [FromQuery] string? type = null)
         {
             if (page < 1) page = 1;
             if (pageSize < 1) pageSize = 10;
@@ -177,7 +182,49 @@ namespace Backend.Controllers
             var query = _context.SMSLogs
                 .Include(l => l.Message)
                 .ThenInclude(m => m!.Sender)
-                .ThenInclude(u => u!.Profile);
+                .ThenInclude(u => u!.Profile)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                string s = search.Trim().ToLower();
+                query = query.Where(l =>
+                    l.LogId.ToString().Contains(s) ||
+                    (l.Message != null && (
+                        (l.Message.Sender != null && l.Message.Sender.Username.ToLower().Contains(s)) ||
+                        (l.Message.Sender != null && l.Message.Sender.Profile != null && l.Message.Sender.Profile.FullName != null && l.Message.Sender.Profile.FullName.ToLower().Contains(s)) ||
+                        l.Message.ReceiverNumber.ToLower().Contains(s) ||
+                        l.Message.Content.ToLower().Contains(s)
+                    )) ||
+                    (l.GatewayStatusCode != null && l.GatewayStatusCode.ToLower().Contains(s))
+                );
+            }
+
+            if (!string.IsNullOrWhiteSpace(status) && status.ToLower() != "all")
+            {
+                string stat = status.Trim().ToLower();
+                if (stat == "delivered" || stat == "sent")
+                {
+                    query = query.Where(l => l.DeliveryStatus == "delivered" || l.DeliveryStatus == "sent");
+                }
+                else
+                {
+                    query = query.Where(l => l.DeliveryStatus.ToLower() == stat);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(type) && type.ToLower() != "all")
+            {
+                string t = type.Trim().ToLower();
+                if (t == "friend")
+                {
+                    query = query.Where(l => l.Message != null && l.Message.IsFreeFriendMsg == true);
+                }
+                else if (t == "normal")
+                {
+                    query = query.Where(l => l.Message == null || l.Message.IsFreeFriendMsg == false);
+                }
+            }
 
             int totalCount = await query.CountAsync();
             var smsLogs = await query
