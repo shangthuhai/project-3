@@ -14,9 +14,9 @@ export default function FriendsTab() {
   const { loggedInUser, triggerAlert } = useAuth();
 
   const searchFilterOptions = [
-    { value: 'friends', label: 'Bạn bè' },
-    { value: 'strangers', label: 'Người lạ' },
-    { value: 'all', label: 'Tất cả' }
+    { value: 'friends', label: t('filter_friends') },
+    { value: 'strangers', label: t('filter_strangers') },
+    { value: 'all', label: t('filter_all') }
   ];
   const {
     friends,
@@ -64,7 +64,10 @@ export default function FriendsTab() {
         .then(res => {
           let results = res.items || [];
           if (searchFilter === 'strangers') {
-            results = results.filter(u => u.friendshipStatus !== 'accepted');
+            results = results.filter(u => {
+              const isFriend = friends.some(f => f.id === u.id || f.mobileNumber === u.mobileNumber);
+              return !isFriend && u.friendshipStatus !== 'accepted';
+            });
           }
           setApiSearchResults(results);
           setLoadingSearch(false);
@@ -75,7 +78,7 @@ export default function FriendsTab() {
     }, 400);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery, searchFilter]);
+  }, [searchQuery, searchFilter, friends]);
 
   // Sync friendshipStatus inside apiSearchResults when global context lists change
   useEffect(() => {
@@ -121,10 +124,10 @@ export default function FriendsTab() {
     blockNumber(user.mobileNumber)
       .then(res => {
         setBlocklist(prev => [...prev, res.block]);
-        triggerAlert('success', res.message || `Đã chặn số ${user.mobileNumber} thành công.`);
+        triggerAlert('success', res.message || `${t('block_success_prefix')} ${user.mobileNumber}`);
       })
       .catch(err => {
-        const errorMsg = err.response?.data?.message || 'Không thể chặn số điện thoại này.';
+        const errorMsg = err.response?.data?.message || t('block_error_default');
         triggerAlert('error', errorMsg);
       });
   };
@@ -135,13 +138,13 @@ export default function FriendsTab() {
 
     sendFriendRequest(loggedInUser.id, user.email)
       .then(res => {
-        triggerAlert('success', res.message || 'Gửi yêu cầu kết bạn thành công!');
+        triggerAlert('success', res.message || t('send_req_success_default'));
         setApiSearchResults(prev =>
           prev.map(u => (u.id === user.id ? { ...u, friendshipStatus: 'pending_sent' } : u))
         );
       })
       .catch(err => {
-        const errorMsg = err.response?.data?.message || 'Không thể gửi yêu cầu.';
+        const errorMsg = err.response?.data?.message || t('send_req_error_default');
         triggerAlert('error', errorMsg);
       });
   };
@@ -161,7 +164,7 @@ export default function FriendsTab() {
     <div className={cx('friends-tab')}>
       <div className={cx('friends-tab__header')}>
         <h1>{t('tab_friends')}</h1>
-        <p>{t('requests_desc')}</p>
+        <p>{t('friends_desc')}</p>
       </div>
 
       <div className={cx('friends-tab__container')}>
@@ -169,7 +172,7 @@ export default function FriendsTab() {
         <div className={cx('friends-tab__left-pane')}>
           <div className={cx('friends-tab__section-header')}>
             <h3>
-              {searchFilter === 'friends' ? t('tab_friends') : (searchFilter === 'strangers' ? 'Tìm kiếm người lạ' : 'Tìm kiếm tất cả')}
+              {searchFilter === 'friends' ? t('tab_friends') : (searchFilter === 'strangers' ? t('search_strangers_title') : t('search_all_title'))}
             </h3>
           </div>
 
@@ -177,7 +180,7 @@ export default function FriendsTab() {
             <div className={cx('friends-tab__search-box-wrapper')}>
               <input
                 type="text"
-                placeholder={searchFilter === 'friends' ? 'Tìm bạn bè trong danh sách...' : (searchFilter === 'strangers' ? 'Tìm người lạ bằng tên/SĐT...' : 'Tìm tất cả mọi người...')}
+                placeholder={searchFilter === 'friends' ? t('search_friends_placeholder') : (searchFilter === 'strangers' ? t('search_strangers_placeholder') : t('search_all_placeholder'))}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className={cx('friends-tab__search-input')}
@@ -187,7 +190,7 @@ export default function FriendsTab() {
                   type="button"
                   onClick={() => setSearchQuery('')}
                   className={cx('friends-tab__search-clear')}
-                  title="Clear search"
+                  title={t('clear_search')}
                 >
                   ✕
                 </button>
@@ -205,11 +208,11 @@ export default function FriendsTab() {
           <div className={cx('friends-tab__list-wrapper')}>
             {loadingSearch ? (
               <div className={cx('friends-tab__status-message')}>{t('searching')}</div>
-            ) : (searchFilter === 'friends' || !searchQuery.trim()) ? (
+            ) : searchFilter === 'friends' ? (
               // Friends Directory list (filtered locally if searchQuery is active)
               filteredFriends.length === 0 ? (
                 <div className={cx('friends-tab__status-message')}>
-                  {searchQuery ? 'Không tìm thấy bạn bè nào trong danh sách.' : (t('no_matching_users') ? 'Chưa có bạn bè nào trong danh sách.' : 'No friends in your list yet.')}
+                  {searchQuery ? t('no_friends_found') : t('no_friends_yet')}
                 </div>
               ) : (
                 <div className={cx('friends-tab__list')}>
@@ -230,16 +233,18 @@ export default function FriendsTab() {
                           className={cx('friends-tab__btn', 'friends-tab__btn--chat')}
                           onClick={() => handleStartChat(friend)}
                         >
-                          💬 {t('tab_chats') ? 'Nhắn tin' : 'Chat'}
+                          💬 {t('btn_chat')}
                         </button>
                       </div>
                     </div>
                   ))}
                 </div>
               )
-            ) : searchFilter === 'strangers' && !searchQuery.trim() ? (
+            ) : !searchQuery.trim() ? (
               <div className={cx('friends-tab__status-message')}>
-                Nhập tên hoặc số điện thoại để tìm kiếm người lạ.
+                {searchFilter === 'strangers'
+                  ? t('enter_search_strangers_prompt')
+                  : t('enter_search_all_prompt')}
               </div>
             ) : (
               // API search results list
@@ -264,11 +269,11 @@ export default function FriendsTab() {
                           <>
                             {user.friendshipStatus === 'pending_sent' ? (
                               <span className={cx('friends-tab__badge', 'friends-tab__badge--sent')}>
-                                {t('sent_friend_req') || '⏳ Pending'}
+                                {t('sent_friend_req')}
                               </span>
                             ) : user.friendshipStatus === 'pending_received' ? (
                               <div className={cx('friends-tab__actions-group')}>
-                                <span className={cx('friends-tab__received-label')}>Lời mời kết bạn gửi đến:</span>
+                                <span className={cx('friends-tab__received-label')}>{t('friend_req_from')}</span>
                                 <div className={cx('friends-tab__action-buttons')}>
                                   <button
                                     className={cx('friends-tab__btn', 'friends-tab__btn--accept')}
@@ -289,7 +294,7 @@ export default function FriendsTab() {
                                 className={cx('friends-tab__btn', 'friends-tab__btn--add')}
                                 onClick={() => handleSendFriendRequestDirect(user)}
                               >
-                                👤+ {t('send_friend_request') ? 'Kết bạn' : 'Add'}
+                                👤+ {t('btn_add_friend')}
                               </button>
                             )}
                           </>
@@ -299,7 +304,7 @@ export default function FriendsTab() {
                           className={cx('friends-tab__btn', 'friends-tab__btn--chat')}
                           onClick={() => handleStartChat(user)}
                         >
-                          💬 {t('tab_chats') ? 'Nhắn tin' : 'Chat'}
+                          💬 {t('btn_chat')}
                         </button>
                       </div>
                     </div>
@@ -359,13 +364,13 @@ export default function FriendsTab() {
           {/* Blacklist / Blocklist panel */}
           <div className={cx('friends-tab__pane-section', 'friends-tab__pane-section--blocklist')}>
             <div className={cx('friends-tab__section-header')}>
-              <h3>Danh sách đen (Blacklist)</h3>
+              <h3>{t('blacklist_title')}</h3>
             </div>
 
             <div className={cx('friends-tab__block-search-box')}>
               <input
                 type="text"
-                placeholder="Tìm tên hoặc số điện thoại để chặn..."
+                placeholder={t('search_block_placeholder')}
                 value={blockSearchQuery}
                 onChange={(e) => setBlockSearchQuery(e.target.value)}
                 className={cx('friends-tab__search-input')}
@@ -375,7 +380,7 @@ export default function FriendsTab() {
                   type="button"
                   onClick={() => setBlockSearchQuery('')}
                   className={cx('friends-tab__search-clear')}
-                  title="Clear block search"
+                  title={t('clear_search')}
                 >
                   ✕
                 </button>
@@ -384,10 +389,10 @@ export default function FriendsTab() {
 
             <div className={cx('friends-tab__blocklist-results-wrapper')}>
               {loadingBlockSearch ? (
-                <div className={cx('friends-tab__status-message-small')}>Đang tìm kiếm...</div>
+                <div className={cx('friends-tab__status-message-small')}>{t('searching')}</div>
               ) : blockSearchQuery ? (
                 blockSearchResults.length === 0 ? (
-                  <div className={cx('friends-tab__status-message-small')}>Không tìm thấy người dùng phù hợp.</div>
+                  <div className={cx('friends-tab__status-message-small')}>{t('no_matching_users')}</div>
                 ) : (
                   <div className={cx('friends-tab__block-search-results')}>
                     {blockSearchResults.map(user => {
@@ -412,14 +417,14 @@ export default function FriendsTab() {
                                   if (blockedEntry) handleUnblockNumber(blockedEntry.id);
                                 }}
                               >
-                                Bỏ chặn
+                                {t('btn_unblock_short')}
                               </button>
                             ) : (
                               <button
                                 className={cx('friends-tab__btn', 'friends-tab__btn--block-small')}
                                 onClick={() => handleBlockUserDirect(user)}
                               >
-                                Chặn
+                                {t('btn_block_short')}
                               </button>
                             )}
                           </div>
@@ -432,19 +437,19 @@ export default function FriendsTab() {
                 // Display list of currently blocked numbers when search is empty
                 <div className={cx('friends-tab__blocked-list')}>
                   {blocklist.length === 0 ? (
-                    <p className={cx('friends-tab__empty-notice')}>Danh sách chặn đang trống.</p>
+                    <p className={cx('friends-tab__empty-notice')}>{t('blocklist_empty')}</p>
                   ) : (
                     blocklist.map(b => (
                       <div key={b.id} className={cx('friends-tab__blocked-item')}>
                         <div className={cx('friends-tab__blocked-info')}>
-                          <span className={cx('friends-tab__blocked-name')}>🚫 {b.blockedName || 'Người dùng lạ'}</span>
+                          <span className={cx('friends-tab__blocked-name')}>🚫 {b.blockedName || t('unknown_user')}</span>
                           <span className={cx('friends-tab__blocked-number')}>{b.blockedNumber}</span>
                         </div>
                         <button
                           className={cx('friends-tab__btn', 'friends-tab__btn--unblock-small')}
                           onClick={() => handleUnblockNumber(b.id)}
                         >
-                          Bỏ chặn
+                          {t('btn_unblock_short')}
                         </button>
                       </div>
                     ))
