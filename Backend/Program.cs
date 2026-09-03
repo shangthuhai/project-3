@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Backend.Data;
 
 var builder = WebApplication.CreateBuilder(args);
-
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? "Server=localhost;Port=3306;Database=online_sms;User=root;Password=;TreatTinyAsBoolean=false;";
 
