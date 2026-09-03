@@ -20,6 +20,7 @@ import {
   getBlocklist,
   blockNumber as apiBlockNumber,
   unblockNumber as apiUnblockNumber,
+  unblockNumberByPhone as apiUnblockNumberByPhone,
   getTemplates,
   createTemplate as apiCreateTemplate,
   deleteTemplate as apiDeleteTemplate,
@@ -325,6 +326,14 @@ export function ChatProvider({ children }) {
       if (active && active.contactNumber === senderMobileNumber) {
         setContactIsTyping(true);
       }
+    });
+
+    conn.on("ReceiveBlockStatus", (data) => {
+      const active = selectedContactRef.current;
+      if (active && (active.contactNumber === data.blockerNumber || active.contactNumber === data.blockedNumber)) {
+        loadChatDetails();
+      }
+      loadBlocklist();
     });
 
     conn.start()
@@ -741,15 +750,26 @@ export function ChatProvider({ children }) {
         setBlocklist(prev => [...prev, res.block]);
         setBlockNumberInput('');
         triggerAlert('success', res.message);
+        loadBlocklist();
+        if (selectedContactRef.current) {
+          loadChatDetails();
+        }
       })
       .catch(err => triggerAlert('error', err.response?.data?.message || 'Failed to block number.'));
   };
 
-  const handleUnblockNumber = (id) => {
-    apiUnblockNumber(id)
+  const handleUnblockNumber = (idOrNumber) => {
+    const isPhoneNumber = typeof idOrNumber === 'string' && idOrNumber.length === 10 && !isNaN(idOrNumber);
+    const apiCall = isPhoneNumber ? apiUnblockNumberByPhone(idOrNumber) : apiUnblockNumber(idOrNumber);
+
+    apiCall
       .then(res => {
-        setBlocklist(prev => prev.filter(b => b.id !== id));
+        setBlocklist(prev => prev.filter(b => b.id !== idOrNumber && b.blockedNumber !== idOrNumber));
         triggerAlert('success', res.message);
+        loadBlocklist();
+        if (selectedContactRef.current) {
+          loadChatDetails();
+        }
       })
       .catch(() => triggerAlert('error', 'Failed to unblock number.'));
   };

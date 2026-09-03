@@ -292,9 +292,26 @@ namespace Backend.Controllers
                 }
             }
 
+            // Check block status
+            bool iHaveBlocked = false;
+            int blockId = 0;
+            var myBlock = await _context.Blocklists.FirstOrDefaultAsync(b => b.UserId == actualUserId && b.BlockedNumber == contactNumber);
+            if (myBlock != null)
+            {
+                iHaveBlocked = true;
+                blockId = myBlock.BlockId;
+            }
+
+            var sender = await _context.Users.FindAsync(actualUserId);
+            bool iAmBlocked = false;
+            if (contactUser != null && sender != null)
+            {
+                iAmBlocked = await _context.Blocklists.AnyAsync(b => b.UserId == contactUser.UserId && b.BlockedNumber == sender.MobileNumber);
+            }
+
             if (isFriend)
             {
-                return Ok(new { isFriend = true, remaining = -1, limit = -1, sentCount = 0, friendshipStatus = "accepted", friendshipId, email, contactUserId = contactUser?.UserId ?? 0 });
+                return Ok(new { isFriend = true, remaining = -1, limit = -1, sentCount = 0, friendshipStatus = "accepted", friendshipId, email, contactUserId = contactUser?.UserId ?? 0, iHaveBlocked, iAmBlocked, blockId });
             }
 
             // Per-stranger Quota check (limit from User_Quotas table, remaining calculated dynamically)
@@ -309,7 +326,7 @@ namespace Backend.Controllers
 
             int remaining = Math.Max(0, limit - sentCount);
 
-            return Ok(new { isFriend = false, remaining, limit, sentCount, friendshipStatus, friendshipId, email, contactUserId = contactUser?.UserId ?? 0 });
+            return Ok(new { isFriend = false, remaining, limit, sentCount, friendshipStatus, friendshipId, email, contactUserId = contactUser?.UserId ?? 0, iHaveBlocked, iAmBlocked, blockId });
         }
 
         // POST: api/messages
@@ -438,6 +455,12 @@ namespace Backend.Controllers
                 if (isBlocked)
                 {
                     return BadRequest(new { message = "You have been blocked by this user." });
+                }
+
+                bool iBlockedReceiver = await _context.Blocklists.AnyAsync(b => b.UserId == sender.UserId && b.BlockedNumber == dto.ReceiverNumber);
+                if (iBlockedReceiver)
+                {
+                    return BadRequest(new { message = "You have blocked this contact. Please unblock first." });
                 }
 
                 // Check if they are friends

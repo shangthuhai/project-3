@@ -522,3 +522,53 @@
     bottom: 100% !important;
   }
 }
+
+.chat-window__blocked-container {
+  padding: 24px;
+  background: var(--bg-sidebar);
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 90px;
+  text-align: center;
+  gap: 10px;
+}
+
+.chat-window__blocked-text {
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: var(--color-danger, #ef4444);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-window__blocked-subtext {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.chat-window__unblock-btn {
+  background: linear-gradient(135deg, var(--color-primary) 0%, #1d6fa5 100%);
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 20px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 14px rgba(36, 129, 204, 0.35);
+}
+
+.chat-window__unblock-btn:hover {
+  background: linear-gradient(135deg, var(--color-primary-hover, #2b95e8) 0%, #1d6fa5 100%);
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 6px 18px rgba(36, 129, 204, 0.5);
+}
+
+.chat-window__unblock-btn:active {
+  transform: translateY(0) scale(0.97);
+}

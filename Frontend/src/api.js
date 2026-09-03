@@ -50,6 +50,7 @@ export const togglePrivacy = (enabled) => api.post('/users/privacy/toggle', { en
 export const getBlocklist = () => api.get('/users/blocklist').then(res => res.data);
 export const blockNumber = (number) => api.post('/users/blocklist', { number }).then(res => res.data);
 export const unblockNumber = (id) => api.delete(`/users/blocklist/${id}`).then(res => res.data);
+export const unblockNumberByPhone = (number) => api.delete(`/users/blocklist/by-number/${number}`).then(res => res.data);
 
 // Contacts API
 export const getContacts = (userId) => api.get(`/contacts?userId=${userId}`).then(res => res.data);

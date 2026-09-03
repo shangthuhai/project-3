@@ -5,6 +5,7 @@ using Backend.Data;
 using Backend.Models;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.SignalR;
 
 namespace Backend.Controllers
 {
@@ -14,10 +15,12 @@ namespace Backend.Controllers
     public class UsersController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly Microsoft.AspNetCore.SignalR.IHubContext<Backend.Hubs.ChatHub> _hubContext;
 
-        public UsersController(AppDbContext context)
+        public UsersController(AppDbContext context, Microsoft.AspNetCore.SignalR.IHubContext<Backend.Hubs.ChatHub> hubContext)
         {
             _context = context;
+            _hubContext = hubContext;
         }
 
         private int AuthenticatedUserId => 
@@ -243,6 +246,12 @@ namespace Backend.Controllers
                 .Include(u => u.Profile)
                 .FirstOrDefaultAsync(u => u.MobileNumber == dto.Number);
             
+            var blocker = await _context.Users.FindAsync(userId);
+            if (blockedUser != null && blocker != null)
+            {
+                await _hubContext.Clients.User(blockedUser.UserId.ToString()).SendAsync("ReceiveBlockStatus", new { blockerNumber = blocker.MobileNumber, isBlocked = true });
+            }
+
             string blockedName = "Người dùng lạ";
             if (blockedUser != null)
             {
@@ -288,8 +297,38 @@ namespace Backend.Controllers
 
             if (block.UserId != userId) return Forbid();
 
+            var blocker = await _context.Users.FindAsync(userId);
+            var blockedUser = await _context.Users.FirstOrDefaultAsync(u => u.MobileNumber == block.BlockedNumber);
+
             _context.Blocklists.Remove(block);
             await _context.SaveChangesAsync();
+
+            if (blockedUser != null && blocker != null)
+            {
+                await _hubContext.Clients.User(blockedUser.UserId.ToString()).SendAsync("ReceiveBlockStatus", new { blockerNumber = blocker.MobileNumber, isBlocked = false });
+            }
+
+            return Ok(new { message = "Number unblocked successfully." });
+        }
+
+        // DELETE: api/users/blocklist/by-number/{number}
+        [HttpDelete("blocklist/by-number/{number}")]
+        public async Task<IActionResult> UnblockNumberByPhone(string number)
+        {
+            int userId = AuthenticatedUserId;
+            var block = await _context.Blocklists.FirstOrDefaultAsync(b => b.UserId == userId && b.BlockedNumber == number);
+            if (block == null) return NotFound(new { message = "Blocked number entry not found." });
+
+            var blocker = await _context.Users.FindAsync(userId);
+            var blockedUser = await _context.Users.FirstOrDefaultAsync(u => u.MobileNumber == number);
+
+            _context.Blocklists.Remove(block);
+            await _context.SaveChangesAsync();
+
+            if (blockedUser != null && blocker != null)
+            {
+                await _hubContext.Clients.User(blockedUser.UserId.ToString()).SendAsync("ReceiveBlockStatus", new { blockerNumber = blocker.MobileNumber, isBlocked = false });
+            }
 
             return Ok(new { message = "Number unblocked successfully." });
         }

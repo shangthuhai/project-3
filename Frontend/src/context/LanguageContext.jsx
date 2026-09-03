@@ -239,6 +239,9 @@ const translations = {
     "unknown_user": "Unknown User",
     "block_success_prefix": "Successfully blocked number",
     "block_error_default": "Unable to block this phone number.",
+    "you_are_blocked": "You have been blocked",
+    "you_blocked_this_user": "You have blocked this contact.",
+    "unblock_to_chat": "Unblock to chat",
     "send_req_success_default": "Friend request sent successfully!",
     "send_req_error_default": "Unable to send friend request.",
 
@@ -538,6 +541,9 @@ const translations = {
     "unknown_user": "Người dùng lạ",
     "block_success_prefix": "Đã chặn số",
     "block_error_default": "Không thể chặn số điện thoại này.",
+    "you_are_blocked": "Bạn đã bị chặn",
+    "you_blocked_this_user": "Bạn đã chặn người dùng này.",
+    "unblock_to_chat": "Bỏ chặn để chat",
     "send_req_success_default": "Gửi yêu cầu kết bạn thành công!",
     "send_req_error_default": "Không thể gửi yêu cầu.",
 
