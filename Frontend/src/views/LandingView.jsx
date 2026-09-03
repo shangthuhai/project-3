@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { MessageSquare, Zap, Newspaper, Sun, Sparkles, Moon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
@@ -48,7 +49,9 @@ export default function LandingView() {
 
         <div className={cx('landing__features')}>
           <div className={cx('landing__feature-item')}>
-            <div className={cx('landing__feature-icon')}>💬</div>
+            <div className={cx('landing__feature-icon')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <MessageSquare size={24} />
+            </div>
             <div className={cx('landing__feature-text')}>
               <h3 className={cx('landing__feature-title')}>{t('feat_chat_title')}</h3>
               <p className={cx('landing__feature-description')}>{t('feat_chat_desc')}</p>
@@ -56,7 +59,9 @@ export default function LandingView() {
           </div>
 
           <div className={cx('landing__feature-item')}>
-            <div className={cx('landing__feature-icon')}>⚡</div>
+            <div className={cx('landing__feature-icon')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Zap size={24} />
+            </div>
             <div className={cx('landing__feature-text')}>
               <h3 className={cx('landing__feature-title')}>{t('feat_sms_title')}</h3>
               <p className={cx('landing__feature-description')}>{t('feat_sms_desc')}</p>
@@ -64,7 +69,9 @@ export default function LandingView() {
           </div>
 
           <div className={cx('landing__feature-item')}>
-            <div className={cx('landing__feature-icon')}>📰</div>
+            <div className={cx('landing__feature-icon')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Newspaper size={24} />
+            </div>
             <div className={cx('landing__feature-text')}>
               <h3 className={cx('landing__feature-title')}>{t('feat_paid_title')}</h3>
               <p className={cx('landing__feature-description')}>{t('feat_paid_desc')}</p>
@@ -133,7 +140,7 @@ export default function LandingView() {
               }}
               title="Change Theme"
             >
-              {theme === 'light' ? '☀️' : theme === 'glass' ? '✨' : '🌙'}
+              {theme === 'light' ? <Sun size={16} /> : theme === 'glass' ? <Sparkles size={16} /> : <Moon size={16} />}
             </button>
           </div>
 
@@ -400,7 +407,7 @@ export default function LandingView() {
                 }}
                 title="Change Theme"
               >
-                {theme === 'light' ? '☀️' : theme === 'glass' ? '✨' : '🌙'}
+                {theme === 'light' ? <Sun size={16} /> : theme === 'glass' ? <Sparkles size={16} /> : <Moon size={16} />}
               </button>
             </div>
           </div>

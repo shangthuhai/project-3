@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { LogOut } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -131,7 +132,8 @@ export default function SettingsTab() {
               onClick={handleLogout}
               style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
             >
-              🚪 {t('logout')}
+              <LogOut size={18} />
+              <span>{t('logout')}</span>
             </button>
           </div>
         </div>

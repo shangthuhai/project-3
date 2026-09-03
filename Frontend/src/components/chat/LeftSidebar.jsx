@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Settings, Briefcase, Users, Shield, FileText } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -162,38 +163,41 @@ export default function LeftSidebar() {
                 className={cx('left-sidebar__dropdown-item', { 'left-sidebar__dropdown-item--active': activeTab === 'settings' })}
                 onClick={() => handleDropdownItemClick('settings')}
               >
-                ⚙️ {t('tab_settings')}
+                <Settings size={18} />
+                <span>{t('tab_settings')}</span>
               </button>
               <button
                 className={cx('left-sidebar__dropdown-item', { 'left-sidebar__dropdown-item--active': activeTab === 'services' })}
                 onClick={() => handleDropdownItemClick('services')}
               >
-                💼 {t('tab_services')}
+                <Briefcase size={18} />
+                <span>{t('tab_services')}</span>
               </button>
               <button
                 className={cx('left-sidebar__dropdown-item', { 'left-sidebar__dropdown-item--active': activeTab === 'groups' })}
                 onClick={() => handleDropdownItemClick('groups')}
               >
-                👥 {t('tab_groups')}
+                <Users size={18} />
+                <span>{t('tab_groups')}</span>
               </button>
               <button
                 className={cx('left-sidebar__dropdown-item', { 'left-sidebar__dropdown-item--active': activeTab === 'security' })}
                 onClick={() => handleDropdownItemClick('security')}
               >
-                🛡️ {t('tab_security')}
+                <Shield size={18} />
+                <span>{t('tab_security')}</span>
               </button>
               <button
                 className={cx('left-sidebar__dropdown-item', { 'left-sidebar__dropdown-item--active': activeTab === 'templates' })}
                 onClick={() => handleDropdownItemClick('templates')}
               >
-                📄 {t('tab_templates')}
+                <FileText size={18} />
+                <span>{t('tab_templates')}</span>
               </button>
             </div>
           )}
         </div>
       </div>
-
-
     </div>
   );
 }

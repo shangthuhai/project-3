@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Pin, Trash2, Sun, Moon, Sparkles, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -310,7 +311,7 @@ export default function Sidebar() {
               <div className={cx('sidebar__item-row')}>
                 <span className={cx('sidebar__item-name')}>
                   {item.name}
-                  {isPinned && <span className={cx('sidebar__item-pin-icon')} title={t('tooltip_pinned') || 'Pinned'}>📌</span>}
+                  {isPinned && <span className={cx('sidebar__item-pin-icon')} title={t('tooltip_pinned') || 'Pinned'}><Pin size={13} style={{ display: 'inline', verticalAlign: 'middle' }} /></span>}
                 </span>
                 <span className={cx('sidebar__item-meta')}>
                   {item.lastMessageTime ? formatMessageTime(item.lastMessageTime) : item.contactNumber}
@@ -352,14 +353,18 @@ export default function Sidebar() {
                 <button
                   className={cx('sidebar__item-dropdown-btn')}
                   onClick={() => handlePinToggle(item.contactNumber)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
-                  📌 {isPinned ? t('tooltip_unpin') : t('tooltip_pin')}
+                  <Pin size={14} />
+                  <span>{isPinned ? t('tooltip_unpin') : t('tooltip_pin')}</span>
                 </button>
                 <button
                   className={cx('sidebar__item-dropdown-btn', 'sidebar__item-dropdown-btn--danger')}
                   onClick={() => handleDeleteConversation(item.contactNumber)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
-                  🗑️ {t('tooltip_delete')}
+                  <Trash2 size={14} />
+                  <span>{t('tooltip_delete')}</span>
                 </button>
               </div>
             )}
@@ -425,7 +430,7 @@ export default function Sidebar() {
           onClick={() => setTheme(theme === 'light' ? 'dark' : theme === 'dark' ? 'glass' : 'light')}
         >
           <span className={cx('sidebar__mobile-nav-icon')}>
-            {theme === 'light' ? '☀️' : theme === 'glass' ? '✨' : '🌙'}
+            {theme === 'light' ? <Sun size={18} /> : theme === 'glass' ? <Sparkles size={18} /> : <Moon size={18} />}
           </span>
           <span className={cx('sidebar__mobile-nav-text')}>{t('theme')}</span>
         </button>
@@ -435,7 +440,7 @@ export default function Sidebar() {
           className={cx('sidebar__mobile-nav-btn', { 'sidebar__mobile-nav-btn--active': activeTab === 'settings' })}
           onClick={() => setActiveTab('settings')}
         >
-          <span className={cx('sidebar__mobile-nav-icon')}>⚙️</span>
+          <span className={cx('sidebar__mobile-nav-icon')}><Settings size={18} /></span>
           <span className={cx('sidebar__mobile-nav-text')}>{t('tab_settings')}</span>
         </button>
 
@@ -444,7 +449,7 @@ export default function Sidebar() {
           className={cx('sidebar__mobile-nav-btn', 'sidebar__mobile-nav-btn--logout')}
           onClick={handleLogout}
         >
-          <span className={cx('sidebar__mobile-nav-icon')}>🚪</span>
+          <span className={cx('sidebar__mobile-nav-icon')}><LogOut size={18} /></span>
           <span className={cx('sidebar__mobile-nav-text')}>{t('logout')}</span>
         </button>
       </div>

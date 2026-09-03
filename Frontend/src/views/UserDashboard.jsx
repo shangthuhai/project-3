@@ -1,4 +1,5 @@
 import React from 'react';
+import { MessageSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useChat } from '../context/ChatContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -63,7 +64,9 @@ export default function UserDashboard() {
           <ChatWindow />
         ) : activeTab === 'chats' ? (
           <div className={cx('dashboard__placeholder')}>
-            <div className={cx('dashboard__placeholder-icon')}>💬</div>
+            <div className={cx('dashboard__placeholder-icon')} style={{ display: 'flex', justifyContent: 'center', opacity: 0.4 }}>
+              <MessageSquare size={48} />
+            </div>
             <h3>{t('welcome_message')}</h3>
             <p>{t('select_chat_placeholder')}</p>
           </div>

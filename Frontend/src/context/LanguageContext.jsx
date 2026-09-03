@@ -79,7 +79,7 @@ const translations = {
     "status_received": "Friend Request",
     "tooltip_pin": "Pin",
     "tooltip_unpin": "Unpin",
-    "tooltip_delete": "Delete Conversation",
+    "tooltip_delete": "Delete",
     "delete_confirm": "Are you sure you want to delete this conversation?",
 
     // Chat Window
@@ -144,8 +144,8 @@ const translations = {
     "settings_saved": "Settings saved successfully!",
 
     // AI Chatbot
-    "ai_chatbot_title": "🤖 AI Chatbot Assistant",
-    "ask_anything": "Ask me anything! 💬",
+    "ai_chatbot_title": "AI Chatbot Assistant",
+    "ask_anything": "Ask me anything!",
     "ai_typing": "AI Assistant is typing a reply...",
     "input_question": "Type a question...",
 
@@ -381,7 +381,7 @@ const translations = {
     "status_received": "Lời mời kết bạn",
     "tooltip_pin": "Ghim",
     "tooltip_unpin": "Bỏ ghim",
-    "tooltip_delete": "Xóa hội thoại",
+    "tooltip_delete": "Xóa",
     "delete_confirm": "Bạn có chắc chắn muốn xóa cuộc trò chuyện này?",
 
     // Chat Window
@@ -446,8 +446,8 @@ const translations = {
     "settings_saved": "Cài đặt ngôn ngữ hiển thị đã được cập nhật thành công!",
 
     // AI Chatbot
-    "ai_chatbot_title": "🤖 Trợ lý AI Chatbot",
-    "ask_anything": "Hỏi mình bất cứ điều gì nhé! 💬",
+    "ai_chatbot_title": "Trợ lý AI Chatbot",
+    "ask_anything": "Hỏi mình bất cứ điều gì nhé!",
     "ai_typing": "Trợ lý AI đang soạn câu trả lời...",
     "input_question": "Nhập câu hỏi...",
 

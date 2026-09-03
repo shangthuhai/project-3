@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { Clock, FileText, Sparkles, Check, Unlock, UserPlus, Ban, Bot } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -180,9 +181,10 @@ export default function ChatWindow() {
                         triggerAlert('error', err.response?.data?.message || (language === 'en' ? 'Failed to send friend request' : 'Không thể gửi lời mời kết bạn'));
                       });
                   }}
-                  style={{ padding: '6px 14px', fontSize: '0.82rem', borderRadius: '20px' }}
+                  style={{ padding: '6px 14px', fontSize: '0.82rem', borderRadius: '20px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                 >
-                  🤝 {language === 'en' ? 'Add Friend' : 'Kết bạn'}
+                  <UserPlus size={15} />
+                  <span>{language === 'en' ? 'Add Friend' : 'Kết bạn'}</span>
                 </button>
               )}
 
@@ -254,7 +256,7 @@ export default function ChatWindow() {
                     <span className={cx('chat-window__message-time')}>
                       {formattedTime}
                       {isPending && (
-                        <span className={cx('chat-window__msg-scheduled-badge')}>⏰ {language === 'en' ? 'Scheduled' : 'Hẹn giờ'}: {new Date(msg.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span className={cx('chat-window__msg-scheduled-badge')}><Clock size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} /> {language === 'en' ? 'Scheduled' : 'Hẹn giờ'}: {new Date(msg.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       )}
                     </span>
                   </div>
@@ -294,8 +296,9 @@ export default function ChatWindow() {
 
       {remainingQuota?.iAmBlocked ? (
         <div className={cx('chat-window__blocked-container')}>
-          <p className={cx('chat-window__blocked-text')}>
-            🚫 {t('you_are_blocked')}
+          <p className={cx('chat-window__blocked-text')} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <Ban size={16} />
+            <span>{t('you_are_blocked')}</span>
           </p>
         </div>
       ) : remainingQuota?.iHaveBlocked ? (
@@ -307,8 +310,10 @@ export default function ChatWindow() {
             type="button"
             className={cx('chat-window__unblock-btn')}
             onClick={() => handleUnblockNumber(remainingQuota.blockId || selectedContact.contactNumber)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
           >
-            🔓 {t('unblock_to_chat')}
+            <Unlock size={15} />
+            <span>{t('unblock_to_chat')}</span>
           </button>
         </div>
       ) : (
@@ -325,8 +330,11 @@ export default function ChatWindow() {
                   setShowTemplatePicker(false);
                   setShowAiAssistant(false);
                 }}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
               >
-                ⏰ {language === 'en' ? 'Schedule' : 'Hẹn giờ'} {scheduleDate && '✓'}
+                <Clock size={15} />
+                <span>{language === 'en' ? 'Schedule' : 'Hẹn giờ'}</span>
+                {scheduleDate && <Check size={14} style={{ color: 'var(--color-primary)' }} />}
               </button>
 
               {/* Scheduler Popover */}
@@ -360,8 +368,10 @@ export default function ChatWindow() {
                   setShowScheduler(false);
                   setShowAiAssistant(false);
                 }}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
               >
-                📄 {language === 'en' ? 'Templates' : 'Mẫu tin nhắn'}
+                <FileText size={15} />
+                <span>{language === 'en' ? 'Templates' : 'Mẫu tin nhắn'}</span>
               </button>
 
               {/* Template Picker Popover */}
@@ -402,15 +412,17 @@ export default function ChatWindow() {
                   setShowScheduler(false);
                   setShowTemplatePicker(false);
                 }}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
               >
-                ✨ {language === 'en' ? 'AI Assistant' : 'Trợ lý AI'}
+                <Sparkles size={15} />
+                <span>{language === 'en' ? 'AI Assistant' : 'Trợ lý AI'}</span>
               </button>
 
               {/* AI Assistant Popover */}
               {showAiAssistant && (
                 <div className={cx('chat-window__ai-popover')}>
                   <div style={{ padding: '4px 0px 8px 0px', fontWeight: 'bold', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-main)' }}>✨ {t('ai_assistant')}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-main)' }}><Sparkles size={16} /> {t('ai_assistant')}</span>
                     <button type="button" style={{ background: 'none', border: 'none', color: '#ff5555', cursor: 'pointer', fontSize: '1rem' }} onClick={() => setShowAiAssistant(false)}>✕</button>
                   </div>
 
@@ -437,7 +449,8 @@ export default function ChatWindow() {
                         setShowAiAssistant(false);
                       }}
                     >
-                      🤖 💬 {language === 'en' ? 'Chat with Bot' : 'Trò chuyện'}
+                      <Bot size={16} />
+                      <span>{language === 'en' ? 'Chat with Bot' : 'Trò chuyện'}</span>
                     </button>
 
                     <div style={{ height: '1px', background: 'var(--border-light)', margin: '2px 0' }} />

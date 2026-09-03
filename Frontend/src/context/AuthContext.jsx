@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { LogOut } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import {
   login,
@@ -286,8 +287,8 @@ export function AuthProvider({ children }) {
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div style={{ fontSize: '3rem', margin: '10px 0 5px 0' }}>
-            🚪
+          <div style={{ margin: '10px 0 5px 0', display: 'flex', justifyContent: 'center', opacity: 0.85 }}>
+            <LogOut size={48} color="var(--color-danger)" />
           </div>
           <div>
             <h3 style={{ margin: '0 0 10px 0', fontSize: '1.25rem', fontWeight: '700', color: 'var(--text-main)' }}>

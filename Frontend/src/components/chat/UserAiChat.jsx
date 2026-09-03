@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { Send } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
 import { useLanguage } from '../../context/LanguageContext';
 import styles from './UserAiChat.module.css';
@@ -171,8 +172,8 @@ export default function UserAiChat() {
           onChange={(e) => setAiNewMessage(e.target.value)}
           disabled={isAiLoading}
         />
-        <button type="submit" className={cx('ai-chat__send-btn')} disabled={!aiNewMessage.trim() || isAiLoading}>
-          ➡️
+        <button type="submit" className={cx('ai-chat__send-btn')} disabled={!aiNewMessage.trim() || isAiLoading} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Send size={16} />
         </button>
       </form>
     </div>

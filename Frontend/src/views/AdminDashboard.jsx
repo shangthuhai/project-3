@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Shield, BarChart3, Users, FileText, CreditCard, FileCode, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import AdminOverview from '../components/admin/AdminOverview';
 import AdminUsers from '../components/admin/AdminUsers';
@@ -137,7 +138,9 @@ export default function AdminDashboard() {
       {/* Sidebar */}
       <div className="admin-sidebar" style={{ width: '280px', minWidth: '280px', background: 'var(--bg-sidebar)', borderRight: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', height: '100%', zIndex: 100 }}>
         <div className="admin-sidebar-header" style={{ padding: '24px 20px', borderBottom: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div className="admin-logo" style={{ fontSize: '2rem' }}>🛡️</div>
+          <div className="admin-logo" style={{ color: 'var(--color-primary)', display: 'flex', alignItems: 'center' }}>
+            <Shield size={28} />
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <h3 style={{ color: 'var(--text-main)', fontSize: '1.05rem', fontWeight: '600' }}>Admin Workspace</h3>
             <span className="admin-role-badge" style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: '600', marginTop: '2px' }}>System Administrator</span>
@@ -150,35 +153,40 @@ export default function AdminDashboard() {
             onClick={() => setAdminTab('overview')}
             style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'overview' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'overview' ? 'var(--color-primary)' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '600', textAlign: 'left', transition: 'var(--transition-fast)' }}
           >
-            📊 Dashboard
+            <BarChart3 size={18} />
+            <span>Dashboard</span>
           </button>
           <button
             className={`admin-nav-btn ${adminTab === 'users' ? 'active' : ''}`}
             onClick={() => setAdminTab('users')}
             style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'users' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'users' ? 'var(--color-primary)' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '600', textAlign: 'left', transition: 'var(--transition-fast)' }}
           >
-            👥 User Accounts
+            <Users size={18} />
+            <span>User Accounts</span>
           </button>
           <button
             className={`admin-nav-btn ${adminTab === 'logs' ? 'active' : ''}`}
             onClick={() => { setAdminTab('logs'); setSmsLogsPage(1); }}
             style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'logs' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'logs' ? 'var(--color-primary)' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '600', textAlign: 'left', transition: 'var(--transition-fast)' }}
           >
-            📜 SMS Logs
+            <FileText size={18} />
+            <span>SMS Logs</span>
           </button>
           <button
             className={`admin-nav-btn ${adminTab === 'transactions' ? 'active' : ''}`}
             onClick={() => setAdminTab('transactions')}
             style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'transactions' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'transactions' ? 'var(--color-primary)' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '600', textAlign: 'left', transition: 'var(--transition-fast)' }}
           >
-            💳 Transactions
+            <CreditCard size={18} />
+            <span>Transactions</span>
           </button>
           <button
             className={`admin-nav-btn ${adminTab === 'templates' ? 'active' : ''}`}
             onClick={() => setAdminTab('templates')}
             style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'templates' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'templates' ? 'var(--color-primary)' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '600', textAlign: 'left', transition: 'var(--transition-fast)' }}
           >
-            📋 System Templates
+            <FileCode size={18} />
+            <span>System Templates</span>
           </button>
         </div>
 
@@ -190,9 +198,10 @@ export default function AdminDashboard() {
           <button
             className="admin-logout-btn"
             onClick={handleLogout}
-            style={{ width: '100%', padding: '10px', border: '1px solid var(--color-danger)', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-danger)', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer', transition: 'var(--transition-fast)' }}
+            style={{ width: '100%', padding: '10px', border: '1px solid var(--color-danger)', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-danger)', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer', transition: 'var(--transition-fast)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
           >
-            Log Out
+            <LogOut size={16} />
+            <span>Log Out</span>
           </button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { MessageSquare, UserPlus, Ban } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
@@ -232,8 +233,10 @@ export default function FriendsTab() {
                         <button
                           className={cx('friends-tab__btn', 'friends-tab__btn--chat')}
                           onClick={() => handleStartChat(friend)}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                         >
-                          💬 {t('btn_chat')}
+                          <MessageSquare size={15} />
+                          <span>{t('btn_chat')}</span>
                         </button>
                       </div>
                     </div>
@@ -293,8 +296,10 @@ export default function FriendsTab() {
                               <button
                                 className={cx('friends-tab__btn', 'friends-tab__btn--add')}
                                 onClick={() => handleSendFriendRequestDirect(user)}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                               >
-                                👤+ {t('btn_add_friend')}
+                                <UserPlus size={15} />
+                                <span>{t('btn_add_friend')}</span>
                               </button>
                             )}
                           </>
@@ -303,8 +308,10 @@ export default function FriendsTab() {
                         <button
                           className={cx('friends-tab__btn', 'friends-tab__btn--chat')}
                           onClick={() => handleStartChat(user)}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                         >
-                          💬 {t('btn_chat')}
+                          <MessageSquare size={15} />
+                          <span>{t('btn_chat')}</span>
                         </button>
                       </div>
                     </div>
@@ -442,7 +449,10 @@ export default function FriendsTab() {
                     blocklist.map(b => (
                       <div key={b.id} className={cx('friends-tab__blocked-item')}>
                         <div className={cx('friends-tab__blocked-info')}>
-                          <span className={cx('friends-tab__blocked-name')}>🚫 {b.blockedName || t('unknown_user')}</span>
+                          <span className={cx('friends-tab__blocked-name')} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            <Ban size={15} style={{ color: 'var(--color-danger)' }} />
+                            <span>{b.blockedName || t('unknown_user')}</span>
+                          </span>
                           <span className={cx('friends-tab__blocked-number')}>{b.blockedNumber}</span>
                         </div>
                         <button

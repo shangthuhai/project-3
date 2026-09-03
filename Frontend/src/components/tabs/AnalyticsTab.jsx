@@ -1,4 +1,5 @@
 import React from 'react';
+import { MessageSquare, Check, X, Clock, BarChart3 } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
 import { useLanguage } from '../../context/LanguageContext';
 import styles from './AnalyticsTab.module.css';
@@ -12,8 +13,9 @@ export default function AnalyticsTab() {
 
   if (!analyticsStats) {
     return (
-      <div className="view-panel" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-        📊 {language === 'en' ? 'Loading analytics statistics...' : 'Đang tải thống kê dữ liệu...'}
+      <div className="view-panel" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+        <BarChart3 size={20} />
+        <span>{language === 'en' ? 'Loading analytics statistics...' : 'Đang tải thống kê dữ liệu...'}</span>
       </div>
     );
   }
@@ -27,28 +29,28 @@ export default function AnalyticsTab() {
 
       <div className={cx('analytics__grid')}>
         <div className={cx('analytics__card')}>
-          <div className={cx('analytics__card-icon', 'analytics__card-icon--sent')}>💬</div>
+          <div className={cx('analytics__card-icon', 'analytics__card-icon--sent')}><MessageSquare size={18} /></div>
           <div className={cx('analytics__card-content')}>
             <h4 className={cx('analytics__card-label')}>{language === 'en' ? 'Total Sent' : 'Tổng tin nhắn gửi'}</h4>
             <p className={cx('analytics__card-value')}>{analyticsStats.totalSent}</p>
           </div>
         </div>
         <div className={cx('analytics__card')}>
-          <div className={cx('analytics__card-icon', 'analytics__card-icon--success')}>✓</div>
+          <div className={cx('analytics__card-icon', 'analytics__card-icon--success')}><Check size={18} /></div>
           <div className={cx('analytics__card-content')}>
             <h4 className={cx('analytics__card-label')}>{language === 'en' ? 'Delivered' : 'Gửi Thành công'}</h4>
             <p className={cx('analytics__card-value')}>{analyticsStats.deliveredCount}</p>
           </div>
         </div>
         <div className={cx('analytics__card')}>
-          <div className={cx('analytics__card-icon', 'analytics__card-icon--failed')}>✗</div>
+          <div className={cx('analytics__card-icon', 'analytics__card-icon--failed')}><X size={18} /></div>
           <div className={cx('analytics__card-content')}>
             <h4 className={cx('analytics__card-label')}>{language === 'en' ? 'Failed' : 'Gửi thất bại'}</h4>
             <p className={cx('analytics__card-value')}>{analyticsStats.failedCount}</p>
           </div>
         </div>
         <div className={cx('analytics__card')}>
-          <div className={cx('analytics__card-icon', 'analytics__card-icon--pending')}>⏰</div>
+          <div className={cx('analytics__card-icon', 'analytics__card-icon--pending')}><Clock size={18} /></div>
           <div className={cx('analytics__card-content')}>
             <h4 className={cx('analytics__card-label')}>{language === 'en' ? 'Pending' : 'Chờ gửi (Hẹn giờ)'}</h4>
             <p className={cx('analytics__card-value')}>{analyticsStats.pendingCount}</p>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Users, Send } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
 import { useLanguage } from '../../context/LanguageContext';
 import CustomSelect from '../common/CustomSelect';
@@ -70,7 +71,10 @@ export default function GroupsTab() {
                     setBulkResultsLog(null);
                   }}
                 >
-                  <span className={cx('groups-tab__list-name')}>👥 {g.name}</span>
+                  <span className={cx('groups-tab__list-name')} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <Users size={16} />
+                    <span>{g.name}</span>
+                  </span>
                   <button
                     style={{ background: 'none', border: 'none', color: '#ff5555', cursor: 'pointer', fontSize: '0.8rem' }}
                     onClick={(e) => {
@@ -173,8 +177,9 @@ export default function GroupsTab() {
                       <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                         Length: {bulkContent.length}/120
                       </span>
-                      <button type="submit" className="btn btn-primary" style={{ marginLeft: 'auto', padding: '8px 20px' }}>
-                        {t('send_bulk_btn')} 🚀
+                      <button type="submit" className="btn btn-primary" style={{ marginLeft: 'auto', padding: '8px 20px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <Send size={15} />
+                        <span>{t('send_bulk_btn')}</span>
                       </button>
                     </div>
                   </form>
@@ -189,7 +194,9 @@ export default function GroupsTab() {
             </>
           ) : (
             <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--text-muted)' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '15px' }}>👥</div>
+              <div style={{ marginBottom: '15px', opacity: 0.5, display: 'flex', justifyContent: 'center' }}>
+                <Users size={56} />
+              </div>
               <h3>No group selected</h3>
               <p>Please select a group from the left menu to manage members or send group messages.</p>
             </div>

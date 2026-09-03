@@ -1,4 +1,5 @@
 import React from 'react';
+import { Trash2 } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
 import { useLanguage } from '../../context/LanguageContext';
 import styles from './TemplatesTab.module.css';
@@ -78,7 +79,7 @@ export default function TemplatesTab() {
                       onClick={() => handleDeleteTemplate(tpl.id)}
                       title={t('confirm_delete_template')}
                     >
-                      🗑
+                      <Trash2 size={16} />
                     </button>
                   )}
                 </div>

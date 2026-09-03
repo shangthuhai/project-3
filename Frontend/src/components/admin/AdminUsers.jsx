@@ -94,7 +94,7 @@ export default function AdminUsers({
           <div style={{ position: 'relative', flex: '1', minWidth: '220px' }}>
             <input
               type="text"
-              placeholder="🔍 Search username, name, mobile, email..."
+              placeholder="Search username, name, mobile, email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
@@ -143,9 +143,9 @@ export default function AdminUsers({
               cursor: 'pointer'
             }}
           >
-            <option value="all">⚡ All Statuses</option>
-            <option value="active">🟢 Active Only</option>
-            <option value="locked">🔴 Locked Only</option>
+            <option value="all">All Statuses</option>
+            <option value="active">Active Only</option>
+            <option value="locked">Locked Only</option>
           </select>
 
           {/* Quota Filter */}
@@ -162,9 +162,9 @@ export default function AdminUsers({
               cursor: 'pointer'
             }}
           >
-            <option value="all">📩 All Quota Levels</option>
-            <option value="hasQuota">✅ Has SMS Quota</option>
-            <option value="zeroQuota">⚠️ Zero SMS Quota</option>
+            <option value="all">All Quota Levels</option>
+            <option value="hasQuota">Has SMS Quota</option>
+            <option value="zeroQuota">Zero SMS Quota</option>
           </select>
 
           {/* Sort Select */}
@@ -181,11 +181,11 @@ export default function AdminUsers({
               cursor: 'pointer'
             }}
           >
-            <option value="newest">📅 Newest First</option>
-            <option value="oldest">📅 Oldest First</option>
-            <option value="username">🔤 Username (A-Z)</option>
-            <option value="quotaDesc">📊 Quota (High to Low)</option>
-            <option value="quotaAsc">📊 Quota (Low to High)</option>
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="username">Username (A-Z)</option>
+            <option value="quotaDesc">Quota (High to Low)</option>
+            <option value="quotaAsc">Quota (Low to High)</option>
           </select>
         </div>
 
