@@ -1,15 +1,34 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, Briefcase, Users, Shield, FileText } from 'lucide-react';
+import {
+  Settings,
+  User,
+  Database,
+  Globe,
+  Palette,
+  HelpCircle,
+  LogOut,
+  ChevronRight,
+  Check,
+  Briefcase,
+  Users,
+  Shield,
+  FileText,
+  Sun,
+  Moon,
+  Sparkles
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useTheme } from '../../context/ThemeContext';
 import styles from './LeftSidebar.module.css';
 import classNames from 'classnames/bind';
 
 const cx = classNames.bind(styles);
 
 export default function LeftSidebar() {
-  const { t } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
+  const { theme, setTheme } = useTheme();
   const { loggedInUser, handleLogout } = useAuth();
   const {
     activeTab,
@@ -26,19 +45,18 @@ export default function LeftSidebar() {
   } = useChat();
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
-  const gearRef = useRef(null);
+  const [activeSubmenu, setActiveSubmenu] = useState(null); // 'language' | 'theme' | 'data' | 'support' | null
+
+  const wrapperRef = useRef(null);
+  const closeTimerRef = useRef(null);
+  const submenuTimerRef = useRef(null);
 
   // Close dropdown on click outside
   useEffect(() => {
     function handleClickOutside(event) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target) &&
-        gearRef.current &&
-        !gearRef.current.contains(event.target)
-      ) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
         setDropdownOpen(false);
+        setActiveSubmenu(null);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -47,32 +65,47 @@ export default function LeftSidebar() {
     };
   }, []);
 
+  const handleSubmenuEnter = (name) => {
+    if (submenuTimerRef.current) clearTimeout(submenuTimerRef.current);
+    setActiveSubmenu(name);
+  };
+
+  const handleSubmenuLeave = () => {
+    submenuTimerRef.current = setTimeout(() => {
+      setActiveSubmenu(null);
+    }, 200);
+  };
+
   const handleAvatarClick = () => {
     setActiveTab('profile');
     setDropdownOpen(false);
+    setActiveSubmenu(null);
   };
 
   const handleChatClick = () => {
     setActiveTab('chats');
     setSelectedContact(null);
     setDropdownOpen(false);
+    setActiveSubmenu(null);
   };
 
   const handleFriendsClick = () => {
     setActiveTab('friends');
     setSelectedContact(null);
     setDropdownOpen(false);
+    setActiveSubmenu(null);
   };
 
   const toggleDropdown = () => {
     setDropdownOpen(prev => !prev);
+    if (dropdownOpen) setActiveSubmenu(null);
   };
 
   const handleDropdownItemClick = (tab) => {
     setActiveTab(tab);
     setDropdownOpen(false);
+    setActiveSubmenu(null);
 
-    // Call necessary loaders just like original Sidebar tab buttons
     if (tab === 'templates') {
       loadTemplates();
     } else if (tab === 'groups') {
@@ -85,17 +118,16 @@ export default function LeftSidebar() {
     }
   };
 
-  // Determine if settings category is active
   const isSettingsActive = ['services', 'groups', 'security', 'templates', 'settings'].includes(activeTab);
 
   return (
     <div className={cx('left-sidebar')}>
-      {/* Top Section - Avatar, Chat, Settings, Theme */}
+      {/* Top Section - Avatar, Chat, Friends, AI Chatbot */}
       <div className={cx('left-sidebar__top')}>
         <div
           className={cx('left-sidebar__avatar-wrapper', { 'left-sidebar__avatar-wrapper--active': activeTab === 'profile' })}
           onClick={handleAvatarClick}
-          title={t('tab_profile')}
+          title={t('account_info')}
         >
           <img
             src={loggedInUser?.profilePhoto || 'https://via.placeholder.com/48'}
@@ -141,12 +173,16 @@ export default function LeftSidebar() {
             <path d="M7 11V8a5 5 0 0 1 10 0v3" />
           </svg>
         </button>
+      </div>
 
-        {/* Settings Gear Icon */}
-        <div style={{ position: 'relative' }}>
+      {/* Bottom Section - Settings Gear Icon & Click Dropdown */}
+      <div className={cx('left-sidebar__bottom')}>
+        <div
+          ref={wrapperRef}
+          className={cx('left-sidebar__gear-wrapper')}
+        >
           <button
-            ref={gearRef}
-            className={cx('left-sidebar__btn', { 'left-sidebar__btn--active': isSettingsActive })}
+            className={cx('left-sidebar__btn', { 'left-sidebar__btn--active': isSettingsActive || dropdownOpen })}
             onClick={toggleDropdown}
             title={t('tab_settings')}
           >
@@ -156,43 +192,173 @@ export default function LeftSidebar() {
             </svg>
           </button>
 
-          {/* Dropdown Menu */}
+          {/* Settings Popup Menu */}
           {dropdownOpen && (
-            <div ref={dropdownRef} className={cx('left-sidebar__dropdown')}>
+            <div className={cx('left-sidebar__dropdown')}>
+              {/* 1. Thông tin tài khoản */}
               <button
-                className={cx('left-sidebar__dropdown-item', { 'left-sidebar__dropdown-item--active': activeTab === 'settings' })}
-                onClick={() => handleDropdownItemClick('settings')}
+                className={cx('left-sidebar__dropdown-item', { 'left-sidebar__dropdown-item--active': activeTab === 'profile' })}
+                onClick={handleAvatarClick}
+                onMouseEnter={() => handleSubmenuEnter(null)}
               >
-                <Settings size={18} />
-                <span>{t('tab_settings')}</span>
+                <div className={cx('left-sidebar__item-left')}>
+                  <User size={18} />
+                  <span>{t('account_info')}</span>
+                </div>
               </button>
-              <button
-                className={cx('left-sidebar__dropdown-item', { 'left-sidebar__dropdown-item--active': activeTab === 'services' })}
-                onClick={() => handleDropdownItemClick('services')}
+
+              {/* 2. Ngôn ngữ > */}
+              <div
+                className={cx('left-sidebar__dropdown-item', 'left-sidebar__dropdown-item--has-sub', { 'left-sidebar__dropdown-item--hovered': activeSubmenu === 'language' })}
+                onMouseEnter={() => handleSubmenuEnter('language')}
+                onMouseLeave={handleSubmenuLeave}
               >
-                <Briefcase size={18} />
-                <span>{t('tab_services')}</span>
-              </button>
-              <button
-                className={cx('left-sidebar__dropdown-item', { 'left-sidebar__dropdown-item--active': activeTab === 'groups' })}
-                onClick={() => handleDropdownItemClick('groups')}
+                <div className={cx('left-sidebar__item-left')}>
+                  <Globe size={18} />
+                  <span>{t('language_label')}</span>
+                </div>
+                <ChevronRight size={16} className={cx('left-sidebar__chevron')} />
+
+                {/* Submenu: Ngôn ngữ */}
+                {activeSubmenu === 'language' && (
+                  <div className={cx('left-sidebar__submenu')} onMouseEnter={() => handleSubmenuEnter('language')} onMouseLeave={handleSubmenuLeave}>
+                    <button
+                      className={cx('left-sidebar__submenu-item', { 'left-sidebar__submenu-item--active': language === 'vi' })}
+                      onClick={() => setLanguage('vi')}
+                    >
+                      <span className={cx('left-sidebar__flag')}>🇻🇳</span>
+                      <span style={{ flex: 1 }}>Tiếng Việt</span>
+                      {language === 'vi' && <Check size={16} className={cx('left-sidebar__check-icon')} />}
+                    </button>
+                    <button
+                      className={cx('left-sidebar__submenu-item', { 'left-sidebar__submenu-item--active': language === 'en' })}
+                      onClick={() => setLanguage('en')}
+                    >
+                      <span className={cx('left-sidebar__flag')}>🇺🇸</span>
+                      <span style={{ flex: 1 }}>English</span>
+                      {language === 'en' && <Check size={16} className={cx('left-sidebar__check-icon')} />}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* 3. Giao diện > */}
+              <div
+                className={cx('left-sidebar__dropdown-item', 'left-sidebar__dropdown-item--has-sub', { 'left-sidebar__dropdown-item--hovered': activeSubmenu === 'theme' })}
+                onMouseEnter={() => handleSubmenuEnter('theme')}
+                onMouseLeave={handleSubmenuLeave}
               >
-                <Users size={18} />
-                <span>{t('tab_groups')}</span>
-              </button>
-              <button
-                className={cx('left-sidebar__dropdown-item', { 'left-sidebar__dropdown-item--active': activeTab === 'security' })}
-                onClick={() => handleDropdownItemClick('security')}
+                <div className={cx('left-sidebar__item-left')}>
+                  <Palette size={18} />
+                  <span>{t('theme')}</span>
+                </div>
+                <ChevronRight size={16} className={cx('left-sidebar__chevron')} />
+
+                {/* Submenu: Giao diện */}
+                {activeSubmenu === 'theme' && (
+                  <div className={cx('left-sidebar__submenu')} onMouseEnter={() => handleSubmenuEnter('theme')} onMouseLeave={handleSubmenuLeave}>
+                    <button
+                      className={cx('left-sidebar__submenu-item', { 'left-sidebar__submenu-item--active': theme === 'dark' })}
+                      onClick={() => setTheme('dark')}
+                    >
+                      <Moon size={16} />
+                      <span style={{ flex: 1 }}>Giao diện Tối</span>
+                      {theme === 'dark' && <Check size={16} className={cx('left-sidebar__check-icon')} />}
+                    </button>
+                    <button
+                      className={cx('left-sidebar__submenu-item', { 'left-sidebar__submenu-item--active': theme === 'light' })}
+                      onClick={() => setTheme('light')}
+                    >
+                      <Sun size={16} />
+                      <span style={{ flex: 1 }}>Giao diện Sáng</span>
+                      {theme === 'light' && <Check size={16} className={cx('left-sidebar__check-icon')} />}
+                    </button>
+                    <button
+                      className={cx('left-sidebar__submenu-item', { 'left-sidebar__submenu-item--active': theme === 'glass' })}
+                      onClick={() => setTheme('glass')}
+                    >
+                      <Sparkles size={16} />
+                      <span style={{ flex: 1 }}>Kính mờ (Glass)</span>
+                      {theme === 'glass' && <Check size={16} className={cx('left-sidebar__check-icon')} />}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* 4. Hỗ trợ > */}
+              <div
+                className={cx('left-sidebar__dropdown-item', 'left-sidebar__dropdown-item--has-sub', { 'left-sidebar__dropdown-item--hovered': activeSubmenu === 'support' })}
+                onMouseEnter={() => handleSubmenuEnter('support')}
+                onMouseLeave={handleSubmenuLeave}
               >
-                <Shield size={18} />
-                <span>{t('tab_security')}</span>
-              </button>
-              <button
-                className={cx('left-sidebar__dropdown-item', { 'left-sidebar__dropdown-item--active': activeTab === 'templates' })}
-                onClick={() => handleDropdownItemClick('templates')}
+                <div className={cx('left-sidebar__item-left')}>
+                  <HelpCircle size={18} />
+                  <span>{t('support_label')}</span>
+                </div>
+                <ChevronRight size={16} className={cx('left-sidebar__chevron')} />
+
+                {/* Submenu: Hỗ trợ */}
+                {activeSubmenu === 'support' && (
+                  <div className={cx('left-sidebar__submenu')} onMouseEnter={() => handleSubmenuEnter('support')} onMouseLeave={handleSubmenuLeave}>
+                    <button className={cx('left-sidebar__submenu-item')} onClick={() => handleDropdownItemClick('security')}>
+                      <Shield size={16} />
+                      <span>{t('tab_security')}</span>
+                    </button>
+                    <button className={cx('left-sidebar__submenu-item')} onClick={() => handleDropdownItemClick('settings')}>
+                      <HelpCircle size={16} />
+                      <span>Trợ giúp & Báo lỗi</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* 5. Xem thêm > (Dữ liệu / More) */}
+              <div
+                className={cx('left-sidebar__dropdown-item', 'left-sidebar__dropdown-item--has-sub', { 'left-sidebar__dropdown-item--hovered': activeSubmenu === 'more' })}
+                onMouseEnter={() => handleSubmenuEnter('more')}
+                onMouseLeave={handleSubmenuLeave}
               >
-                <FileText size={18} />
-                <span>{t('tab_templates')}</span>
+                <div className={cx('left-sidebar__item-left')}>
+                  <Database size={18} />
+                  <span>{t('more_options') || 'Xem thêm'}</span>
+                </div>
+                <ChevronRight size={16} className={cx('left-sidebar__chevron')} />
+
+                {/* Submenu: Xem thêm (Dữ liệu) */}
+                {activeSubmenu === 'more' && (
+                  <div className={cx('left-sidebar__submenu')} onMouseEnter={() => handleSubmenuEnter('more')} onMouseLeave={handleSubmenuLeave}>
+                    <button className={cx('left-sidebar__submenu-item')} onClick={() => handleDropdownItemClick('services')}>
+                      <Briefcase size={16} />
+                      <span>{t('tab_services')}</span>
+                    </button>
+                    <button className={cx('left-sidebar__submenu-item')} onClick={() => handleDropdownItemClick('groups')}>
+                      <Users size={16} />
+                      <span>{t('tab_groups')}</span>
+                    </button>
+                    <button className={cx('left-sidebar__submenu-item')} onClick={() => handleDropdownItemClick('templates')}>
+                      <FileText size={16} />
+                      <span>{t('tab_templates')}</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Divider */}
+              <div className={cx('left-sidebar__dropdown-divider')} />
+
+              {/* 7. Đăng xuất (Red text) */}
+              <button
+                className={cx('left-sidebar__dropdown-item', 'left-sidebar__dropdown-item--danger')}
+                onClick={() => {
+                  setDropdownOpen(false);
+                  handleLogout();
+                }}
+                onMouseEnter={() => handleSubmenuEnter(null)}
+              >
+                <div className={cx('left-sidebar__item-left')}>
+                  <LogOut size={18} />
+                  <span>{t('logout')}</span>
+                </div>
               </button>
             </div>
           )}
