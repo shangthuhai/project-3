@@ -19,6 +19,9 @@ builder.Services.AddHttpClient<Backend.Services.IAiService, Backend.Services.AiS
 // Register Telegram Service
 builder.Services.AddHttpClient<Backend.Services.ITelegramService, Backend.Services.TelegramService>();
 
+// Register Email Service for OTP
+builder.Services.AddScoped<Backend.Services.IEmailService, Backend.Services.EmailService>();
+
 // Configure JWT Authentication
 builder.Services.AddAuthentication(options =>
 {

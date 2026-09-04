@@ -21,11 +21,13 @@ namespace Backend.Controllers
     {
         private readonly AppDbContext _context;
         private readonly ITelegramService _telegramService;
+        private readonly IEmailService _emailService;
 
-        public AuthController(AppDbContext context, ITelegramService telegramService)
+        public AuthController(AppDbContext context, ITelegramService telegramService, IEmailService emailService)
         {
             _context = context;
             _telegramService = telegramService;
+            _emailService = emailService;
         }
 
         private string GenerateJwtToken(User user)
@@ -185,8 +187,12 @@ namespace Backend.Controllers
                     // Console output for simulation/retrieval
                     Console.WriteLine($"[2FA OTP] Generated login code for user '{user.Username}': {code} (Sent to {user.Email})");
 
-                    // Send OTP code via Telegram Bot
-                    await _telegramService.SendMessageAsync($"[2FA OTP] Mã xác nhận đăng nhập cho tài khoản '{user.Username}' của bạn là: {code} (Hạn dùng trong 5 phút)");
+                    // Send OTP code via Email Service
+                    await _emailService.SendEmailAsync(
+                        user.Email,
+                        "Mã xác nhận đăng nhập (2FA) - ChatFlow",
+                        $"Xin chào {user.Username},\n\nMã xác nhận đăng nhập (OTP 2FA) của bạn là: {code}\nMã có hiệu lực trong 5 phút. Vui lòng không chia sẻ mã này với ai."
+                    );
 
                     return Ok(new { requires2Fa = true, username = user.Username, email = user.Email });
                 }
