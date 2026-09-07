@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5292/api';
+const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+  ? `${window.location.protocol}//${window.location.host}/api`
+  : 'http://localhost:5292/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -9,12 +11,14 @@ const api = axios.create({
   },
 });
 
-// Request interceptor to attach JWT token
+// Request interceptor to attach JWT token and language preference
 api.interceptors.request.use((config) => {
   const user = JSON.parse(localStorage.getItem('user') || 'null');
   if (user && user.token) {
     config.headers.Authorization = `Bearer ${user.token}`;
   }
+  const lang = localStorage.getItem('language') || 'en';
+  config.headers['Accept-Language'] = lang;
   return config;
 }, (error) => {
   return Promise.reject(error);
@@ -48,6 +52,7 @@ export const togglePrivacy = (enabled) => api.post('/users/privacy/toggle', { en
 export const getBlocklist = () => api.get('/users/blocklist').then(res => res.data);
 export const blockNumber = (number) => api.post('/users/blocklist', { number }).then(res => res.data);
 export const unblockNumber = (id) => api.delete(`/users/blocklist/${id}`).then(res => res.data);
+export const unblockNumberByPhone = (number) => api.delete(`/users/blocklist/by-number/${number}`).then(res => res.data);
 
 // Contacts API
 export const getContacts = (userId) => api.get(`/contacts?userId=${userId}`).then(res => res.data);
@@ -61,6 +66,8 @@ export const sendFriendRequest = (senderId, recipientEmail) =>
   api.post('/friends/request', { senderId, recipientEmail }).then(res => res.data);
 export const respondFriendRequest = (connectionId, accept) => 
   api.post('/friends/respond', { connectionId, accept }).then(res => res.data);
+export const searchUsers = (query, page = 1, pageSize = 10) => 
+  api.get(`/friends/search?query=${encodeURIComponent(query)}&page=${page}&pageSize=${pageSize}`).then(res => res.data);
 
 // Contact Groups API
 export const getGroups = () => api.get('/groups').then(res => res.data);
@@ -76,8 +83,13 @@ export const createTemplate = (title, body) => api.post('/templates', { title, b
 export const deleteTemplate = (id) => api.delete(`/templates/${id}`).then(res => res.data);
 
 // Messages API
-export const getChatHistory = (userId, contactNumber) => 
-  api.get(`/messages/history?userId=${userId}&contactNumber=${contactNumber}`).then(res => res.data);
+export const getChatHistory = (userId, contactNumber, before = null, limit = 20) => {
+  let url = `/messages/history?userId=${userId}&contactNumber=${contactNumber}&limit=${limit}`;
+  if (before) {
+    url += `&before=${encodeURIComponent(before)}`;
+  }
+  return api.get(url).then(res => res.data);
+};
 export const getQuota = (userId, contactNumber) => 
   api.get(`/messages/quota?userId=${userId}&contactNumber=${contactNumber}`).then(res => res.data);
 export const sendMessage = (senderId, receiverNumber, content, scheduledAt) => 
@@ -117,8 +129,13 @@ export const updateUserQuota = (id, freeMessagesLeft) =>
 export const getAdminTransactions = () => 
   api.get('/admin/transactions').then(res => res.data);
 
-export const getAdminSmsLogs = () => 
-  api.get('/admin/sms-logs').then(res => res.data);
+export const getAdminSmsLogs = (page = 1, pageSize = 10, search = '', status = '', type = '') => {
+  let url = `/admin/sms-logs?page=${page}&pageSize=${pageSize}`;
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+  if (status) url += `&status=${encodeURIComponent(status)}`;
+  if (type) url += `&type=${encodeURIComponent(type)}`;
+  return api.get(url).then(res => res.data);
+};
 
 export const createAdminTemplate = (title, body) => 
   api.post('/admin/templates', { title, body }).then(res => res.data);
@@ -128,5 +145,14 @@ export const deleteAdminTemplate = (id) =>
 
 export const chatWithAdminAi = (message, history) => 
   api.post('/admin/ai-chat', { message, history }).then(res => res.data);
+
+export const reportTyping = (receiverNumber) => 
+  api.post('/messages/typing', { receiverNumber }).then(res => res.data);
+
+export const getTypingStatus = (contactNumber) => 
+  api.get(`/messages/typing-status?contactNumber=${contactNumber}`).then(res => res.data);
+
+export const getConversations = () => 
+  api.get('/messages/conversations').then(res => res.data);
 
 export default api;

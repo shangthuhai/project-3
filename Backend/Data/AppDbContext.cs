@@ -201,9 +201,9 @@ namespace Backend.Data
                 }
             );
 
-            // 4. Seed Quotas (Since Alice sent 2 free messages to David, her quota has 3 left. Others have 5.)
+            // 4. Seed Quotas (Default limit of 5 free messages per stranger for all users)
             modelBuilder.Entity<UserQuota>().HasData(
-                new UserQuota { QuotaId = 1, UserId = 1, FreeMessagesLeft = 3, UpdatedAt = DateTime.Parse("2026-08-14T00:00:00Z") },
+                new UserQuota { QuotaId = 1, UserId = 1, FreeMessagesLeft = 5, UpdatedAt = DateTime.Parse("2026-08-14T00:00:00Z") },
                 new UserQuota { QuotaId = 2, UserId = 2, FreeMessagesLeft = 5, UpdatedAt = DateTime.Parse("2026-08-14T00:00:00Z") },
                 new UserQuota { QuotaId = 3, UserId = 3, FreeMessagesLeft = 5, UpdatedAt = DateTime.Parse("2026-08-14T00:00:00Z") },
                 new UserQuota { QuotaId = 999, UserId = 999, FreeMessagesLeft = 999999, UpdatedAt = DateTime.Parse("2026-08-14T00:00:00Z") }

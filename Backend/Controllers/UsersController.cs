@@ -5,6 +5,7 @@ using Backend.Data;
 using Backend.Models;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.SignalR;
 
 namespace Backend.Controllers
 {
@@ -14,10 +15,12 @@ namespace Backend.Controllers
     public class UsersController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly Microsoft.AspNetCore.SignalR.IHubContext<Backend.Hubs.ChatHub> _hubContext;
 
-        public UsersController(AppDbContext context)
+        public UsersController(AppDbContext context, Microsoft.AspNetCore.SignalR.IHubContext<Backend.Hubs.ChatHub> hubContext)
         {
             _context = context;
+            _hubContext = hubContext;
         }
 
         private int AuthenticatedUserId => 
@@ -148,13 +151,71 @@ namespace Backend.Controllers
 
         // GET: api/users/blocklist
         [HttpGet("blocklist")]
-        public async Task<ActionResult<IEnumerable<Blocklist>>> GetBlocklist()
+        public async Task<ActionResult<IEnumerable<object>>> GetBlocklist()
         {
             int userId = AuthenticatedUserId;
             var blocklist = await _context.Blocklists
                 .Where(b => b.UserId == userId)
                 .ToListAsync();
-            return Ok(blocklist);
+
+            var blockedNumbers = blocklist.Select(b => b.BlockedNumber).ToList();
+
+            // 1. Query registered users with their profiles (in memory lookup to avoid client-side GroupBy EF translation issues)
+            var usersList = await _context.Users
+                .Include(u => u.Profile)
+                .Where(u => blockedNumbers.Contains(u.MobileNumber))
+                .ToListAsync();
+
+            var blockedUsersDict = new Dictionary<string, string>();
+            foreach (var u in usersList)
+            {
+                if (!string.IsNullOrEmpty(u.MobileNumber) && !blockedUsersDict.ContainsKey(u.MobileNumber))
+                {
+                    string displayName = !string.IsNullOrEmpty(u.Profile?.FullName)
+                        ? u.Profile.FullName
+                        : u.Username;
+                    blockedUsersDict[u.MobileNumber] = displayName;
+                }
+            }
+
+            // 2. Query contacts of the current user to resolve name fallbacks for non-registered numbers
+            var contactsList = await _context.Contacts
+                .Where(c => c.UserId == userId && blockedNumbers.Contains(c.ContactNumber))
+                .ToListAsync();
+
+            var contactsDict = new Dictionary<string, string>();
+            foreach (var c in contactsList)
+            {
+                if (!string.IsNullOrEmpty(c.ContactNumber) && !contactsDict.ContainsKey(c.ContactNumber))
+                {
+                    string contactName = $"{c.FirstName} {c.LastName}".Trim();
+                    if (!string.IsNullOrEmpty(contactName))
+                    {
+                        contactsDict[c.ContactNumber] = contactName;
+                    }
+                }
+            }
+
+            var result = blocklist.Select(b => {
+                string name = "Người dùng lạ";
+                if (blockedUsersDict.ContainsKey(b.BlockedNumber))
+                {
+                    name = blockedUsersDict[b.BlockedNumber];
+                }
+                else if (contactsDict.ContainsKey(b.BlockedNumber))
+                {
+                    name = contactsDict[b.BlockedNumber];
+                }
+                return new
+                {
+                    Id = b.BlockId,
+                    UserId = b.UserId,
+                    BlockedNumber = b.BlockedNumber,
+                    BlockedName = name
+                };
+            });
+
+            return Ok(result);
         }
 
         // POST: api/users/blocklist
@@ -180,7 +241,50 @@ namespace Backend.Controllers
             _context.Blocklists.Add(block);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = $"Blocked number {dto.Number} successfully.", block });
+            // Find name in users first
+            var blockedUser = await _context.Users
+                .Include(u => u.Profile)
+                .FirstOrDefaultAsync(u => u.MobileNumber == dto.Number);
+            
+            var blocker = await _context.Users.FindAsync(userId);
+            if (blockedUser != null && blocker != null)
+            {
+                await _hubContext.Clients.User(blockedUser.UserId.ToString()).SendAsync("ReceiveBlockStatus", new { blockerNumber = blocker.MobileNumber, isBlocked = true });
+            }
+
+            string blockedName = "Người dùng lạ";
+            if (blockedUser != null)
+            {
+                blockedName = !string.IsNullOrEmpty(blockedUser.Profile?.FullName)
+                    ? blockedUser.Profile.FullName
+                    : blockedUser.Username;
+            }
+            else
+            {
+                // Fallback to contacts
+                var contact = await _context.Contacts
+                    .FirstOrDefaultAsync(c => c.UserId == userId && c.ContactNumber == dto.Number);
+                if (contact != null)
+                {
+                    string contactName = $"{contact.FirstName} {contact.LastName}".Trim();
+                    if (!string.IsNullOrEmpty(contactName))
+                    {
+                        blockedName = contactName;
+                    }
+                }
+            }
+
+            return Ok(new 
+            { 
+                message = $"Blocked number {dto.Number} successfully.", 
+                block = new
+                {
+                    Id = block.BlockId,
+                    UserId = block.UserId,
+                    BlockedNumber = block.BlockedNumber,
+                    BlockedName = blockedName
+                }
+            });
         }
 
         // DELETE: api/users/blocklist/{id}
@@ -193,8 +297,38 @@ namespace Backend.Controllers
 
             if (block.UserId != userId) return Forbid();
 
+            var blocker = await _context.Users.FindAsync(userId);
+            var blockedUser = await _context.Users.FirstOrDefaultAsync(u => u.MobileNumber == block.BlockedNumber);
+
             _context.Blocklists.Remove(block);
             await _context.SaveChangesAsync();
+
+            if (blockedUser != null && blocker != null)
+            {
+                await _hubContext.Clients.User(blockedUser.UserId.ToString()).SendAsync("ReceiveBlockStatus", new { blockerNumber = blocker.MobileNumber, isBlocked = false });
+            }
+
+            return Ok(new { message = "Number unblocked successfully." });
+        }
+
+        // DELETE: api/users/blocklist/by-number/{number}
+        [HttpDelete("blocklist/by-number/{number}")]
+        public async Task<IActionResult> UnblockNumberByPhone(string number)
+        {
+            int userId = AuthenticatedUserId;
+            var block = await _context.Blocklists.FirstOrDefaultAsync(b => b.UserId == userId && b.BlockedNumber == number);
+            if (block == null) return NotFound(new { message = "Blocked number entry not found." });
+
+            var blocker = await _context.Users.FindAsync(userId);
+            var blockedUser = await _context.Users.FirstOrDefaultAsync(u => u.MobileNumber == number);
+
+            _context.Blocklists.Remove(block);
+            await _context.SaveChangesAsync();
+
+            if (blockedUser != null && blocker != null)
+            {
+                await _hubContext.Clients.User(blockedUser.UserId.ToString()).SendAsync("ReceiveBlockStatus", new { blockerNumber = blocker.MobileNumber, isBlocked = false });
+            }
 
             return Ok(new { message = "Number unblocked successfully." });
         }

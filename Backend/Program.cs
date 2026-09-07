@@ -17,6 +17,12 @@ builder.Services.AddHostedService<Backend.Services.SMSBackgroundService>();
 // Register AI Service
 builder.Services.AddHttpClient<Backend.Services.IAiService, Backend.Services.AiService>();
 
+// Register Telegram Service
+builder.Services.AddHttpClient<Backend.Services.ITelegramService, Backend.Services.TelegramService>();
+
+// Register Email Service for OTP
+builder.Services.AddScoped<Backend.Services.IEmailService, Backend.Services.EmailService>();
+
 // Configure JWT Authentication
 builder.Services.AddAuthentication(options =>
 {
@@ -35,20 +41,35 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = "smschat",
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("SuperSecretSecureKey123456789012345"))
     };
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/chatHub"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
 });
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReact", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.SetIsOriginAllowed(origin => true)
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+builder.Services.AddSignalR();
 
 var app = builder.Build();
 
@@ -77,6 +98,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<Backend.Hubs.ChatHub>("/chatHub");
 
 app.Run();
 

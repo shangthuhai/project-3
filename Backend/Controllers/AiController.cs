@@ -27,8 +27,9 @@ namespace Backend.Controllers
             }
 
             string tone = string.IsNullOrWhiteSpace(dto.Tone) ? "polite" : dto.Tone;
-            
-            string result = await _aiService.GenerateSmsAsync(dto.Prompt, tone);
+            string lang = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrEmpty(lang)) lang = "en";
+            string result = await _aiService.GenerateSmsAsync(dto.Prompt, tone, lang);
 
             if (result.StartsWith("Lỗi:"))
             {
