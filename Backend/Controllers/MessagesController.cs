@@ -476,7 +476,14 @@ namespace Backend.Controllers
                 }
             }
 
-            bool isScheduled = dto.ScheduledAt.HasValue && dto.ScheduledAt.Value > DateTime.UtcNow;
+            DateTime? scheduledUtc = null;
+            if (dto.ScheduledAt.HasValue)
+            {
+                var dt = dto.ScheduledAt.Value;
+                scheduledUtc = dt.Kind == DateTimeKind.Utc ? dt : dt.ToUniversalTime();
+            }
+
+            bool isScheduled = scheduledUtc.HasValue && scheduledUtc.Value > DateTime.UtcNow;
 
             if (!isFriend)
             {
@@ -504,7 +511,7 @@ namespace Backend.Controllers
                 Content = dto.Content,
                 SentAt = DateTime.UtcNow,
                 IsFreeFriendMsg = isFriend,
-                ScheduledAt = isScheduled ? dto.ScheduledAt : null
+                ScheduledAt = isScheduled ? scheduledUtc : null
             };
 
             _context.Messages.Add(message);
@@ -576,7 +583,14 @@ namespace Backend.Controllers
             int failedCount = 0;
             var details = new List<string>();
 
-            bool isScheduled = dto.ScheduledAt.HasValue && dto.ScheduledAt.Value > DateTime.UtcNow;
+            DateTime? scheduledUtc = null;
+            if (dto.ScheduledAt.HasValue)
+            {
+                var dt = dto.ScheduledAt.Value;
+                scheduledUtc = dt.Kind == DateTimeKind.Utc ? dt : dt.ToUniversalTime();
+            }
+
+            bool isScheduled = scheduledUtc.HasValue && scheduledUtc.Value > DateTime.UtcNow;
 
             foreach (var member in members)
             {
@@ -644,7 +658,7 @@ namespace Backend.Controllers
                     Content = dto.Content,
                     SentAt = DateTime.UtcNow,
                     IsFreeFriendMsg = isFriend,
-                    ScheduledAt = isScheduled ? dto.ScheduledAt : null
+                    ScheduledAt = isScheduled ? scheduledUtc : null
                 };
 
                 _context.Messages.Add(message);

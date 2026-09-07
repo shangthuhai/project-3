@@ -134,20 +134,78 @@ namespace Backend.Controllers
                 return Forbid();
             }
 
-            var contact = await _context.Contacts.FindAsync(dto.ContactId);
-            if (contact == null)
-            {
-                return NotFound(new { message = "Contact not found." });
-            }
+            Contact? contactTarget = null;
 
-            if (contact.UserId != userId)
+            if (dto.ContactId.HasValue && dto.ContactId.Value > 0)
             {
-                return BadRequest(new { message = "Contact does not belong to your contact list." });
+                contactTarget = await _context.Contacts.FindAsync(dto.ContactId.Value);
+                if (contactTarget == null)
+                {
+                    return NotFound(new { message = "Contact not found." });
+                }
+                if (contactTarget.UserId != userId)
+                {
+                    return BadRequest(new { message = "Contact does not belong to your contact list." });
+                }
+            }
+            else if (dto.FriendUserId.HasValue && dto.FriendUserId.Value > 0)
+            {
+                var friendUser = await _context.Users.Include(u => u.Profile).FirstOrDefaultAsync(u => u.UserId == dto.FriendUserId.Value);
+                if (friendUser == null)
+                {
+                    return NotFound(new { message = "Friend user not found." });
+                }
+
+                // Find existing contact or create one
+                contactTarget = await _context.Contacts.FirstOrDefaultAsync(c => c.UserId == userId && c.ContactNumber == friendUser.MobileNumber);
+                if (contactTarget == null)
+                {
+                    string fullName = friendUser.Name ?? friendUser.Username;
+                    var nameParts = fullName.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+                    string fName = nameParts.Length > 0 ? nameParts[0] : friendUser.Username;
+                    string lName = nameParts.Length > 1 ? nameParts[1] : "";
+
+                    contactTarget = new Contact
+                    {
+                        UserId = userId,
+                        FirstName = fName,
+                        LastName = string.IsNullOrEmpty(lName) ? "(Friend)" : lName,
+                        ContactNumber = friendUser.MobileNumber
+                    };
+                    _context.Contacts.Add(contactTarget);
+                    await _context.SaveChangesAsync();
+                }
+            }
+            else if (!string.IsNullOrWhiteSpace(dto.ContactNumber))
+            {
+                string phone = dto.ContactNumber.Trim();
+                if (phone.Length != 10 || !phone.All(char.IsDigit))
+                {
+                    return BadRequest(new { message = "Contact number must be exactly 10 digits." });
+                }
+
+                contactTarget = await _context.Contacts.FirstOrDefaultAsync(c => c.UserId == userId && c.ContactNumber == phone);
+                if (contactTarget == null)
+                {
+                    contactTarget = new Contact
+                    {
+                        UserId = userId,
+                        FirstName = string.IsNullOrWhiteSpace(dto.FirstName) ? "Contact" : dto.FirstName.Trim(),
+                        LastName = dto.LastName?.Trim() ?? "",
+                        ContactNumber = phone
+                    };
+                    _context.Contacts.Add(contactTarget);
+                    await _context.SaveChangesAsync();
+                }
+            }
+            else
+            {
+                return BadRequest(new { message = "Please select a contact/friend or enter a contact number." });
             }
 
             // Check if already in group
             bool exists = await _context.ContactGroupMembers
-                .AnyAsync(m => m.GroupId == id && m.ContactId == dto.ContactId);
+                .AnyAsync(m => m.GroupId == id && m.ContactId == contactTarget.ContactId);
 
             if (exists)
             {
@@ -157,13 +215,13 @@ namespace Backend.Controllers
             var member = new ContactGroupMember
             {
                 GroupId = id,
-                ContactId = dto.ContactId
+                ContactId = contactTarget.ContactId
             };
 
             _context.ContactGroupMembers.Add(member);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Contact added to group successfully.", contact });
+            return Ok(new { message = "Contact added to group successfully.", contact = contactTarget });
         }
 
         // DELETE: api/groups/{id}/members/{contactId}
@@ -205,6 +263,10 @@ namespace Backend.Controllers
 
     public class AddGroupMemberDto
     {
-        public int ContactId { get; set; }
+        public int? ContactId { get; set; }
+        public int? FriendUserId { get; set; }
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+        public string? ContactNumber { get; set; }
     }
 }

@@ -74,7 +74,8 @@ export const getGroups = () => api.get('/groups').then(res => res.data);
 export const createGroup = (name) => api.post('/groups', { name }).then(res => res.data);
 export const deleteGroup = (id) => api.delete(`/groups/${id}`).then(res => res.data);
 export const getGroupMembers = (id) => api.get(`/groups/${id}/members`).then(res => res.data);
-export const addGroupMember = (groupId, contactId) => api.post(`/groups/${groupId}/members`, { contactId }).then(res => res.data);
+export const addGroupMember = (groupId, memberData) => 
+  api.post(`/groups/${groupId}/members`, typeof memberData === 'object' ? memberData : { contactId: memberData }).then(res => res.data);
 export const removeGroupMember = (groupId, contactId) => api.delete(`/groups/${groupId}/members/${contactId}`).then(res => res.data);
 
 // SMS Templates API

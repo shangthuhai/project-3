@@ -695,16 +695,43 @@ export function ChatProvider({ children }) {
       .catch(() => { });
   };
 
-  const handleAddGroupMember = (e) => {
-    e.preventDefault();
-    if (!selectedGroup || !newGroupMemberId) return;
-    apiAddGroupMember(selectedGroup.id, parseInt(newGroupMemberId))
+  const handleAddGroupMember = (payloadOrEvent) => {
+    let payload = null;
+    if (payloadOrEvent && typeof payloadOrEvent.preventDefault === 'function') {
+      payloadOrEvent.preventDefault();
+      if (!newGroupMemberId) return;
+      if (typeof newGroupMemberId === 'string' && newGroupMemberId.startsWith('friend_')) {
+        payload = { friendUserId: parseInt(newGroupMemberId.replace('friend_', '')) };
+      } else if (typeof newGroupMemberId === 'string' && newGroupMemberId.startsWith('contact_')) {
+        payload = { contactId: parseInt(newGroupMemberId.replace('contact_', '')) };
+      } else {
+        payload = { contactId: parseInt(newGroupMemberId) };
+      }
+    } else {
+      payload = payloadOrEvent;
+    }
+
+    if (!selectedGroup || !payload) return Promise.reject(new Error('No group selected or invalid payload.'));
+
+    return apiAddGroupMember(selectedGroup.id, payload)
       .then(res => {
-        setGroupMembers(prev => [...prev, res.contact]);
+        if (res.contact) {
+          setGroupMembers(prev => {
+            if (prev.some(m => m.id === res.contact.id)) return prev;
+            return [...prev, res.contact];
+          });
+          setContacts(prev => {
+            if (prev.some(c => c.id === res.contact.id)) return prev;
+            return [...prev, res.contact];
+          });
+        }
         setNewGroupMemberId('');
         triggerAlert('success', res.message);
+        return res;
       })
-      .catch(err => triggerAlert('error', err.response?.data?.message || 'Failed to add member.'));
+      .catch(err => {
+        triggerAlert('error', err.response?.data?.message || 'Failed to add member.');
+      });
   };
 
   const handleRemoveGroupMember = (contactId) => {
@@ -721,9 +748,17 @@ export function ChatProvider({ children }) {
     e.preventDefault();
     if (!selectedGroup || !bulkContent.trim()) return;
 
-    setBulkResultsLog('Sending bulk messages, please wait...');
+    setBulkResultsLog('Processing bulk message send...');
 
-    sendBulkMessage(selectedGroup.id, bulkContent.trim(), bulkScheduleDate || null)
+    let scheduledUtcString = null;
+    if (bulkScheduleDate) {
+      const dt = new Date(bulkScheduleDate);
+      if (!isNaN(dt.getTime())) {
+        scheduledUtcString = dt.toISOString();
+      }
+    }
+
+    sendBulkMessage(selectedGroup.id, bulkContent.trim(), scheduledUtcString)
       .then(res => {
         setBulkContent('');
         setBulkScheduleDate('');
