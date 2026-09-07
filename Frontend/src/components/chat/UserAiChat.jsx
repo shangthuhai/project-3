@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Send } from 'lucide-react';
-import { useChat } from '../../context/ChatContext';
+import { useChat, getInitialAiChatPosition } from '../../context/ChatContext';
 import { useLanguage } from '../../context/LanguageContext';
 import styles from './UserAiChat.module.css';
 import classNames from 'classnames/bind';
@@ -22,6 +22,7 @@ export default function UserAiChat() {
     handleAiSendMessage
   } = useChat();
 
+  const [hasUserDragged, setHasUserDragged] = useState(false);
   const aiChatDragRef = useRef({ isDragging: false, startX: 0, startY: 0, posX: 0, posY: 0 });
 
   const handleCloseAiChat = () => {
@@ -48,6 +49,7 @@ export default function UserAiChat() {
 
     if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
       aiChatDragRef.current.isDragging = true;
+      setHasUserDragged(true);
     }
 
     let newX = aiChatDragRef.current.posX + dx;
@@ -65,15 +67,30 @@ export default function UserAiChat() {
   };
 
   useEffect(() => {
+    if (isAiBubbleOpen && !hasUserDragged) {
+      const updatePosition = () => {
+        setAiChatPosition(getInitialAiChatPosition());
+      };
+      updatePosition();
+      const timer = setTimeout(updatePosition, 40);
+      return () => clearTimeout(timer);
+    }
+  }, [isAiBubbleOpen, hasUserDragged]);
+
+  useEffect(() => {
     const handleResize = () => {
-      setAiChatPosition(prev => ({
-        x: Math.max(10, Math.min(window.innerWidth - 370, prev.x)),
-        y: Math.max(10, Math.min(window.innerHeight - 490, prev.y))
-      }));
+      if (!hasUserDragged) {
+        setAiChatPosition(getInitialAiChatPosition());
+      } else {
+        setAiChatPosition(prev => ({
+          x: Math.max(10, Math.min(window.innerWidth - 370, prev.x)),
+          y: Math.max(10, Math.min(window.innerHeight - 490, prev.y))
+        }));
+      }
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [hasUserDragged]);
 
   const [showScrollBottom, setShowScrollBottom] = React.useState(false);
   const aiMessagesAreaRef = useRef(null);

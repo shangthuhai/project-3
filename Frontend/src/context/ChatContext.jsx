@@ -40,6 +40,44 @@ import {
 
 const ChatContext = createContext(null);
 
+export const getInitialAiChatPosition = () => {
+  const btn = document.getElementById('ai-chatbot-icon-btn');
+  const chatWidth = 360;
+  const chatHeight = 480;
+  const margin = 12;
+
+  if (btn) {
+    const rect = btn.getBoundingClientRect();
+    if (window.innerWidth <= 1024) {
+      let x = rect.left + rect.width / 2 - chatWidth / 2;
+      let y = rect.top - chatHeight - margin;
+
+      x = Math.max(margin, Math.min(window.innerWidth - chatWidth - margin, x));
+      y = Math.max(margin, Math.min(window.innerHeight - chatHeight - margin, y));
+      return { x, y };
+    } else {
+      let x = rect.right + margin;
+      let y = rect.top;
+
+      x = Math.max(margin, Math.min(window.innerWidth - chatWidth - margin, x));
+      y = Math.max(margin, Math.min(window.innerHeight - chatHeight - margin, y));
+      return { x, y };
+    }
+  }
+
+  if (window.innerWidth <= 1024) {
+    return {
+      x: Math.max(12, Math.floor((window.innerWidth - chatWidth) / 2)),
+      y: Math.max(12, window.innerHeight - chatHeight - 72)
+    };
+  }
+
+  return {
+    x: 82,
+    y: Math.max(12, Math.min(window.innerHeight - chatHeight - 12, 216))
+  };
+};
+
 export function ChatProvider({ children }) {
   const { loggedInUser, triggerAlert, updateLoggedInUserLocal } = useAuth();
 
@@ -177,10 +215,7 @@ export function ChatProvider({ children }) {
   const [aiMessages, setAiMessages] = useState([]);
   const [aiNewMessage, setAiNewMessage] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const [aiChatPosition, setAiChatPosition] = useState({
-    x: Math.max(10, window.innerWidth - 384),
-    y: Math.max(10, window.innerHeight - 520)
-  });
+  const [aiChatPosition, setAiChatPosition] = useState(getInitialAiChatPosition);
 
   // Refs for tracking active values inside async events / timeouts
   const connectionRef = useRef(null);
