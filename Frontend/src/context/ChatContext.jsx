@@ -1,7 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { HubConnectionBuilder } from '@microsoft/signalr';
 import { useAuth } from './AuthContext';
+import { useLanguage } from './LanguageContext';
 import {
+  getUser,
+  updateUser,
   getContacts,
   addContact as apiAddContact,
   deleteContact as apiDeleteContact,
@@ -80,6 +83,7 @@ export const getInitialAiChatPosition = () => {
 
 export function ChatProvider({ children }) {
   const { loggedInUser, triggerAlert, updateLoggedInUserLocal } = useAuth();
+  const { language, t } = useLanguage();
 
   // Navigation and generic tabs
   const [activeTab, setActiveTab] = useState('chats');
@@ -238,6 +242,13 @@ export function ChatProvider({ children }) {
   // Load backend private details when loggedInUser becomes available
   const refreshDashboardData = () => {
     if (!loggedInUser) return;
+    getUser(loggedInUser.id)
+      .then(freshUser => {
+        updateLoggedInUserLocal(freshUser);
+        setProfileForm(freshUser);
+      })
+      .catch(() => setProfileForm(loggedInUser));
+
     getContacts(loggedInUser.id).then(setContacts).catch(() => { });
     getFriends(loggedInUser.id).then(setFriends).catch(() => { });
     loadConversations();
@@ -245,7 +256,6 @@ export function ChatProvider({ children }) {
     getActivatedServices(loggedInUser.id)
       .then(data => setActivatedServices(data.map(s => s.serviceName)))
       .catch(() => { });
-    setProfileForm(loggedInUser);
 
     loadTemplates();
     loadGroups();
@@ -384,7 +394,7 @@ export function ChatProvider({ children }) {
       conn.stop();
       connectionRef.current = null;
     };
-  }, [loggedInUser]);
+  }, [loggedInUser?.id]);
 
   // Typing status inactivity timeout
   useEffect(() => {
@@ -507,12 +517,40 @@ export function ChatProvider({ children }) {
   // User details & profile submission
   const handleProfileSubmit = (e) => {
     e.preventDefault();
-    updateUser(loggedInUser.id, profileForm)
+    if (!loggedInUser) return;
+
+    if (!profileForm.name || !profileForm.name.trim()) {
+      triggerAlert('error', language === 'vi' ? 'Vui lòng nhập Họ và Tên.' : 'Full Name is required.');
+      return;
+    }
+
+    // Sanitize empty string date values to null so ASP.NET Core JSON deserializer won't fail with 400
+    const sanitizedDob = profileForm.dob && String(profileForm.dob).trim() !== '' ? profileForm.dob : null;
+
+    const payload = {
+      ...profileForm,
+      id: loggedInUser.id,
+      dob: sanitizedDob
+    };
+
+    updateUser(loggedInUser.id, payload)
       .then(updated => {
         updateLoggedInUserLocal(updated);
-        triggerAlert('success', 'Profile updated successfully.');
+        setProfileForm(updated);
+        triggerAlert('success', t('profile_saved_success'));
       })
-      .catch(() => triggerAlert('error', 'Failed to update profile.'));
+      .catch(err => {
+        let errorMsg = (language === 'vi' ? 'Không thể cập nhật hồ sơ.' : 'Failed to update profile.');
+        if (err.response?.data?.message) {
+          errorMsg = err.response.data.message;
+        } else if (err.response?.data?.errors) {
+          const firstKey = Object.keys(err.response.data.errors)[0];
+          if (firstKey && err.response.data.errors[firstKey]?.length > 0) {
+            errorMsg = err.response.data.errors[firstKey][0];
+          }
+        }
+        triggerAlert('error', errorMsg);
+      });
   };
 
   // Contacts

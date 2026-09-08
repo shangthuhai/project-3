@@ -244,7 +244,8 @@ export function AuthProvider({ children }) {
   const updateLoggedInUserLocal = (updates) => {
     setLoggedInUser(prev => {
       if (!prev) return null;
-      const updated = { ...prev, ...updates };
+      const token = updates?.token || prev.token;
+      const updated = { ...prev, ...updates, token };
       localStorage.setItem('user', JSON.stringify(updated));
       return updated;
     });
