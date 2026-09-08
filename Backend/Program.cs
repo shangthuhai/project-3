@@ -83,6 +83,41 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     dbContext.Database.EnsureCreated();
+
+    try
+    {
+        dbContext.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS ""Keyword_Rules"" (
+                ""rule_id"" INTEGER NOT NULL CONSTRAINT ""PK_Keyword_Rules"" PRIMARY KEY AUTOINCREMENT,
+                ""keyword"" TEXT NOT NULL,
+                ""category"" TEXT NULL,
+                ""action"" TEXT NULL,
+                ""is_active"" INTEGER NOT NULL DEFAULT 1,
+                ""created_at"" TEXT NOT NULL
+            );
+        ");
+
+        try { dbContext.Database.ExecuteSqlRaw(@"ALTER TABLE ""Messages"" ADD COLUMN ""spam_status"" TEXT DEFAULT 'normal';"); } catch {}
+        try { dbContext.Database.ExecuteSqlRaw(@"ALTER TABLE ""Messages"" ADD COLUMN ""moderation_reason"" TEXT NULL;"); } catch {}
+        try { dbContext.Database.ExecuteSqlRaw(@"ALTER TABLE ""Messages"" ADD COLUMN ""delay_until"" TEXT NULL;"); } catch {}
+        try { dbContext.Database.ExecuteSqlRaw(@"ALTER TABLE ""Messages"" ADD COLUMN ""is_approved"" INTEGER NULL;"); } catch {}
+
+        if (!dbContext.KeywordRules.Any())
+        {
+            dbContext.KeywordRules.AddRange(
+                new Backend.Models.KeywordRule { Keyword = "lừa đảo", Category = "Scam", Action = "block", IsActive = true, CreatedAt = DateTime.UtcNow },
+                new Backend.Models.KeywordRule { Keyword = "cờ bạc", Category = "Scam", Action = "block", IsActive = true, CreatedAt = DateTime.UtcNow },
+                new Backend.Models.KeywordRule { Keyword = "nợ", Category = "Sensitive", Action = "flag", IsActive = true, CreatedAt = DateTime.UtcNow },
+                new Backend.Models.KeywordRule { Keyword = "khuyến mãi khủng", Category = "Spam", Action = "flag", IsActive = true, CreatedAt = DateTime.UtcNow },
+                new Backend.Models.KeywordRule { Keyword = "chuyển tiền gấp", Category = "Scam", Action = "delay", IsActive = true, CreatedAt = DateTime.UtcNow }
+            );
+            dbContext.SaveChanges();
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"DB Migration warning: {ex.Message}");
+    }
 }
 
 app.UseCors("AllowReact");

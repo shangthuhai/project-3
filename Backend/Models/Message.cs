@@ -45,6 +45,22 @@ namespace Backend.Models
         [JsonPropertyName("sentTime")]
         public DateTime SentAt { get; set; } = DateTime.UtcNow;
 
+        [Column("spam_status")]
+        [JsonPropertyName("spamStatus")]
+        public string SpamStatus { get; set; } = "normal"; // normal, suspected_spam, sensitive_flagged, blocked, delayed
+
+        [Column("moderation_reason")]
+        [JsonPropertyName("moderationReason")]
+        public string? ModerationReason { get; set; }
+
+        [Column("delay_until")]
+        [JsonPropertyName("delayUntil")]
+        public DateTime? DelayUntil { get; set; }
+
+        [Column("is_approved")]
+        [JsonPropertyName("isApproved")]
+        public bool? IsApproved { get; set; }
+
         // Navigation properties
         [ForeignKey("SenderId")]
         [JsonIgnore]

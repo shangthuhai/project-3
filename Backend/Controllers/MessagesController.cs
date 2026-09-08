@@ -485,6 +485,52 @@ namespace Backend.Controllers
 
             bool isScheduled = scheduledUtc.HasValue && scheduledUtc.Value > DateTime.UtcNow;
 
+            // --- MODERATION & SPAM DETECTION PIPELINE ---
+            string spamStatus = "normal";
+            string? moderationReason = null;
+            DateTime? delayUntil = null;
+
+            // 1. Repetitive Spam Detection Check (Identical content sent >= 3 times in last 2 minutes)
+            string normalizedContent = dto.Content.Trim().ToLower();
+            var recentTwoMinCutoff = DateTime.UtcNow.AddMinutes(-2);
+            int recentIdenticalCount = await _context.Messages.CountAsync(m =>
+                m.SenderId == sender.UserId &&
+                m.SentAt >= recentTwoMinCutoff &&
+                m.Content.ToLower().Trim() == normalizedContent);
+
+            if (recentIdenticalCount >= 2)
+            {
+                spamStatus = "suspected_spam";
+                moderationReason = "Cảnh báo spam: Người dùng gửi nội dung lặp lại bất thường trong thời gian ngắn.";
+            }
+
+            // 2. Sensitive Keyword Screening & AI Intent Analysis
+            var activeKeywords = await _context.KeywordRules.Where(k => k.IsActive).ToListAsync();
+            var matchedRule = activeKeywords.FirstOrDefault(k => 
+                normalizedContent.Contains(k.Keyword.ToLower()));
+
+            if (matchedRule != null)
+            {
+                // Call AI for contextual intent analysis
+                var (isMalicious, aiExplanation) = await _aiService.AnalyzeMessageModerationAsync(dto.Content, matchedRule.Keyword);
+
+                if (matchedRule.Action == "block" || (isMalicious && matchedRule.Category == "Scam"))
+                {
+                    return BadRequest(new { message = $"Tin nhắn bị hệ thống kiểm duyệt chặn: Từ khóa '{matchedRule.Keyword}' ({aiExplanation})" });
+                }
+                else if (matchedRule.Action == "delay")
+                {
+                    spamStatus = "delayed";
+                    delayUntil = DateTime.UtcNow.AddMinutes(5);
+                    moderationReason = $"Tạm hoãn gửi 5 phút theo quy định từ khóa [{matchedRule.Keyword}]. Phân tích AI: {aiExplanation}";
+                }
+                else
+                {
+                    spamStatus = "sensitive_flagged";
+                    moderationReason = $"Đã đánh nhãn vi phạm từ khóa [{matchedRule.Keyword}]. Phân tích AI: {aiExplanation}";
+                }
+            }
+
             if (!isFriend)
             {
                 // Retrieve user's stranger SMS limit
@@ -499,7 +545,7 @@ namespace Backend.Controllers
 
                 if (sentCount >= limit)
                 {
-                    return BadRequest(new { message = $"You have reached your limit of {limit} free messages for this stranger. Add them as a friend for unlimited free messaging." });
+                    return BadRequest(new { message = $"Bạn đã dùng hết {limit} tin nhắn miễn phí cho số điện thoại người lạ này. Vui lòng kết bạn để nhắn tin không giới hạn." });
                 }
             }
 
@@ -511,7 +557,10 @@ namespace Backend.Controllers
                 Content = dto.Content,
                 SentAt = DateTime.UtcNow,
                 IsFreeFriendMsg = isFriend,
-                ScheduledAt = isScheduled ? scheduledUtc : null
+                ScheduledAt = isScheduled ? scheduledUtc : null,
+                SpamStatus = spamStatus,
+                ModerationReason = moderationReason,
+                DelayUntil = delayUntil
             };
 
             _context.Messages.Add(message);

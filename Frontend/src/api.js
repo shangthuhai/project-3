@@ -156,4 +156,26 @@ export const getTypingStatus = (contactNumber) =>
 export const getConversations = () => 
   api.get('/messages/conversations').then(res => res.data);
 
+// --- Admin Moderation & Keyword Rules ---
+export const getAdminKeywords = () =>
+  api.get('/admin/keywords').then(res => res.data);
+
+export const createAdminKeyword = (keyword, category, action) =>
+  api.post('/admin/keywords', { keyword, category, action }).then(res => res.data);
+
+export const toggleAdminKeyword = (id) =>
+  api.put(`/admin/keywords/${id}/toggle`).then(res => res.data);
+
+export const deleteAdminKeyword = (id) =>
+  api.delete(`/admin/keywords/${id}`).then(res => res.data);
+
+export const getAdminModerationLogs = (page = 1, pageSize = 25) =>
+  api.get(`/admin/moderation/logs?page=${page}&pageSize=${pageSize}`).then(res => res.data);
+
+export const seed15DaysData = () =>
+  api.post('/admin/seed-15days-data').then(res => res.data);
+
+export const createStrangerUsers = () =>
+  api.post('/admin/create-stranger-users').then(res => res.data);
+
 export default api;

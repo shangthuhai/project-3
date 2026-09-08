@@ -18,6 +18,7 @@ namespace Backend.Services
         Task<bool> ModerateContentAsync(string content);
         Task<string> ChatWithAiAsync(string userMessage, List<Message> history, string language = "en");
         Task<string> ChatWithAdminAsync(string userMessage, List<AdminChatMessage> history, string systemInstruction);
+        Task<(bool isMalicious, string explanation)> AnalyzeMessageModerationAsync(string content, string keyword);
     }
 
     public class AdminChatMessage
@@ -460,6 +461,49 @@ namespace Backend.Services
                 }
                 return "Thank you for your message! AI assistant is currently offline, your message has been recorded.";
             }
+        }
+
+        public async Task<(bool isMalicious, string explanation)> AnalyzeMessageModerationAsync(string content, string keyword)
+        {
+            string systemInstruction = 
+                "Bạn là Chuyên gia Phân tích An toàn Nội dung AI. Nhiệm vụ của bạn là kiểm tra nội dung tin nhắn SMS có chứa từ khóa nhạy cảm/nghi vấn. " +
+                "Hãy xác định xem đây là tin nhắn SPAM/LỪA ĐẢO/ĐỘC HẠI thực sự (MALICIOUS) hay là tin nhắn THÔNG THƯỜNG/HỢP PHÁP có chứa từ khóa đó theo ngữ cảnh (SAFE). " +
+                "Trả về định dạng JSON duy nhất như sau: {\"status\": \"MALICIOUS\" hoặc \"SAFE\", \"reason\": \"Giải thích ngắn gọn 1 câu\"}";
+
+            var (success, responseString, _) = await PostChatCompletionsWithFallbackAsync(model => new
+            {
+                model = model,
+                messages = new[]
+                {
+                    new { role = "system", content = systemInstruction },
+                    new { role = "user", content = $"Từ khóa phát hiện: [{keyword}]\nNội dung tin nhắn: [{content}]" }
+                },
+                max_tokens = 150,
+                temperature = 0.2
+            });
+
+            if (success && !string.IsNullOrWhiteSpace(responseString))
+            {
+                try
+                {
+                    int jsonStart = responseString.IndexOf("{");
+                    int jsonEnd = responseString.LastIndexOf("}");
+                    if (jsonStart >= 0 && jsonEnd > jsonStart)
+                    {
+                        string jsonStr = responseString.Substring(jsonStart, jsonEnd - jsonStart + 1);
+                        using var doc = JsonDocument.Parse(jsonStr);
+                        string status = doc.RootElement.GetProperty("status").GetString() ?? "SAFE";
+                        string reason = doc.RootElement.GetProperty("reason").GetString() ?? "Đã được kiểm tra bởi AI";
+                        return (status.ToUpper() == "MALICIOUS", reason);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to parse AI moderation JSON result.");
+                }
+            }
+
+            return (true, $"Tin nhắn chứa từ khóa nghi vấn: '{keyword}'");
         }
 
         private string StripThinkingProcess(string text)
