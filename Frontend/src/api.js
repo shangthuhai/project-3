@@ -175,6 +175,9 @@ export const getAdminModerationLogs = (page = 1, pageSize = 25) =>
 export const seed15DaysData = () =>
   api.post('/admin/seed-15days-data').then(res => res.data);
 
+export const createFriendUsers = () =>
+  api.post('/admin/create-friend-users').then(res => res.data);
+
 export const createStrangerUsers = () =>
   api.post('/admin/create-stranger-users').then(res => res.data);
 

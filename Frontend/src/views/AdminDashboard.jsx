@@ -24,6 +24,7 @@ import {
   deleteAdminKeyword,
   getAdminModerationLogs,
   seed15DaysData,
+  createFriendUsers,
   createStrangerUsers
 } from '../api';
 
@@ -192,6 +193,21 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleCreateFriendUsers = async () => {
+    try {
+      const res = await createFriendUsers();
+      triggerAlert('success', res.message);
+      getAdminStats().then(setAdminStats);
+      if (adminTab === 'users') {
+        getAdminUsers().then(setAdminUsers);
+      }
+      return res;
+    } catch (err) {
+      triggerAlert('error', err.response?.data?.message || 'Failed to create friend users.');
+      throw err;
+    }
+  };
+
   const handleCreateStrangerUsers = async () => {
     try {
       const res = await createStrangerUsers();
@@ -290,7 +306,14 @@ export default function AdminDashboard() {
 
       {/* Content Area */}
       <div className="admin-content" style={{ flex: '1', padding: '30px 40px', overflowY: 'auto', background: 'var(--bg-app)' }}>
-        {adminTab === 'overview' && <AdminOverview adminStats={adminStats} onSeedData={handleSeed15DaysData} onCreateStrangers={handleCreateStrangerUsers} />}
+        {adminTab === 'overview' && (
+          <AdminOverview
+            adminStats={adminStats}
+            onSeedData={handleSeed15DaysData}
+            onCreateFriends={handleCreateFriendUsers}
+            onCreateStrangers={handleCreateStrangerUsers}
+          />
+        )}
         {adminTab === 'moderation' && (
           <AdminModeration
             keywords={adminKeywords}

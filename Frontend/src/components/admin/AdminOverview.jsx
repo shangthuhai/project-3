@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 
-export default function AdminOverview({ adminStats, onSeedData, onCreateStrangers }) {
+export default function AdminOverview({ adminStats, onSeedData, onCreateFriends, onCreateStrangers }) {
   const [seeding, setSeeding] = useState(false);
+  const [creatingFriends, setCreatingFriends] = useState(false);
   const [creatingStrangers, setCreatingStrangers] = useState(false);
   const [seedMsg, setSeedMsg] = useState('');
 
@@ -26,6 +27,21 @@ export default function AdminOverview({ adminStats, onSeedData, onCreateStranger
       setSeedMsg('❌ Không thể khởi tạo dữ liệu mẫu.');
     } finally {
       setSeeding(false);
+    }
+  };
+
+  const handleCreateFriends = async () => {
+    setCreatingFriends(true);
+    setSeedMsg('');
+    try {
+      if (onCreateFriends) {
+        const res = await onCreateFriends();
+        setSeedMsg(`✅ ${res.message || 'Đã tạo 5 tài khoản và tự động kết bạn!'}`);
+      }
+    } catch (err) {
+      setSeedMsg('❌ Không thể tạo tài khoản bạn bè.');
+    } finally {
+      setCreatingFriends(false);
     }
   };
 
@@ -60,6 +76,26 @@ export default function AdminOverview({ adminStats, onSeedData, onCreateStranger
         <div>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end' }}>
             <button
+              onClick={handleCreateFriends}
+              disabled={creatingFriends}
+              style={{
+                padding: '10px 16px',
+                background: creatingFriends ? '#4b5563' : 'linear-gradient(135deg, #3b82f6, #2563eb)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                fontWeight: '600',
+                cursor: creatingFriends ? 'not-allowed' : 'pointer',
+                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              {creatingFriends ? '⏳ Đang tạo...' : '👥+ Tạo 5 User Tự Động Kết Bạn'}
+            </button>
+
+            <button
               onClick={handleCreateStrangers}
               disabled={creatingStrangers}
               style={{
@@ -76,7 +112,7 @@ export default function AdminOverview({ adminStats, onSeedData, onCreateStranger
                 gap: '8px'
               }}
             >
-              {creatingStrangers ? '⏳ Đang tạo...' : '👤+ Tạo 5 Tài Khoản Người Lạ (Chưa Kết Bạn)'}
+              {creatingStrangers ? '⏳ Đang tạo...' : '👤+ Tạo 5 User Người Lạ (Chưa Kết Bạn)'}
             </button>
 
             <button
@@ -96,7 +132,7 @@ export default function AdminOverview({ adminStats, onSeedData, onCreateStranger
                 gap: '8px'
               }}
             >
-              {seeding ? '⏳ Đang khởi tạo...' : '🚀 Khởi Tạo Dữ Liệu Mẫu 15 Ngày (500-1000/ngày)'}
+              {seeding ? '⏳ Đang khởi tạo...' : '🚀 Khởi Tạo Dữ Liệu SMS 15 Ngày'}
             </button>
           </div>
           {seedMsg && <div style={{ fontSize: '0.85rem', color: '#10b981', marginTop: '6px', textAlign: 'right' }}>{seedMsg}</div>}

@@ -523,59 +523,6 @@ namespace Backend.Controllers
                 }
             }
 
-            // 1b. Dynamically generate 5 BRAND NEW real users with profiles on each seed call
-            string[] firstNames = new[] { "Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Huỳnh", "Vũ", "Đặng", "Bùi", "Đỗ" };
-            string[] middleNames = new[] { "Văn", "Thị", "Quốc", "Thành", "Minh", "Đức", "Ngọc", "Thu", "Gia", "Hữu" };
-            string[] lastNames = new[] { "Anh", "Mai", "Nam", "Bảo", "Hà", "Hùng", "Trang", "Linh", "Dũng", "Phương" };
-            string[] avatarPool = new[]
-            {
-                "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
-                "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150",
-                "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150",
-                "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150",
-                "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150"
-            };
-
-            for (int u = 0; u < 5; u++)
-            {
-                int numSuffix = rnd.Next(1000, 9999);
-                string uName = $"user_{numSuffix}";
-                string mobile = $"09{rnd.Next(10000000, 99999999)}";
-                string fullName = $"{firstNames[rnd.Next(firstNames.Length)]} {middleNames[rnd.Next(middleNames.Length)]} {lastNames[rnd.Next(lastNames.Length)]}";
-
-                var newU = new User
-                {
-                    Username = uName,
-                    PasswordHash = "password123",
-                    MobileNumber = mobile,
-                    Email = $"{uName}@smschat.com",
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow.AddDays(-rnd.Next(15, 60))
-                };
-                _context.Users.Add(newU);
-                await _context.SaveChangesAsync();
-
-                _context.Profiles.Add(new Profile
-                {
-                    UserId = newU.UserId,
-                    FullName = fullName,
-                    Gender = u % 2 == 0 ? "Male" : "Female",
-                    ProfilePhoto = avatarPool[rnd.Next(avatarPool.Length)],
-                    Address = "Hanoi, Vietnam",
-                    WorkStatus = "Employed"
-                });
-
-                _context.UserQuotas.Add(new UserQuota
-                {
-                    UserId = newU.UserId,
-                    FreeMessagesLeft = 10,
-                    UpdatedAt = DateTime.UtcNow
-                });
-
-                await _context.SaveChangesAsync();
-                realUsers.Add(newU);
-            }
-
             // 2. Ensure Accepted Friendships and Contacts between all real users
             for (int i = 0; i < realUsers.Count; i++)
             {
@@ -771,11 +718,137 @@ namespace Backend.Controllers
 
             return Ok(new
             {
-                message = $"Thành công! Đã sinh {realUsers.Count} tài khoản thật (đã kết bạn với nhau) và khởi tạo {newMessages.Count} tin nhắn mẫu cho 15 ngày liên tiếp.",
+                message = $"Thành công! Đã khởi tạo {newMessages.Count} tin nhắn mẫu 15 ngày cho {realUsers.Count} tài khoản hiện có.",
                 totalRealUsers = realUsers.Count,
                 totalMessagesAdded = newMessages.Count,
                 totalLogsAdded = newLogs.Count,
                 totalTransactionsAdded = newTransactions.Count
+            });
+        }
+
+        // POST: api/admin/create-friend-users
+        [HttpPost("create-friend-users")]
+        public async Task<IActionResult> CreateFriendUsers()
+        {
+            var rnd = new Random();
+            string[] firstNames = new[] { "Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Huỳnh", "Vũ", "Đặng", "Bùi", "Đỗ" };
+            string[] middleNames = new[] { "Văn", "Thị", "Quốc", "Thành", "Minh", "Đức", "Ngọc", "Thu", "Gia", "Hữu" };
+            string[] lastNames = new[] { "Anh", "Mai", "Nam", "Bảo", "Hà", "Hùng", "Trang", "Linh", "Dũng", "Phương" };
+            string[] avatarPool = new[]
+            {
+                "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
+                "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150",
+                "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150",
+                "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150",
+                "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150"
+            };
+
+            var existingUsers = await _context.Users.Include(u => u.Profile).ToListAsync();
+            List<User> newFriends = new List<User>();
+
+            for (int u = 0; u < 5; u++)
+            {
+                int numSuffix = rnd.Next(1000, 9999);
+                string uName = $"friend_{numSuffix}";
+                string mobile = $"09{rnd.Next(10000000, 99999999)}";
+                string fullName = $"{firstNames[rnd.Next(firstNames.Length)]} {middleNames[rnd.Next(middleNames.Length)]} {lastNames[rnd.Next(lastNames.Length)]} (Bạn Bè)";
+
+                while (await _context.Users.AnyAsync(user => user.Username == uName || user.MobileNumber == mobile))
+                {
+                    numSuffix = rnd.Next(1000, 9999);
+                    uName = $"friend_{numSuffix}";
+                    mobile = $"09{rnd.Next(10000000, 99999999)}";
+                }
+
+                var newU = new User
+                {
+                    Username = uName,
+                    PasswordHash = "password123",
+                    MobileNumber = mobile,
+                    Email = $"{uName}@smschat.com",
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.Users.Add(newU);
+                await _context.SaveChangesAsync();
+
+                _context.Profiles.Add(new Profile
+                {
+                    UserId = newU.UserId,
+                    FullName = fullName,
+                    Gender = u % 2 == 0 ? "Male" : "Female",
+                    ProfilePhoto = avatarPool[rnd.Next(avatarPool.Length)],
+                    Address = "Hanoi, Vietnam",
+                    WorkStatus = "Employed"
+                });
+
+                _context.UserQuotas.Add(new UserQuota
+                {
+                    UserId = newU.UserId,
+                    FreeMessagesLeft = 10,
+                    UpdatedAt = DateTime.UtcNow
+                });
+
+                await _context.SaveChangesAsync();
+                newFriends.Add(newU);
+            }
+
+            var allUsersToConnect = existingUsers.Concat(newFriends).ToList();
+
+            for (int i = 0; i < allUsersToConnect.Count; i++)
+            {
+                for (int j = i + 1; j < allUsersToConnect.Count; j++)
+                {
+                    var u1 = allUsersToConnect[i];
+                    var u2 = allUsersToConnect[j];
+
+                    bool friendExists = await _context.Friendships.AnyAsync(f =>
+                        (f.RequesterId == u1.UserId && f.AddresseeId == u2.UserId) ||
+                        (f.RequesterId == u2.UserId && f.AddresseeId == u1.UserId));
+
+                    if (!friendExists)
+                    {
+                        _context.Friendships.Add(new Friendship
+                        {
+                            RequesterId = u1.UserId,
+                            AddresseeId = u2.UserId,
+                            Status = "accepted",
+                            CreatedAt = DateTime.UtcNow
+                        });
+                    }
+
+                    bool c1Exists = await _context.Contacts.AnyAsync(c => c.UserId == u1.UserId && c.ContactNumber == u2.MobileNumber);
+                    if (!c1Exists)
+                    {
+                        _context.Contacts.Add(new Contact
+                        {
+                            UserId = u1.UserId,
+                            FirstName = u2.Profile?.FullName ?? u2.Username,
+                            LastName = "",
+                            ContactNumber = u2.MobileNumber
+                        });
+                    }
+
+                    bool c2Exists = await _context.Contacts.AnyAsync(c => c.UserId == u2.UserId && c.ContactNumber == u1.MobileNumber);
+                    if (!c2Exists)
+                    {
+                        _context.Contacts.Add(new Contact
+                        {
+                            UserId = u2.UserId,
+                            FirstName = u1.Profile?.FullName ?? u1.Username,
+                            LastName = "",
+                            ContactNumber = u1.MobileNumber
+                        });
+                    }
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = $"✅ Đã tạo thành công {newFriends.Count} tài khoản và tự động kết bạn!",
+                count = newFriends.Count
             });
         }
 
