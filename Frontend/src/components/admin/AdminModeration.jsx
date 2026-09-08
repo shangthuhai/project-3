@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+import { Download, FileSpreadsheet, FileText } from 'lucide-react';
 import Pagination from './Pagination';
+import { exportToCSV, exportToPDF } from '../../utils/exportUtils';
 
 export default function AdminModeration({
   keywords = { items: [], totalCount: 0, page: 1, pageSize: 10, totalPages: 1 },
@@ -19,6 +21,7 @@ export default function AdminModeration({
   onDeleteKeyword
 }) {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const [newKeyword, setNewKeyword] = useState('');
   const [newCategory, setNewCategory] = useState('Sensitive');
   const [newAction, setNewAction] = useState('flag');
@@ -65,10 +68,52 @@ export default function AdminModeration({
     }
   };
 
+  // Export Mappings
+  const ruleColumns = [
+    { header: 'ID', accessor: 'id' },
+    { header: 'Từ khóa', accessor: item => item.word || item.keyword || '—' },
+    { header: 'Danh mục', accessor: item => item.category || 'Chung' },
+    { header: 'Hành vi', accessor: item => item.action || 'Flag' },
+    { header: 'Trạng thái', accessor: item => item.isActive !== false ? 'Kích hoạt' : 'Tắt' },
+    { header: 'Ngày tạo', accessor: item => item.createdAt ? new Date(item.createdAt).toLocaleDateString('vi-VN') : '—' }
+  ];
+
+  const logColumns = [
+    { header: 'ID', accessor: 'id' },
+    { header: 'Người gửi', accessor: item => item.senderUsername || item.sender || '—' },
+    { header: 'Nội dung tin nhắn', accessor: item => item.content || item.messageContent || '—' },
+    { header: 'Từ vi phạm', accessor: item => item.matchedWord || '—' },
+    { header: 'Phân loại', accessor: item => item.status || 'Chờ duyệt' },
+    { header: 'Thời gian', accessor: item => item.createdAt ? new Date(item.createdAt).toLocaleString('vi-VN') : '—' }
+  ];
+
+  const handleExportCSV = () => {
+    if (activeSubTab === 'rules') {
+      exportToCSV(`Bao_Cao_Quy_Tac_Tu_Khoa_${new Date().toISOString().slice(0,10)}`, ruleColumns, keywordsList);
+    } else {
+      exportToCSV(`Bao_Cao_Nhat_Ky_Kiem_Duyet_${new Date().toISOString().slice(0,10)}`, logColumns, moderationLogsList);
+    }
+    setShowExportMenu(false);
+  };
+
+  const handleExportPDF = () => {
+    if (activeSubTab === 'rules') {
+      const summary = keywordsSearch ? `Từ khóa tìm kiếm: "${keywordsSearch}"` : 'Tất cả quy tắc từ khóa';
+      exportToPDF('BÁO CÁO QUY TẮC TỪ KHÓA KIỂM DUYỆT', ruleColumns, keywordsList, summary);
+    } else {
+      const summary = [
+        moderationLogsSearch ? `Từ khóa: "${moderationLogsSearch}"` : null,
+        moderationLogsStatus !== 'all' ? `Trạng thái: ${moderationLogsStatus}` : null
+      ].filter(Boolean).join(' | ') || 'Tất cả nhật ký kiểm duyệt';
+      exportToPDF('BÁO CÁO NHẬT KÝ KIỂM DUYỆT TIN NHẮN', logColumns, moderationLogsList, summary);
+    }
+    setShowExportMenu(false);
+  };
+
   return (
     <div className="admin-tab-content">
       {/* Header */}
-      <div className="admin-header" style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="admin-header" style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h2 style={{ fontSize: '1.8rem', fontWeight: '600', color: 'var(--text-main)', marginBottom: '6px' }}>
             🛡️ AI & Keyword Content Moderation
@@ -78,7 +123,92 @@ export default function AdminModeration({
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          {/* Export Report Dropdown */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              className="btn btn-secondary"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '9px 16px',
+                borderRadius: '8px',
+                fontSize: '0.88rem',
+                fontWeight: '500',
+                cursor: 'pointer',
+                background: 'var(--bg-sidebar)',
+                border: '1px solid var(--border-light)',
+                color: 'var(--text-main)',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+              }}
+            >
+              <Download size={16} /> Xuất Báo Cáo
+            </button>
+
+            {showExportMenu && (
+              <div style={{
+                position: 'absolute',
+                right: 0,
+                top: 'calc(100% + 6px)',
+                background: 'var(--bg-sidebar)',
+                border: '1px solid var(--border-light)',
+                borderRadius: '8px',
+                padding: '6px',
+                boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+                zIndex: 100,
+                minWidth: '180px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4px'
+              }}>
+                <button
+                  onClick={handleExportCSV}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 12px',
+                    border: 'none',
+                    background: 'transparent',
+                    color: 'var(--text-main)',
+                    fontSize: '0.86rem',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    width: '100%'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <FileSpreadsheet size={15} style={{ color: '#10b981' }} /> Xuất Excel / CSV
+                </button>
+                <button
+                  onClick={handleExportPDF}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 12px',
+                    border: 'none',
+                    background: 'transparent',
+                    color: 'var(--text-main)',
+                    fontSize: '0.86rem',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    width: '100%'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <FileText size={15} style={{ color: '#ef4444' }} /> Xuất PDF
+                </button>
+              </div>
+            )}
+          </div>
+
           <button
             onClick={() => setShowAddModal(true)}
             style={{

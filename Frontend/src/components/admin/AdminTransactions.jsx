@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Download, FileSpreadsheet, FileText } from 'lucide-react';
 import Pagination from './Pagination';
+import { exportToCSV, exportToPDF } from '../../utils/exportUtils';
 
 export default function AdminTransactions({
   adminTransactions = { items: [], totalCount: 0, page: 1, pageSize: 10, totalPages: 1, uniqueServices: [] },
@@ -14,6 +16,7 @@ export default function AdminTransactions({
   transactionsSortBy = 'newest',
   setTransactionsSortBy = () => {}
 }) {
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const transactionsList = adminTransactions.items || [];
   const totalCount = adminTransactions.totalCount || 0;
   const totalPages = adminTransactions.totalPages || 1;
@@ -30,11 +33,125 @@ export default function AdminTransactions({
     setTransactionsPage(1);
   };
 
+  const transactionColumns = [
+    { header: 'Mã GD', accessor: 'id' },
+    { header: 'Tài khoản', accessor: 'username' },
+    { header: 'Họ tên', accessor: item => item.userFullName || item.fullName || '—' },
+    { header: 'Dịch vụ', accessor: item => item.serviceSubscribed || item.service || '—' },
+    { header: 'Số tiền', accessor: item => item.amount ? item.amount.toLocaleString('vi-VN') + ' đ' : '0 đ' },
+    { header: 'Trạng thái', accessor: item => item.status || 'Hoàn tất' },
+    { header: 'Thẻ', accessor: item => item.cardLast4 ? `**** ${item.cardLast4}` : '—' },
+    { header: 'Thời gian', accessor: item => item.createdAt ? new Date(item.createdAt).toLocaleString('vi-VN') : '—' }
+  ];
+
+  const handleExportCSV = () => {
+    exportToCSV(`Bao_Cao_Giao_Dich_${new Date().toISOString().slice(0,10)}`, transactionColumns, transactionsList);
+    setShowExportMenu(false);
+  };
+
+  const handleExportPDF = () => {
+    const summary = [
+      transactionsSearch ? `Từ khóa: "${transactionsSearch}"` : null,
+      transactionsService !== 'all' ? `Dịch vụ: ${transactionsService}` : null,
+      transactionsStatus !== 'all' ? `Trạng thái: ${transactionsStatus}` : null
+    ].filter(Boolean).join(' | ') || 'Tất cả giao dịch';
+
+    exportToPDF('BÁO CÁO LỊCH SỬ GIAO DỊCH & DOANH THU', transactionColumns, transactionsList, summary);
+    setShowExportMenu(false);
+  };
+
   return (
     <div className="admin-tab-content">
-      <div className="admin-header" style={{ marginBottom: '20px' }}>
-        <h2 style={{ fontSize: '1.8rem', fontWeight: '600', color: 'var(--text-main)', marginBottom: '6px' }}>Payment & Subscription Ledger</h2>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>Monitor payment transactions generated from subscribers activating premium Value-Added Services (VAS).</p>
+      <div className="admin-header" style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div>
+          <h2 style={{ fontSize: '1.8rem', fontWeight: '600', color: 'var(--text-main)', marginBottom: '6px' }}>Payment & Subscription Ledger</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>Monitor payment transactions generated from subscribers activating premium Value-Added Services (VAS).</p>
+        </div>
+
+        {/* Export Report Dropdown */}
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => setShowExportMenu(!showExportMenu)}
+            className="btn btn-secondary"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '9px 16px',
+              borderRadius: '8px',
+              fontSize: '0.88rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              background: 'var(--bg-sidebar)',
+              border: '1px solid var(--border-light)',
+              color: 'var(--text-main)',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+            }}
+          >
+            <Download size={16} /> Xuất Báo Cáo
+          </button>
+
+          {showExportMenu && (
+            <div style={{
+              position: 'absolute',
+              right: 0,
+              top: 'calc(100% + 6px)',
+              background: 'var(--bg-sidebar)',
+              border: '1px solid var(--border-light)',
+              borderRadius: '8px',
+              padding: '6px',
+              boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+              zIndex: 100,
+              minWidth: '180px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '4px'
+            }}>
+              <button
+                onClick={handleExportCSV}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 12px',
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'var(--text-main)',
+                  fontSize: '0.86rem',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  width: '100%'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <FileSpreadsheet size={15} style={{ color: '#10b981' }} /> Xuất Excel / CSV
+              </button>
+              <button
+                onClick={handleExportPDF}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 12px',
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'var(--text-main)',
+                  fontSize: '0.86rem',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  width: '100%'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <FileText size={15} style={{ color: '#ef4444' }} /> Xuất PDF
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Filter and Search Controls Bar */}
