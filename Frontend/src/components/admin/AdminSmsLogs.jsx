@@ -95,7 +95,7 @@ export default function AdminSmsLogs({
             }}
             style={{
               padding: '9px 12px',
-              background: '#182533',
+              background: 'var(--bg-app)',
               border: '1px solid var(--border-light)',
               borderRadius: '8px',
               color: smsLogsStatus !== 'all' ? 'var(--color-primary)' : 'var(--text-muted)',
@@ -118,7 +118,7 @@ export default function AdminSmsLogs({
             }}
             style={{
               padding: '9px 12px',
-              background: '#182533',
+              background: 'var(--bg-app)',
               border: '1px solid var(--border-light)',
               borderRadius: '8px',
               color: smsLogsType !== 'all' ? 'var(--color-primary)' : 'var(--text-muted)',

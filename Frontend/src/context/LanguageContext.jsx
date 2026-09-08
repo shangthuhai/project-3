@@ -321,6 +321,21 @@ const translations = {
     "confirm_delete_contact": "Are you sure you want to delete contact",
     "confirm_delete_group": "Are you sure you want to delete this group? All membership info will be deleted.",
     "confirm_delete_template": "Are you sure you want to delete this template?",
+
+    // Admin Dashboard & Settings
+    "admin_workspace": "Admin Workspace",
+    "system_admin": "System Administrator",
+    "admin_nav_dashboard": "Dashboard",
+    "admin_nav_moderation": "AI Moderation",
+    "admin_nav_users": "User Accounts",
+    "admin_nav_sms_logs": "SMS Logs",
+    "admin_nav_transactions": "Transactions",
+    "admin_nav_templates": "System Templates",
+    "admin_nav_settings": "Settings",
+    "admin_settings_title": "Admin Workspace Settings",
+    "admin_settings_desc": "Configure system appearance, language preferences, and administrative controls.",
+    "admin_system_appearance": "System Theme & Appearance",
+    "admin_language_pref": "Language Preferences",
   },
   vi: {
     // Landing View
@@ -640,6 +655,21 @@ const translations = {
     "confirm_delete_contact": "Bạn có chắc chắn muốn xóa liên hệ",
     "confirm_delete_group": "Bạn có chắc chắn muốn xóa nhóm này? Toàn bộ thành viên sẽ bị xóa khỏi nhóm.",
     "confirm_delete_template": "Bạn có chắc chắn muốn xóa tin nhắn mẫu này không?",
+
+    // Admin Dashboard & Settings
+    "admin_workspace": "Bảng Quản Trị Admin",
+    "system_admin": "Quản Trị Viên Hệ Thống",
+    "admin_nav_dashboard": "Tổng quan",
+    "admin_nav_moderation": "Kiểm duyệt AI",
+    "admin_nav_users": "Tài khoản người dùng",
+    "admin_nav_sms_logs": "Nhật ký SMS",
+    "admin_nav_transactions": "Lịch sử giao dịch",
+    "admin_nav_templates": "Mẫu tin hệ thống",
+    "admin_nav_settings": "Cài đặt hệ thống",
+    "admin_settings_title": "Cài đặt Bảng Quản trị",
+    "admin_settings_desc": "Tùy chỉnh giao diện hệ thống, ngôn ngữ hiển thị và các thiết lập quản trị.",
+    "admin_system_appearance": "Giao diện & Chủ đề Hệ thống",
+    "admin_language_pref": "Thiết lập Ngôn ngữ",
   }
 };
 

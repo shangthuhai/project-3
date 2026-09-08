@@ -305,7 +305,7 @@ export default function AdminModeration({
                 }}
                 style={{
                   padding: '8px 12px',
-                  background: '#182533',
+                  background: 'var(--bg-app)',
                   border: '1px solid var(--border-light)',
                   borderRadius: '8px',
                   color: moderationLogsStatus !== 'all' ? 'var(--color-primary)' : 'var(--text-muted)',
@@ -378,7 +378,7 @@ export default function AdminModeration({
       {/* CREATE KEYWORD MODAL */}
       {showAddModal && (
         <div className="modal-backdrop" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: '#182533', padding: '24px', borderRadius: '12px', border: '1px solid var(--border-light)', width: '90%', maxWidth: '450px' }}>
+          <div style={{ background: 'var(--bg-sidebar)', padding: '24px', borderRadius: '12px', border: '1px solid var(--border-light)', width: '90%', maxWidth: '450px' }}>
             <h3 style={{ fontSize: '1.2rem', color: 'var(--text-main)', marginBottom: '16px' }}>Thêm Quy Tắc Từ Khóa Mới</h3>
             <form onSubmit={handleSubmitKeyword}>
               <div style={{ marginBottom: '14px' }}>

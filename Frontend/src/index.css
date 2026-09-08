@@ -709,23 +709,53 @@ select option {
 
 
 /* ==================== ADMIN PANEL EXTRA STYLES ==================== */
+.admin-nav-btn {
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
 .admin-nav-btn:hover {
-  background: rgba(255, 255, 255, 0.03) !important;
-  color: #fff !important;
+  background: rgba(125, 125, 125, 0.08) !important;
+  color: var(--text-main) !important;
+}
+
+.theme-light .admin-nav-btn:hover {
+  background: rgba(0, 0, 0, 0.06) !important;
+  color: var(--text-main) !important;
+}
+
+.theme-dark .admin-nav-btn:hover,
+.theme-glass .admin-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+.admin-nav-btn.active {
+  background: rgba(36, 129, 204, 0.14) !important;
+  color: var(--color-primary) !important;
 }
 
 .admin-nav-btn.active:hover {
-  background: rgba(36, 129, 204, 0.18) !important;
+  background: rgba(36, 129, 204, 0.22) !important;
+  color: var(--color-primary) !important;
 }
 
 .table-row-hover:hover {
-  background: rgba(255, 255, 255, 0.02) !important;
+  background: rgba(125, 125, 125, 0.05) !important;
+}
+
+.theme-light .table-row-hover:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+
+.theme-dark .table-row-hover:hover,
+.theme-glass .table-row-hover:hover {
+  background: rgba(255, 255, 255, 0.04) !important;
 }
 
 .admin-stat-card:hover {
   transform: translateY(-2px);
   border-color: rgba(36, 129, 204, 0.3) !important;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4) !important;
+  box-shadow: var(--shadow-md) !important;
 }
 
 .admin-stat-card {

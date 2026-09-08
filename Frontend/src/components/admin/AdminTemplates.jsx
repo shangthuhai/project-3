@@ -134,7 +134,7 @@ export default function AdminTemplates({
             }}
             style={{
               padding: '9px 12px',
-              background: '#182533',
+              background: 'var(--bg-app)',
               border: '1px solid var(--border-light)',
               borderRadius: '8px',
               color: 'var(--text-muted)',

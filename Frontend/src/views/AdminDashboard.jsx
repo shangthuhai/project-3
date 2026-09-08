@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, BarChart3, Users, FileText, CreditCard, FileCode, LogOut, ShieldAlert } from 'lucide-react';
+import { Shield, BarChart3, Users, FileText, CreditCard, FileCode, LogOut, ShieldAlert, Settings } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import AdminOverview from '../components/admin/AdminOverview';
 import AdminUsers from '../components/admin/AdminUsers';
 import AdminSmsLogs from '../components/admin/AdminSmsLogs';
@@ -8,6 +9,7 @@ import AdminTransactions from '../components/admin/AdminTransactions';
 import AdminTemplates from '../components/admin/AdminTemplates';
 import AdminAiCopilot from '../components/admin/AdminAiCopilot';
 import AdminModeration from '../components/admin/AdminModeration';
+import AdminSettings from '../components/admin/AdminSettings';
 import {
   getAdminStats,
   getAdminUsers,
@@ -30,6 +32,7 @@ import {
 
 export default function AdminDashboard() {
   const { loggedInUser, handleLogout, triggerAlert } = useAuth();
+  const { t } = useLanguage();
 
   const [adminTab, setAdminTab] = useState('overview');
   const [adminStats, setAdminStats] = useState(null);
@@ -292,8 +295,8 @@ export default function AdminDashboard() {
             <Shield size={28} />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <h3 style={{ color: 'var(--text-main)', fontSize: '1.05rem', fontWeight: '600' }}>Admin Workspace</h3>
-            <span className="admin-role-badge" style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: '600', marginTop: '2px' }}>System Administrator</span>
+            <h3 style={{ color: 'var(--text-main)', fontSize: '1.05rem', fontWeight: '600' }}>{t('admin_workspace')}</h3>
+            <span className="admin-role-badge" style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: '600', marginTop: '2px' }}>{t('system_admin')}</span>
           </div>
         </div>
 
@@ -304,7 +307,7 @@ export default function AdminDashboard() {
             style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'overview' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'overview' ? 'var(--color-primary)' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '600', textAlign: 'left', transition: 'var(--transition-fast)' }}
           >
             <BarChart3 size={18} />
-            <span>Dashboard</span>
+            <span>{t('admin_nav_dashboard')}</span>
           </button>
           <button
             className={`admin-nav-btn ${adminTab === 'moderation' ? 'active' : ''}`}
@@ -312,7 +315,7 @@ export default function AdminDashboard() {
             style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'moderation' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'moderation' ? 'var(--color-primary)' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '600', textAlign: 'left', transition: 'var(--transition-fast)' }}
           >
             <ShieldAlert size={18} />
-            <span>AI Moderation</span>
+            <span>{t('admin_nav_moderation')}</span>
           </button>
           <button
             className={`admin-nav-btn ${adminTab === 'users' ? 'active' : ''}`}
@@ -320,7 +323,7 @@ export default function AdminDashboard() {
             style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'users' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'users' ? 'var(--color-primary)' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '600', textAlign: 'left', transition: 'var(--transition-fast)' }}
           >
             <Users size={18} />
-            <span>User Accounts</span>
+            <span>{t('admin_nav_users')}</span>
           </button>
           <button
             className={`admin-nav-btn ${adminTab === 'logs' ? 'active' : ''}`}
@@ -328,7 +331,7 @@ export default function AdminDashboard() {
             style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'logs' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'logs' ? 'var(--color-primary)' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '600', textAlign: 'left', transition: 'var(--transition-fast)' }}
           >
             <FileText size={18} />
-            <span>SMS Logs</span>
+            <span>{t('admin_nav_sms_logs')}</span>
           </button>
           <button
             className={`admin-nav-btn ${adminTab === 'transactions' ? 'active' : ''}`}
@@ -336,7 +339,7 @@ export default function AdminDashboard() {
             style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'transactions' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'transactions' ? 'var(--color-primary)' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '600', textAlign: 'left', transition: 'var(--transition-fast)' }}
           >
             <CreditCard size={18} />
-            <span>Transactions</span>
+            <span>{t('admin_nav_transactions')}</span>
           </button>
           <button
             className={`admin-nav-btn ${adminTab === 'templates' ? 'active' : ''}`}
@@ -344,7 +347,15 @@ export default function AdminDashboard() {
             style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'templates' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'templates' ? 'var(--color-primary)' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '600', textAlign: 'left', transition: 'var(--transition-fast)' }}
           >
             <FileCode size={18} />
-            <span>System Templates</span>
+            <span>{t('admin_nav_templates')}</span>
+          </button>
+          <button
+            className={`admin-nav-btn ${adminTab === 'settings' ? 'active' : ''}`}
+            onClick={() => setAdminTab('settings')}
+            style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'settings' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'settings' ? 'var(--color-primary)' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '600', textAlign: 'left', transition: 'var(--transition-fast)' }}
+          >
+            <Settings size={18} />
+            <span>{t('admin_nav_settings')}</span>
           </button>
         </div>
 
@@ -359,7 +370,7 @@ export default function AdminDashboard() {
             style={{ width: '100%', padding: '10px', border: '1px solid var(--color-danger)', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-danger)', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer', transition: 'var(--transition-fast)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
           >
             <LogOut size={16} />
-            <span>Log Out</span>
+            <span>{t('logout')}</span>
           </button>
         </div>
       </div>
@@ -453,6 +464,9 @@ export default function AdminDashboard() {
             handleCreateSystemTemplate={handleCreateSystemTemplate}
             handleDeleteSystemTemplate={handleDeleteSystemTemplate}
           />
+        )}
+        {adminTab === 'settings' && (
+          <AdminSettings />
         )}
       </div>
 
