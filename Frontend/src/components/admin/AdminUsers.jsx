@@ -42,7 +42,9 @@ export default function AdminUsers({
 
     // Sorting
     result.sort((a, b) => {
-      if (sortBy === 'oldest') return a.id - b.id;
+      const idA = a.id || a.userId || 0;
+      const idB = b.id || b.userId || 0;
+      if (sortBy === 'oldest') return idA - idB;
       if (sortBy === 'username') return a.username.localeCompare(b.username);
       if (sortBy === 'quotaDesc') {
         const qA = a.quota?.freeMessagesLeft ?? 5;
@@ -54,7 +56,7 @@ export default function AdminUsers({
         const qB = b.quota?.freeMessagesLeft ?? 5;
         return qA - qB;
       }
-      return b.id - a.id;
+      return idB - idA;
     });
 
     return result;
@@ -237,10 +239,11 @@ export default function AdminUsers({
                 </td>
               </tr>
             ) : (
-              filteredUsers.map(user => {
+            filteredUsers.map(user => {
+                const targetUserId = user.id || user.userId;
                 const quotaVal = user.quota?.freeMessagesLeft !== undefined ? user.quota.freeMessagesLeft : 5;
                 return (
-                  <tr key={user.id} style={{ borderBottom: '1px solid var(--border-light)', transition: 'var(--transition-fast)' }} className="table-row-hover">
+                  <tr key={targetUserId} style={{ borderBottom: '1px solid var(--border-light)', transition: 'var(--transition-fast)' }} className="table-row-hover">
                     <td style={{ padding: '12px 20px' }}>
                       <img src={user.profilePhoto || 'https://via.placeholder.com/38'} alt={user.name} style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover' }} />
                     </td>
@@ -261,7 +264,7 @@ export default function AdminUsers({
                         <button
                           className="btn btn-secondary"
                           onClick={() => {
-                            setSelectedUserForQuota(user);
+                            setSelectedUserForQuota({ ...user, id: targetUserId });
                             setNewQuotaValue(quotaVal);
                             setShowQuotaModal(true);
                           }}
@@ -271,7 +274,7 @@ export default function AdminUsers({
                         </button>
                         <button
                           className={`btn ${user.isActive ? 'btn-danger' : 'btn-accent'}`}
-                          onClick={() => handleToggleUserStatus(user.id, user.isActive)}
+                          onClick={() => handleToggleUserStatus(targetUserId, user.isActive)}
                           style={{ padding: '6px 12px', fontSize: '0.78rem', minWidth: '75px', background: user.isActive ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)', border: '1px solid ' + (user.isActive ? 'var(--color-danger)' : 'var(--color-accent)'), color: user.isActive ? 'var(--color-danger)' : 'var(--color-accent)' }}
                         >
                           {user.isActive ? '🔒 Lock' : '🔓 Unlock'}
