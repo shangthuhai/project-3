@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, BarChart3, Users, FileText, CreditCard, FileCode, LogOut } from 'lucide-react';
+import { Shield, BarChart3, Users, FileText, CreditCard, FileCode, LogOut, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import AdminOverview from '../components/admin/AdminOverview';
 import AdminUsers from '../components/admin/AdminUsers';
@@ -7,6 +7,7 @@ import AdminSmsLogs from '../components/admin/AdminSmsLogs';
 import AdminTransactions from '../components/admin/AdminTransactions';
 import AdminTemplates from '../components/admin/AdminTemplates';
 import AdminAiCopilot from '../components/admin/AdminAiCopilot';
+import AdminModeration from '../components/admin/AdminModeration';
 import {
   getAdminStats,
   getAdminUsers,
@@ -16,7 +17,14 @@ import {
   updateUserStatus,
   updateUserQuota,
   createAdminTemplate,
-  deleteAdminTemplate
+  deleteAdminTemplate,
+  getAdminKeywords,
+  createAdminKeyword,
+  toggleAdminKeyword,
+  deleteAdminKeyword,
+  getAdminModerationLogs,
+  seed15DaysData,
+  createStrangerUsers
 } from '../api';
 
 export default function AdminDashboard() {
@@ -32,6 +40,8 @@ export default function AdminDashboard() {
   const [smsLogsStatus, setSmsLogsStatus] = useState('all');
   const [smsLogsType, setSmsLogsType] = useState('all');
   const [adminTemplates, setAdminTemplates] = useState([]);
+  const [adminKeywords, setAdminKeywords] = useState([]);
+  const [adminModerationLogs, setAdminModerationLogs] = useState([]);
 
   // Quota Modal Form
   const [showQuotaModal, setShowQuotaModal] = useState(false);
@@ -64,6 +74,9 @@ export default function AdminDashboard() {
       getTemplates()
         .then(setAdminTemplates)
         .catch(() => triggerAlert('error', 'Cannot load templates.'));
+    } else if (adminTab === 'moderation') {
+      getAdminKeywords().then(setAdminKeywords).catch(() => triggerAlert('error', 'Cannot load keywords.'));
+      getAdminModerationLogs().then(data => setAdminModerationLogs(data.items || [])).catch(() => triggerAlert('error', 'Cannot load moderation logs.'));
     }
   };
 
@@ -133,6 +146,67 @@ export default function AdminDashboard() {
       });
   };
 
+  const handleCreateKeyword = (keyword, category, action) => {
+    createAdminKeyword(keyword, category, action)
+      .then(res => {
+        triggerAlert('success', res.message);
+        getAdminKeywords().then(setAdminKeywords);
+      })
+      .catch(err => {
+        triggerAlert('error', err.response?.data?.message || 'Failed to add keyword rule.');
+      });
+  };
+
+  const handleToggleKeyword = (id) => {
+    toggleAdminKeyword(id)
+      .then(res => {
+        triggerAlert('success', res.message);
+        getAdminKeywords().then(setAdminKeywords);
+      })
+      .catch(err => {
+        triggerAlert('error', err.response?.data?.message || 'Failed to toggle keyword rule.');
+      });
+  };
+
+  const handleDeleteKeyword = (id) => {
+    if (!window.confirm('Are you sure you want to delete this keyword rule?')) return;
+    deleteAdminKeyword(id)
+      .then(res => {
+        triggerAlert('success', res.message);
+        getAdminKeywords().then(setAdminKeywords);
+      })
+      .catch(err => {
+        triggerAlert('error', err.response?.data?.message || 'Failed to delete keyword rule.');
+      });
+  };
+
+  const handleSeed15DaysData = async () => {
+    try {
+      const res = await seed15DaysData();
+      triggerAlert('success', res.message);
+      getAdminStats().then(setAdminStats);
+      return res;
+    } catch (err) {
+      triggerAlert('error', err.response?.data?.message || 'Failed to seed sample data.');
+      throw err;
+    }
+  };
+
+  const handleCreateStrangerUsers = async () => {
+    try {
+      const res = await createStrangerUsers();
+      triggerAlert('success', res.message);
+      getAdminStats().then(setAdminStats);
+      if (adminTab === 'users') {
+        getAdminUsers().then(setAdminUsers);
+      }
+      return res;
+    } catch (err) {
+      triggerAlert('error', err.response?.data?.message || 'Failed to create stranger users.');
+      throw err;
+    }
+  };
+
   return (
     <div className="admin-container" style={{ display: 'flex', width: '100vw', height: '100vh', background: 'var(--bg-app)', color: 'var(--text-main)', overflow: 'hidden' }}>
       {/* Sidebar */}
@@ -155,6 +229,14 @@ export default function AdminDashboard() {
           >
             <BarChart3 size={18} />
             <span>Dashboard</span>
+          </button>
+          <button
+            className={`admin-nav-btn ${adminTab === 'moderation' ? 'active' : ''}`}
+            onClick={() => setAdminTab('moderation')}
+            style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'moderation' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'moderation' ? 'var(--color-primary)' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '600', textAlign: 'left', transition: 'var(--transition-fast)' }}
+          >
+            <ShieldAlert size={18} />
+            <span>AI Moderation</span>
           </button>
           <button
             className={`admin-nav-btn ${adminTab === 'users' ? 'active' : ''}`}
@@ -208,7 +290,17 @@ export default function AdminDashboard() {
 
       {/* Content Area */}
       <div className="admin-content" style={{ flex: '1', padding: '30px 40px', overflowY: 'auto', background: 'var(--bg-app)' }}>
-        {adminTab === 'overview' && <AdminOverview adminStats={adminStats} />}
+        {adminTab === 'overview' && <AdminOverview adminStats={adminStats} onSeedData={handleSeed15DaysData} onCreateStrangers={handleCreateStrangerUsers} />}
+        {adminTab === 'moderation' && (
+          <AdminModeration
+            keywords={adminKeywords}
+            moderationLogs={adminModerationLogs}
+            onCreateKeyword={handleCreateKeyword}
+            onToggleKeyword={handleToggleKeyword}
+            onDeleteKeyword={handleDeleteKeyword}
+            onRefreshLogs={() => getAdminModerationLogs().then(data => setAdminModerationLogs(data.items || []))}
+          />
+        )}
         {adminTab === 'users' && (
           <AdminUsers
             adminUsers={adminUsers}
