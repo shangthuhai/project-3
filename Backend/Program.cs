@@ -22,6 +22,12 @@ builder.Services.AddHttpClient<Backend.Services.ITelegramService, Backend.Servic
 // Register Email Service for OTP
 builder.Services.AddScoped<Backend.Services.IEmailService, Backend.Services.EmailService>();
 
+// Register S3 Storage Service
+builder.Services.AddScoped<Backend.Services.IS3StorageService, Backend.Services.S3StorageService>();
+
+// Register Cloudinary Service
+builder.Services.AddScoped<Backend.Services.ICloudinaryService, Backend.Services.CloudinaryService>();
+
 // Configure JWT Authentication
 builder.Services.AddAuthentication(options =>
 {

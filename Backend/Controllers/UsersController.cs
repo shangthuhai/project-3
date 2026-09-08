@@ -16,11 +16,19 @@ namespace Backend.Controllers
     {
         private readonly AppDbContext _context;
         private readonly Microsoft.AspNetCore.SignalR.IHubContext<Backend.Hubs.ChatHub> _hubContext;
+        private readonly Backend.Services.IS3StorageService _s3StorageService;
+        private readonly Backend.Services.ICloudinaryService _cloudinaryService;
 
-        public UsersController(AppDbContext context, Microsoft.AspNetCore.SignalR.IHubContext<Backend.Hubs.ChatHub> hubContext)
+        public UsersController(
+            AppDbContext context, 
+            Microsoft.AspNetCore.SignalR.IHubContext<Backend.Hubs.ChatHub> hubContext,
+            Backend.Services.IS3StorageService s3StorageService,
+            Backend.Services.ICloudinaryService cloudinaryService)
         {
             _context = context;
             _hubContext = hubContext;
+            _s3StorageService = s3StorageService;
+            _cloudinaryService = cloudinaryService;
         }
 
         private int AuthenticatedUserId => 
@@ -98,6 +106,24 @@ namespace Backend.Controllers
             dbUser.Dislikes = user.Dislikes;
             dbUser.Cuisines = user.Cuisines;
             dbUser.Sports = user.Sports;
+            
+            // Upload photo to Cloudinary (or AWS S3) if it's base64 data
+            if (!string.IsNullOrWhiteSpace(user.ProfilePhoto) && user.ProfilePhoto.StartsWith("data:image/"))
+            {
+                var cloudinaryUrl = await _cloudinaryService.UploadBase64ImageAsync(user.ProfilePhoto, "avatars");
+                if (!string.IsNullOrEmpty(cloudinaryUrl) && (cloudinaryUrl.StartsWith("http://") || cloudinaryUrl.StartsWith("https://")))
+                {
+                    user.ProfilePhoto = cloudinaryUrl;
+                }
+                else
+                {
+                    var s3Url = await _s3StorageService.UploadBase64ImageAsync(user.ProfilePhoto, "avatars");
+                    if (!string.IsNullOrEmpty(s3Url))
+                    {
+                        user.ProfilePhoto = s3Url;
+                    }
+                }
+            }
             dbUser.ProfilePhoto = user.ProfilePhoto;
             
             dbUser.Qualification = user.Qualification;
