@@ -13,7 +13,7 @@ import {
   getAdminUsers,
   getAdminSmsLogs,
   getAdminTransactions,
-  getTemplates,
+  getAdminTemplates,
   updateUserStatus,
   updateUserQuota,
   createAdminTemplate,
@@ -29,20 +29,49 @@ import {
 } from '../api';
 
 export default function AdminDashboard() {
-  const { loggedInUser, handleLogout, alert, triggerAlert } = useAuth();
+  const { loggedInUser, handleLogout, triggerAlert } = useAuth();
 
   const [adminTab, setAdminTab] = useState('overview');
   const [adminStats, setAdminStats] = useState(null);
-  const [adminUsers, setAdminUsers] = useState([]);
-  const [adminTransactions, setAdminTransactions] = useState([]);
+
+  // Users tab pagination & filter state
+  const [adminUsers, setAdminUsers] = useState({ items: [], totalCount: 0, page: 1, pageSize: 10, totalPages: 1 });
+  const [usersPage, setUsersPage] = useState(1);
+  const [usersSearch, setUsersSearch] = useState('');
+  const [usersStatus, setUsersStatus] = useState('all');
+  const [usersQuota, setUsersQuota] = useState('all');
+  const [usersSortBy, setUsersSortBy] = useState('newest');
+
+  // Transactions tab pagination & filter state
+  const [adminTransactions, setAdminTransactions] = useState({ items: [], totalCount: 0, page: 1, pageSize: 10, totalPages: 1, uniqueServices: [] });
+  const [transactionsPage, setTransactionsPage] = useState(1);
+  const [transactionsSearch, setTransactionsSearch] = useState('');
+  const [transactionsService, setTransactionsService] = useState('all');
+  const [transactionsStatus, setTransactionsStatus] = useState('all');
+  const [transactionsSortBy, setTransactionsSortBy] = useState('newest');
+
+  // SMS Logs tab pagination & filter state
   const [adminSmsLogs, setAdminSmsLogs] = useState({ items: [], totalCount: 0, page: 1, pageSize: 10, totalPages: 1 });
   const [smsLogsPage, setSmsLogsPage] = useState(1);
   const [smsLogsSearch, setSmsLogsSearch] = useState('');
   const [smsLogsStatus, setSmsLogsStatus] = useState('all');
   const [smsLogsType, setSmsLogsType] = useState('all');
-  const [adminTemplates, setAdminTemplates] = useState([]);
-  const [adminKeywords, setAdminKeywords] = useState([]);
-  const [adminModerationLogs, setAdminModerationLogs] = useState([]);
+
+  // AI Moderation tab pagination & filter state
+  const [adminKeywords, setAdminKeywords] = useState({ items: [], totalCount: 0, page: 1, pageSize: 10, totalPages: 1 });
+  const [keywordsPage, setKeywordsPage] = useState(1);
+  const [keywordsSearch, setKeywordsSearch] = useState('');
+
+  const [adminModerationLogs, setAdminModerationLogs] = useState({ items: [], totalCount: 0, page: 1, pageSize: 10, totalPages: 1 });
+  const [moderationLogsPage, setModerationLogsPage] = useState(1);
+  const [moderationLogsSearch, setModerationLogsSearch] = useState('');
+  const [moderationLogsStatus, setModerationLogsStatus] = useState('all');
+
+  // System Templates tab pagination & filter state
+  const [adminTemplates, setAdminTemplates] = useState({ items: [], totalCount: 0, page: 1, pageSize: 10, totalPages: 1 });
+  const [templatesPage, setTemplatesPage] = useState(1);
+  const [templatesSearch, setTemplatesSearch] = useState('');
+  const [templatesSortBy, setTemplatesSortBy] = useState('newest');
 
   // Quota Modal Form
   const [showQuotaModal, setShowQuotaModal] = useState(false);
@@ -52,7 +81,43 @@ export default function AdminDashboard() {
   // Template Form
   const [adminTemplateForm, setAdminTemplateForm] = useState({ title: '', body: '' });
 
-  const loadAdminDashboardData = () => {
+  const fetchUsers = () => {
+    getAdminUsers(usersPage, 10, usersSearch, usersStatus, usersQuota, usersSortBy)
+      .then(setAdminUsers)
+      .catch(() => triggerAlert('error', 'Cannot load users.'));
+  };
+
+  const fetchTransactions = () => {
+    getAdminTransactions(transactionsPage, 10, transactionsSearch, transactionsService, transactionsStatus, transactionsSortBy)
+      .then(setAdminTransactions)
+      .catch(() => triggerAlert('error', 'Cannot load transactions.'));
+  };
+
+  const fetchSmsLogs = () => {
+    getAdminSmsLogs(smsLogsPage, 10, smsLogsSearch, smsLogsStatus, smsLogsType)
+      .then(setAdminSmsLogs)
+      .catch(() => triggerAlert('error', 'Cannot load SMS logs.'));
+  };
+
+  const fetchKeywords = () => {
+    getAdminKeywords(keywordsPage, 10, keywordsSearch)
+      .then(setAdminKeywords)
+      .catch(() => triggerAlert('error', 'Cannot load keywords.'));
+  };
+
+  const fetchModerationLogs = () => {
+    getAdminModerationLogs(moderationLogsPage, 10, moderationLogsSearch, moderationLogsStatus)
+      .then(setAdminModerationLogs)
+      .catch(() => triggerAlert('error', 'Cannot load moderation logs.'));
+  };
+
+  const fetchTemplates = () => {
+    getAdminTemplates(templatesPage, 10, templatesSearch, templatesSortBy)
+      .then(setAdminTemplates)
+      .catch(() => triggerAlert('error', 'Cannot load templates.'));
+  };
+
+  useEffect(() => {
     if (!loggedInUser || !loggedInUser.isAdmin) return;
 
     if (adminTab === 'overview') {
@@ -60,39 +125,34 @@ export default function AdminDashboard() {
         .then(setAdminStats)
         .catch(() => triggerAlert('error', 'Cannot load dashboard stats.'));
     } else if (adminTab === 'users') {
-      getAdminUsers()
-        .then(setAdminUsers)
-        .catch(() => triggerAlert('error', 'Cannot load users.'));
-    } else if (adminTab === 'logs') {
-      getAdminSmsLogs(smsLogsPage, 10, smsLogsSearch, smsLogsStatus, smsLogsType)
-        .then(setAdminSmsLogs)
-        .catch(() => triggerAlert('error', 'Cannot load SMS logs.'));
+      fetchUsers();
     } else if (adminTab === 'transactions') {
-      getAdminTransactions()
-        .then(setAdminTransactions)
-        .catch(() => triggerAlert('error', 'Cannot load transactions.'));
-    } else if (adminTab === 'templates') {
-      getTemplates()
-        .then(setAdminTemplates)
-        .catch(() => triggerAlert('error', 'Cannot load templates.'));
+      fetchTransactions();
+    } else if (adminTab === 'logs') {
+      fetchSmsLogs();
     } else if (adminTab === 'moderation') {
-      getAdminKeywords().then(setAdminKeywords).catch(() => triggerAlert('error', 'Cannot load keywords.'));
-      getAdminModerationLogs().then(data => setAdminModerationLogs(data.items || [])).catch(() => triggerAlert('error', 'Cannot load moderation logs.'));
+      fetchKeywords();
+      fetchModerationLogs();
+    } else if (adminTab === 'templates') {
+      fetchTemplates();
     }
-  };
-
-  useEffect(() => {
-    if (loggedInUser && loggedInUser.isAdmin) {
-      loadAdminDashboardData();
-    }
-  }, [adminTab, smsLogsPage, smsLogsSearch, smsLogsStatus, smsLogsType]);
+  }, [
+    loggedInUser,
+    adminTab,
+    usersPage, usersSearch, usersStatus, usersQuota, usersSortBy,
+    transactionsPage, transactionsSearch, transactionsService, transactionsStatus, transactionsSortBy,
+    smsLogsPage, smsLogsSearch, smsLogsStatus, smsLogsType,
+    keywordsPage, keywordsSearch,
+    moderationLogsPage, moderationLogsSearch, moderationLogsStatus,
+    templatesPage, templatesSearch, templatesSortBy
+  ]);
 
   const handleToggleUserStatus = (id, currentActive) => {
     const newActive = !currentActive;
     updateUserStatus(id, newActive)
       .then(res => {
         triggerAlert('success', res.message);
-        getAdminUsers().then(setAdminUsers);
+        fetchUsers();
         if (adminTab === 'overview') {
           getAdminStats().then(setAdminStats);
         }
@@ -110,7 +170,7 @@ export default function AdminDashboard() {
         triggerAlert('success', res.message);
         setShowQuotaModal(false);
         setSelectedUserForQuota(null);
-        getAdminUsers().then(setAdminUsers);
+        fetchUsers();
       })
       .catch(err => {
         const errorMsg = err.response?.data?.message || 'Failed to update quota.';
@@ -126,7 +186,7 @@ export default function AdminDashboard() {
       .then(() => {
         triggerAlert('success', 'System template created successfully!');
         setAdminTemplateForm({ title: '', body: '' });
-        getTemplates().then(setAdminTemplates);
+        fetchTemplates();
       })
       .catch(err => {
         const errorMsg = err.response?.data?.message || 'Failed to create system template.';
@@ -139,7 +199,7 @@ export default function AdminDashboard() {
     deleteAdminTemplate(id)
       .then(res => {
         triggerAlert('success', res.message || 'Template deleted successfully.');
-        getTemplates().then(setAdminTemplates);
+        fetchTemplates();
       })
       .catch(err => {
         const errorMsg = err.response?.data?.message || 'Failed to delete system template.';
@@ -151,7 +211,7 @@ export default function AdminDashboard() {
     createAdminKeyword(keyword, category, action)
       .then(res => {
         triggerAlert('success', res.message);
-        getAdminKeywords().then(setAdminKeywords);
+        fetchKeywords();
       })
       .catch(err => {
         triggerAlert('error', err.response?.data?.message || 'Failed to add keyword rule.');
@@ -162,7 +222,7 @@ export default function AdminDashboard() {
     toggleAdminKeyword(id)
       .then(res => {
         triggerAlert('success', res.message);
-        getAdminKeywords().then(setAdminKeywords);
+        fetchKeywords();
       })
       .catch(err => {
         triggerAlert('error', err.response?.data?.message || 'Failed to toggle keyword rule.');
@@ -174,7 +234,7 @@ export default function AdminDashboard() {
     deleteAdminKeyword(id)
       .then(res => {
         triggerAlert('success', res.message);
-        getAdminKeywords().then(setAdminKeywords);
+        fetchKeywords();
       })
       .catch(err => {
         triggerAlert('error', err.response?.data?.message || 'Failed to delete keyword rule.');
@@ -199,7 +259,7 @@ export default function AdminDashboard() {
       triggerAlert('success', res.message);
       getAdminStats().then(setAdminStats);
       if (adminTab === 'users') {
-        getAdminUsers().then(setAdminUsers);
+        fetchUsers();
       }
       return res;
     } catch (err) {
@@ -214,7 +274,7 @@ export default function AdminDashboard() {
       triggerAlert('success', res.message);
       getAdminStats().then(setAdminStats);
       if (adminTab === 'users') {
-        getAdminUsers().then(setAdminUsers);
+        fetchUsers();
       }
       return res;
     } catch (err) {
@@ -317,16 +377,35 @@ export default function AdminDashboard() {
         {adminTab === 'moderation' && (
           <AdminModeration
             keywords={adminKeywords}
+            keywordsPage={keywordsPage}
+            setKeywordsPage={setKeywordsPage}
+            keywordsSearch={keywordsSearch}
+            setKeywordsSearch={setKeywordsSearch}
             moderationLogs={adminModerationLogs}
+            moderationLogsPage={moderationLogsPage}
+            setModerationLogsPage={setModerationLogsPage}
+            moderationLogsSearch={moderationLogsSearch}
+            setModerationLogsSearch={setModerationLogsSearch}
+            moderationLogsStatus={moderationLogsStatus}
+            setModerationLogsStatus={setModerationLogsStatus}
             onCreateKeyword={handleCreateKeyword}
             onToggleKeyword={handleToggleKeyword}
             onDeleteKeyword={handleDeleteKeyword}
-            onRefreshLogs={() => getAdminModerationLogs().then(data => setAdminModerationLogs(data.items || []))}
           />
         )}
         {adminTab === 'users' && (
           <AdminUsers
             adminUsers={adminUsers}
+            usersPage={usersPage}
+            setUsersPage={setUsersPage}
+            usersSearch={usersSearch}
+            setUsersSearch={setUsersSearch}
+            usersStatus={usersStatus}
+            setUsersStatus={setUsersStatus}
+            usersQuota={usersQuota}
+            setUsersQuota={setUsersQuota}
+            usersSortBy={usersSortBy}
+            setUsersSortBy={setUsersSortBy}
             setSelectedUserForQuota={setSelectedUserForQuota}
             setNewQuotaValue={setNewQuotaValue}
             setShowQuotaModal={setShowQuotaModal}
@@ -345,10 +424,30 @@ export default function AdminDashboard() {
             setSmsLogsType={setSmsLogsType}
           />
         )}
-        {adminTab === 'transactions' && <AdminTransactions adminTransactions={adminTransactions} />}
+        {adminTab === 'transactions' && (
+          <AdminTransactions
+            adminTransactions={adminTransactions}
+            transactionsPage={transactionsPage}
+            setTransactionsPage={setTransactionsPage}
+            transactionsSearch={transactionsSearch}
+            setTransactionsSearch={setTransactionsSearch}
+            transactionsService={transactionsService}
+            setTransactionsService={setTransactionsService}
+            transactionsStatus={transactionsStatus}
+            setTransactionsStatus={setTransactionsStatus}
+            transactionsSortBy={transactionsSortBy}
+            setTransactionsSortBy={setTransactionsSortBy}
+          />
+        )}
         {adminTab === 'templates' && (
           <AdminTemplates
             adminTemplates={adminTemplates}
+            templatesPage={templatesPage}
+            setTemplatesPage={setTemplatesPage}
+            templatesSearch={templatesSearch}
+            setTemplatesSearch={setTemplatesSearch}
+            templatesSortBy={templatesSortBy}
+            setTemplatesSortBy={setTemplatesSortBy}
             adminTemplateForm={adminTemplateForm}
             setAdminTemplateForm={setAdminTemplateForm}
             handleCreateSystemTemplate={handleCreateSystemTemplate}

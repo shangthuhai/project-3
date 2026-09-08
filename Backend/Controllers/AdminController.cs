@@ -95,16 +95,85 @@ namespace Backend.Controllers
 
         // GET: api/admin/users
         [HttpGet("users")]
-        public async Task<IActionResult> GetUsers()
+        public async Task<IActionResult> GetUsers(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null,
+            [FromQuery] string? status = null,
+            [FromQuery] string? quota = null,
+            [FromQuery] string? sortBy = null)
         {
-            var users = await _context.Users
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 10;
+
+            var query = _context.Users
                 .Include(u => u.Profile)
                 .Include(u => u.Quota)
                 .Where(u => u.UserId != 999) // Exclude virtual chatbot helper
-                .OrderByDescending(u => u.CreatedAt)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                string s = search.Trim().ToLower();
+                query = query.Where(u =>
+                    u.Username.ToLower().Contains(s) ||
+                    (u.Profile != null && u.Profile.FullName != null && u.Profile.FullName.ToLower().Contains(s)) ||
+                    (u.MobileNumber != null && u.MobileNumber.ToLower().Contains(s)) ||
+                    (u.Email != null && u.Email.ToLower().Contains(s))
+                );
+            }
+
+            if (!string.IsNullOrWhiteSpace(status) && status.ToLower() != "all")
+            {
+                if (status.ToLower() == "active")
+                    query = query.Where(u => u.IsActive);
+                else if (status.ToLower() == "locked")
+                    query = query.Where(u => !u.IsActive);
+            }
+
+            if (!string.IsNullOrWhiteSpace(quota) && quota.ToLower() != "all")
+            {
+                if (quota.ToLower() == "hasquota")
+                    query = query.Where(u => u.Quota != null ? u.Quota.FreeMessagesLeft > 0 : true);
+                else if (quota.ToLower() == "zeroquota")
+                    query = query.Where(u => u.Quota != null ? u.Quota.FreeMessagesLeft == 0 : false);
+            }
+
+            if (sortBy?.ToLower() == "oldest")
+            {
+                query = query.OrderBy(u => u.UserId);
+            }
+            else if (sortBy?.ToLower() == "username")
+            {
+                query = query.OrderBy(u => u.Username);
+            }
+            else if (sortBy?.ToLower() == "quotadesc")
+            {
+                query = query.OrderByDescending(u => u.Quota != null ? u.Quota.FreeMessagesLeft : 5);
+            }
+            else if (sortBy?.ToLower() == "quotaasc")
+            {
+                query = query.OrderBy(u => u.Quota != null ? u.Quota.FreeMessagesLeft : 5);
+            }
+            else
+            {
+                query = query.OrderByDescending(u => u.UserId);
+            }
+
+            int totalCount = await query.CountAsync();
+            var users = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
 
-            return Ok(users);
+            return Ok(new
+            {
+                items = users,
+                totalCount,
+                page,
+                pageSize,
+                totalPages = (int)Math.Ceiling((double)totalCount / pageSize)
+            });
         }
 
         // PUT: api/admin/users/{id}/status
@@ -151,17 +220,81 @@ namespace Backend.Controllers
 
         // GET: api/admin/transactions
         [HttpGet("transactions")]
-        public async Task<IActionResult> GetTransactions()
+        public async Task<IActionResult> GetTransactions(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null,
+            [FromQuery] string? service = null,
+            [FromQuery] string? status = null,
+            [FromQuery] string? sortBy = null)
         {
-            var transactions = await _context.Transactions
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 10;
+
+            var baseQuery = _context.Transactions
                 .Include(t => t.User)
                 .ThenInclude(u => u!.Profile)
                 .Include(t => t.Subscription)
                 .ThenInclude(s => s!.Service)
-                .OrderByDescending(t => t.CreatedAt)
+                .AsQueryable();
+
+            var uniqueServices = await _context.UserServices
+                .Include(us => us.Service)
+                .Where(us => us.Service != null)
+                .Select(us => us.Service!.ServiceName)
+                .Distinct()
                 .ToListAsync();
 
-            var result = transactions.Select(t => new
+            var query = baseQuery;
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                string s = search.Trim().ToLower();
+                query = query.Where(t =>
+                    t.TransactionId.ToString().Contains(s) ||
+                    (t.User != null && t.User.Username.ToLower().Contains(s)) ||
+                    (t.User != null && t.User.Profile != null && t.User.Profile.FullName != null && t.User.Profile.FullName.ToLower().Contains(s)) ||
+                    (t.Subscription != null && t.Subscription.Service != null && t.Subscription.Service.ServiceName.ToLower().Contains(s)) ||
+                    (t.CardLast4 != null && t.CardLast4.Contains(s))
+                );
+            }
+
+            if (!string.IsNullOrWhiteSpace(service) && service.ToLower() != "all")
+            {
+                string svc = service.Trim().ToLower();
+                query = query.Where(t => t.Subscription != null && t.Subscription.Service != null && t.Subscription.Service.ServiceName.ToLower() == svc);
+            }
+
+            if (!string.IsNullOrWhiteSpace(status) && status.ToLower() != "all")
+            {
+                string stat = status.Trim().ToLower();
+                query = query.Where(t => t.TransactionStatus.ToLower() == stat);
+            }
+
+            if (sortBy?.ToLower() == "oldest")
+            {
+                query = query.OrderBy(t => t.CreatedAt);
+            }
+            else if (sortBy?.ToLower() == "amountdesc")
+            {
+                query = query.OrderByDescending(t => t.Amount);
+            }
+            else if (sortBy?.ToLower() == "amountasc")
+            {
+                query = query.OrderBy(t => t.Amount);
+            }
+            else
+            {
+                query = query.OrderByDescending(t => t.CreatedAt);
+            }
+
+            int totalCount = await query.CountAsync();
+            var pagedTransactions = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var items = pagedTransactions.Select(t => new
             {
                 transactionId = t.TransactionId,
                 userId = t.UserId,
@@ -174,7 +307,15 @@ namespace Backend.Controllers
                 createdAt = t.CreatedAt
             });
 
-            return Ok(result);
+            return Ok(new
+            {
+                items,
+                totalCount,
+                page,
+                pageSize,
+                totalPages = (int)Math.Ceiling((double)totalCount / pageSize),
+                uniqueServices
+            });
         }
 
         // GET: api/admin/sms-logs
@@ -257,6 +398,60 @@ namespace Backend.Controllers
                 deliveryStatus = l.DeliveryStatus,
                 gatewayStatusCode = l.GatewayStatusCode
             });
+
+            return Ok(new
+            {
+                items,
+                totalCount,
+                page,
+                pageSize,
+                totalPages = (int)Math.Ceiling((double)totalCount / pageSize)
+            });
+        }
+
+        // GET: api/admin/templates
+        [HttpGet("templates")]
+        public async Task<IActionResult> GetSystemTemplates(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null,
+            [FromQuery] string? sortBy = null)
+        {
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 10;
+
+            var query = _context.SMSTemplates
+                .Where(t => t.UserId == null) // null represents system template
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                string s = search.Trim().ToLower();
+                query = query.Where(t => t.Title.ToLower().Contains(s) || t.Body.ToLower().Contains(s));
+            }
+
+            if (sortBy?.ToLower() == "oldest")
+            {
+                query = query.OrderBy(t => t.TemplateId);
+            }
+            else if (sortBy?.ToLower() == "titleasc")
+            {
+                query = query.OrderBy(t => t.Title);
+            }
+            else if (sortBy?.ToLower() == "titledesc")
+            {
+                query = query.OrderByDescending(t => t.Title);
+            }
+            else
+            {
+                query = query.OrderByDescending(t => t.TemplateId);
+            }
+
+            int totalCount = await query.CountAsync();
+            var items = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
 
             return Ok(new
             {
@@ -366,10 +561,37 @@ namespace Backend.Controllers
 
         // GET: api/admin/keywords
         [HttpGet("keywords")]
-        public async Task<IActionResult> GetKeywords()
+        public async Task<IActionResult> GetKeywords(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null)
         {
-            var rules = await _context.KeywordRules.OrderByDescending(k => k.CreatedAt).ToListAsync();
-            return Ok(rules);
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 10;
+
+            var query = _context.KeywordRules.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                string s = search.Trim().ToLower();
+                query = query.Where(k => k.Keyword.ToLower().Contains(s) || (k.Category != null && k.Category.ToLower().Contains(s)));
+            }
+
+            int totalCount = await query.CountAsync();
+            var items = await query
+                .OrderByDescending(k => k.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return Ok(new
+            {
+                items,
+                totalCount,
+                page,
+                pageSize,
+                totalPages = (int)Math.Ceiling((double)totalCount / pageSize)
+            });
         }
 
         // POST: api/admin/keywords
@@ -426,29 +648,64 @@ namespace Backend.Controllers
 
         // GET: api/admin/moderation/logs
         [HttpGet("moderation/logs")]
-        public async Task<IActionResult> GetModerationLogs([FromQuery] int page = 1, [FromQuery] int pageSize = 25)
+        public async Task<IActionResult> GetModerationLogs(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null,
+            [FromQuery] string? status = null)
         {
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 10;
+
             var query = _context.Messages
                 .Include(m => m.Sender)
                 .ThenInclude(u => u!.Profile)
                 .Where(m => m.SpamStatus != "normal" || m.ModerationReason != null)
-                .OrderByDescending(m => m.SentAt);
+                .AsQueryable();
 
-            int totalItems = await query.CountAsync();
-            var items = await query.Skip((page - 1) * pageSize).Take(pageSize).Select(m => new {
-                messageId = m.MessageId,
-                senderId = m.SenderId,
-                senderUsername = m.Sender != null ? m.Sender.Username : "Unknown",
-                receiverNumber = m.ReceiverNumber,
-                content = m.Content,
-                sentAt = m.SentAt,
-                spamStatus = m.SpamStatus,
-                moderationReason = m.ModerationReason,
-                delayUntil = m.DelayUntil,
-                isApproved = m.IsApproved
-            }).ToListAsync();
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                string s = search.Trim().ToLower();
+                query = query.Where(m =>
+                    (m.Sender != null && m.Sender.Username.ToLower().Contains(s)) ||
+                    m.ReceiverNumber.ToLower().Contains(s) ||
+                    m.Content.ToLower().Contains(s) ||
+                    (m.ModerationReason != null && m.ModerationReason.ToLower().Contains(s))
+                );
+            }
 
-            return Ok(new { totalItems, page, pageSize, items });
+            if (!string.IsNullOrWhiteSpace(status) && status.ToLower() != "all")
+            {
+                string stat = status.Trim().ToLower();
+                query = query.Where(m => m.SpamStatus.ToLower() == stat);
+            }
+
+            int totalCount = await query.CountAsync();
+            var items = await query
+                .OrderByDescending(m => m.SentAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(m => new {
+                    messageId = m.MessageId,
+                    senderId = m.SenderId,
+                    senderUsername = m.Sender != null ? m.Sender.Username : "Unknown",
+                    receiverNumber = m.ReceiverNumber,
+                    content = m.Content,
+                    sentAt = m.SentAt,
+                    spamStatus = m.SpamStatus,
+                    moderationReason = m.ModerationReason,
+                    delayUntil = m.DelayUntil,
+                    isApproved = m.IsApproved
+                }).ToListAsync();
+
+            return Ok(new
+            {
+                items,
+                totalCount,
+                page,
+                pageSize,
+                totalPages = (int)Math.Ceiling((double)totalCount / pageSize)
+            });
         }
 
         // POST: api/admin/seed-15days-data

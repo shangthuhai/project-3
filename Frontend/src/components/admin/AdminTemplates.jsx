@@ -1,42 +1,30 @@
-import React, { useState, useMemo } from 'react';
+import React from 'react';
+import Pagination from './Pagination';
 
 export default function AdminTemplates({
-  adminTemplates,
+  adminTemplates = { items: [], totalCount: 0, page: 1, pageSize: 10, totalPages: 1 },
+  templatesPage = 1,
+  setTemplatesPage = () => {},
+  templatesSearch = '',
+  setTemplatesSearch = () => {},
+  templatesSortBy = 'newest',
+  setTemplatesSortBy = () => {},
   adminTemplateForm,
   setAdminTemplateForm,
   handleCreateSystemTemplate,
   handleDeleteSystemTemplate
 }) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('newest');
+  const templatesList = adminTemplates.items || (Array.isArray(adminTemplates) ? adminTemplates : []);
+  const totalCount = adminTemplates.totalCount !== undefined ? adminTemplates.totalCount : templatesList.length;
+  const totalPages = adminTemplates.totalPages || 1;
+  const pageSize = adminTemplates.pageSize || 10;
 
-  const systemTemplates = useMemo(() => {
-    let result = adminTemplates.filter(t => t.userId === null);
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.trim().toLowerCase();
-      result = result.filter(t =>
-        (t.title && t.title.toLowerCase().includes(q)) ||
-        (t.body && t.body.toLowerCase().includes(q))
-      );
-    }
-
-    result.sort((a, b) => {
-      if (sortBy === 'oldest') return a.id - b.id;
-      if (sortBy === 'titleAsc') return a.title.localeCompare(b.title);
-      if (sortBy === 'titleDesc') return b.title.localeCompare(a.title);
-      return b.id - a.id;
-    });
-
-    return result;
-  }, [adminTemplates, searchQuery, sortBy]);
-
-  const totalSystemTemplatesCount = adminTemplates.filter(t => t.userId === null).length;
-  const hasActiveFilters = searchQuery !== '' || sortBy !== 'newest';
+  const hasActiveFilters = templatesSearch !== '' || templatesSortBy !== 'newest';
 
   const resetFilters = () => {
-    setSearchQuery('');
-    setSortBy('newest');
+    setTemplatesSearch('');
+    setTemplatesSortBy('newest');
+    setTemplatesPage(1);
   };
 
   return (
@@ -97,12 +85,15 @@ export default function AdminTemplates({
             <input
               type="text"
               placeholder="🔍 Search template title or content..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={templatesSearch}
+              onChange={(e) => {
+                setTemplatesSearch(e.target.value);
+                setTemplatesPage(1);
+              }}
               style={{
                 width: '100%',
                 padding: '9px 12px',
-                paddingRight: searchQuery ? '32px' : '12px',
+                paddingRight: templatesSearch ? '32px' : '12px',
                 background: 'var(--bg-app)',
                 border: '1px solid var(--border-light)',
                 borderRadius: '8px',
@@ -111,9 +102,12 @@ export default function AdminTemplates({
                 outline: 'none'
               }}
             />
-            {searchQuery && (
+            {templatesSearch && (
               <button
-                onClick={() => setSearchQuery('')}
+                onClick={() => {
+                  setTemplatesSearch('');
+                  setTemplatesPage(1);
+                }}
                 style={{
                   position: 'absolute',
                   right: '10px',
@@ -133,8 +127,11 @@ export default function AdminTemplates({
 
           {/* Sort Select */}
           <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
+            value={templatesSortBy}
+            onChange={(e) => {
+              setTemplatesSortBy(e.target.value);
+              setTemplatesPage(1);
+            }}
             style={{
               padding: '9px 12px',
               background: '#182533',
@@ -155,7 +152,7 @@ export default function AdminTemplates({
         {/* Filter Stats & Reset */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            Showing <strong>{systemTemplates.length}</strong> / <strong>{totalSystemTemplatesCount}</strong> templates
+            Total <strong>{totalCount}</strong> templates
           </span>
           {hasActiveFilters && (
             <button
@@ -189,23 +186,24 @@ export default function AdminTemplates({
             </tr>
           </thead>
           <tbody>
-            {systemTemplates.length === 0 ? (
+            {templatesList.length === 0 ? (
               <tr>
                 <td colSpan="4" style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-muted)' }}>
                   No system templates found matching your search criteria.
                 </td>
               </tr>
             ) : (
-              systemTemplates.map(t => {
+              templatesList.map(t => {
+                const templateId = t.id || t.templateId;
                 return (
-                  <tr key={t.id} style={{ borderBottom: '1px solid var(--border-light)' }} className="table-row-hover">
-                    <td style={{ padding: '12px 20px', color: 'var(--text-muted)' }}>#{t.id}</td>
+                  <tr key={templateId} style={{ borderBottom: '1px solid var(--border-light)' }} className="table-row-hover">
+                    <td style={{ padding: '12px 20px', color: 'var(--text-muted)' }}>#{templateId}</td>
                     <td style={{ padding: '12px 20px', color: 'var(--text-main)' }}><strong>{t.title}</strong></td>
                     <td style={{ padding: '12px 20px', color: 'var(--text-main)', fontSize: '0.88rem' }}>{t.body}</td>
                     <td style={{ padding: '12px 20px' }}>
                       <button
                         className="btn btn-danger"
-                        onClick={() => handleDeleteSystemTemplate(t.id)}
+                        onClick={() => handleDeleteSystemTemplate(templateId)}
                         style={{ padding: '6px 12px', fontSize: '0.78rem', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid var(--color-danger)', color: 'var(--color-danger)' }}
                       >
                         🗑️ Delete
@@ -218,6 +216,15 @@ export default function AdminTemplates({
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      <Pagination
+        page={templatesPage}
+        totalPages={totalPages}
+        totalCount={totalCount}
+        pageSize={pageSize}
+        onPageChange={setTemplatesPage}
+      />
     </div>
   );
 }

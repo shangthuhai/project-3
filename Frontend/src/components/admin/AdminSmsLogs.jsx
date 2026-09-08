@@ -1,4 +1,5 @@
 import React from 'react';
+import Pagination from './Pagination';
 
 export default function AdminSmsLogs({
   adminSmsLogs,
@@ -214,82 +215,13 @@ export default function AdminSmsLogs({
       </div>
 
       {/* Pagination Controls */}
-      {adminSmsLogs && adminSmsLogs.totalPages > 1 && (
-        <div className="pagination-container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', padding: '12px 20px', background: 'var(--bg-sidebar)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)' }}>
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-            Hiển thị trang <strong>{adminSmsLogs.page}</strong> / <strong>{adminSmsLogs.totalPages}</strong> (Tổng cộng <strong>{adminSmsLogs.totalCount}</strong> bản ghi)
-          </span>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              onClick={() => setSmsLogsPage(prev => Math.max(prev - 1, 1))}
-              disabled={adminSmsLogs.page <= 1}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '6px',
-                background: adminSmsLogs.page <= 1 ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.08)',
-                color: adminSmsLogs.page <= 1 ? 'var(--text-muted)' : '#fff',
-                border: '1px solid var(--border-light)',
-                cursor: adminSmsLogs.page <= 1 ? 'not-allowed' : 'pointer',
-                fontSize: '0.85rem',
-                fontWeight: '500',
-                transition: 'all 0.2s'
-              }}
-            >
-              Trước
-            </button>
-            
-            {/* Dynamic page numbers */}
-            {Array.from({ length: adminSmsLogs.totalPages }, (_, idx) => idx + 1)
-              .filter(p => Math.abs(p - adminSmsLogs.page) <= 2 || p === 1 || p === adminSmsLogs.totalPages)
-              .map((p, idx, arr) => {
-                const elements = [];
-                if (idx > 0 && p - arr[idx - 1] > 1) {
-                  elements.push(
-                    <span key={`dots-${p}`} style={{ color: 'var(--text-muted)', alignSelf: 'center', padding: '0 4px' }}>...</span>
-                  );
-                }
-                elements.push(
-                  <button
-                    key={p}
-                    onClick={() => setSmsLogsPage(p)}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      background: adminSmsLogs.page === p ? 'var(--color-primary, #2481cc)' : 'rgba(255,255,255,0.04)',
-                      color: '#fff',
-                      border: adminSmsLogs.page === p ? '1px solid var(--color-primary, #2481cc)' : '1px solid var(--border-light)',
-                      cursor: 'pointer',
-                      fontSize: '0.85rem',
-                      fontWeight: adminSmsLogs.page === p ? '600' : '500',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    {p}
-                  </button>
-                );
-                return elements;
-              })}
-
-            <button
-              onClick={() => setSmsLogsPage(prev => Math.min(prev + 1, adminSmsLogs.totalPages))}
-              disabled={adminSmsLogs.page >= adminSmsLogs.totalPages}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '6px',
-                background: adminSmsLogs.page >= adminSmsLogs.totalPages ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.08)',
-                color: adminSmsLogs.page >= adminSmsLogs.totalPages ? 'var(--text-muted)' : '#fff',
-                border: '1px solid var(--border-light)',
-                cursor: adminSmsLogs.page >= adminSmsLogs.totalPages ? 'not-allowed' : 'pointer',
-                fontSize: '0.85rem',
-                fontWeight: '500',
-                transition: 'all 0.2s'
-              }}
-            >
-              Sau
-            </button>
-          </div>
-        </div>
-      )}
+      <Pagination
+        page={adminSmsLogs.page}
+        totalPages={adminSmsLogs.totalPages}
+        totalCount={adminSmsLogs.totalCount}
+        pageSize={adminSmsLogs.pageSize || 10}
+        onPageChange={setSmsLogsPage}
+      />
     </div>
   );
 }

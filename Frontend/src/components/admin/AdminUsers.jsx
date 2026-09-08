@@ -1,74 +1,36 @@
-import React, { useState, useMemo } from 'react';
+import React from 'react';
+import Pagination from './Pagination';
 
 export default function AdminUsers({
-  adminUsers,
+  adminUsers = { items: [], totalCount: 0, page: 1, pageSize: 10, totalPages: 1 },
+  usersPage = 1,
+  setUsersPage = () => {},
+  usersSearch = '',
+  setUsersSearch = () => {},
+  usersStatus = 'all',
+  setUsersStatus = () => {},
+  usersQuota = 'all',
+  setUsersQuota = () => {},
+  usersSortBy = 'newest',
+  setUsersSortBy = () => {},
   setSelectedUserForQuota,
   setNewQuotaValue,
   setShowQuotaModal,
   handleToggleUserStatus
 }) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [quotaFilter, setQuotaFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('newest');
+  const usersList = adminUsers.items || [];
+  const totalCount = adminUsers.totalCount || 0;
+  const totalPages = adminUsers.totalPages || 1;
+  const pageSize = adminUsers.pageSize || 10;
 
-  const filteredUsers = useMemo(() => {
-    let result = [...adminUsers];
-
-    // Filter by search query
-    if (searchQuery.trim()) {
-      const q = searchQuery.trim().toLowerCase();
-      result = result.filter(u =>
-        (u.username && u.username.toLowerCase().includes(q)) ||
-        (u.name && u.name.toLowerCase().includes(q)) ||
-        (u.mobileNumber && u.mobileNumber.toLowerCase().includes(q)) ||
-        (u.email && u.email.toLowerCase().includes(q))
-      );
-    }
-
-    // Filter by account status
-    if (statusFilter === 'active') {
-      result = result.filter(u => u.isActive);
-    } else if (statusFilter === 'locked') {
-      result = result.filter(u => !u.isActive);
-    }
-
-    // Filter by SMS quota
-    if (quotaFilter === 'hasQuota') {
-      result = result.filter(u => (u.quota?.freeMessagesLeft ?? 5) > 0);
-    } else if (quotaFilter === 'zeroQuota') {
-      result = result.filter(u => (u.quota?.freeMessagesLeft ?? 5) === 0);
-    }
-
-    // Sorting
-    result.sort((a, b) => {
-      const idA = a.id || a.userId || 0;
-      const idB = b.id || b.userId || 0;
-      if (sortBy === 'oldest') return idA - idB;
-      if (sortBy === 'username') return a.username.localeCompare(b.username);
-      if (sortBy === 'quotaDesc') {
-        const qA = a.quota?.freeMessagesLeft ?? 5;
-        const qB = b.quota?.freeMessagesLeft ?? 5;
-        return qB - qA;
-      }
-      if (sortBy === 'quotaAsc') {
-        const qA = a.quota?.freeMessagesLeft ?? 5;
-        const qB = b.quota?.freeMessagesLeft ?? 5;
-        return qA - qB;
-      }
-      return idB - idA;
-    });
-
-    return result;
-  }, [adminUsers, searchQuery, statusFilter, quotaFilter, sortBy]);
-
-  const hasActiveFilters = searchQuery !== '' || statusFilter !== 'all' || quotaFilter !== 'all' || sortBy !== 'newest';
+  const hasActiveFilters = usersSearch !== '' || usersStatus !== 'all' || usersQuota !== 'all' || usersSortBy !== 'newest';
 
   const resetFilters = () => {
-    setSearchQuery('');
-    setStatusFilter('all');
-    setQuotaFilter('all');
-    setSortBy('newest');
+    setUsersSearch('');
+    setUsersStatus('all');
+    setUsersQuota('all');
+    setUsersSortBy('newest');
+    setUsersPage(1);
   };
 
   return (
@@ -97,12 +59,15 @@ export default function AdminUsers({
             <input
               type="text"
               placeholder="Search username, name, mobile, email..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={usersSearch}
+              onChange={(e) => {
+                setUsersSearch(e.target.value);
+                setUsersPage(1);
+              }}
               style={{
                 width: '100%',
                 padding: '9px 12px',
-                paddingRight: searchQuery ? '32px' : '12px',
+                paddingRight: usersSearch ? '32px' : '12px',
                 background: 'var(--bg-app)',
                 border: '1px solid var(--border-light)',
                 borderRadius: '8px',
@@ -111,9 +76,12 @@ export default function AdminUsers({
                 outline: 'none'
               }}
             />
-            {searchQuery && (
+            {usersSearch && (
               <button
-                onClick={() => setSearchQuery('')}
+                onClick={() => {
+                  setUsersSearch('');
+                  setUsersPage(1);
+                }}
                 style={{
                   position: 'absolute',
                   right: '10px',
@@ -133,14 +101,17 @@ export default function AdminUsers({
 
           {/* Account Status Filter */}
           <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            value={usersStatus}
+            onChange={(e) => {
+              setUsersStatus(e.target.value);
+              setUsersPage(1);
+            }}
             style={{
               padding: '9px 12px',
               background: '#182533',
               border: '1px solid var(--border-light)',
               borderRadius: '8px',
-              color: statusFilter !== 'all' ? 'var(--color-primary)' : 'var(--text-muted)',
+              color: usersStatus !== 'all' ? 'var(--color-primary)' : 'var(--text-muted)',
               fontSize: '0.88rem',
               cursor: 'pointer'
             }}
@@ -152,14 +123,17 @@ export default function AdminUsers({
 
           {/* Quota Filter */}
           <select
-            value={quotaFilter}
-            onChange={(e) => setQuotaFilter(e.target.value)}
+            value={usersQuota}
+            onChange={(e) => {
+              setUsersQuota(e.target.value);
+              setUsersPage(1);
+            }}
             style={{
               padding: '9px 12px',
               background: '#182533',
               border: '1px solid var(--border-light)',
               borderRadius: '8px',
-              color: quotaFilter !== 'all' ? 'var(--color-primary)' : 'var(--text-muted)',
+              color: usersQuota !== 'all' ? 'var(--color-primary)' : 'var(--text-muted)',
               fontSize: '0.88rem',
               cursor: 'pointer'
             }}
@@ -171,8 +145,11 @@ export default function AdminUsers({
 
           {/* Sort Select */}
           <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
+            value={usersSortBy}
+            onChange={(e) => {
+              setUsersSortBy(e.target.value);
+              setUsersPage(1);
+            }}
             style={{
               padding: '9px 12px',
               background: '#182533',
@@ -194,7 +171,7 @@ export default function AdminUsers({
         {/* Filter Stats & Reset */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            Showing <strong>{filteredUsers.length}</strong> / <strong>{adminUsers.length}</strong> users
+            Total <strong>{totalCount}</strong> users
           </span>
           {hasActiveFilters && (
             <button
@@ -232,23 +209,25 @@ export default function AdminUsers({
             </tr>
           </thead>
           <tbody>
-            {filteredUsers.length === 0 ? (
+            {usersList.length === 0 ? (
               <tr>
                 <td colSpan="8" style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-muted)' }}>
                   No users found matching your filter criteria.
                 </td>
               </tr>
             ) : (
-            filteredUsers.map(user => {
-                const targetUserId = user.id || user.userId;
+              usersList.map(user => {
+                const targetUserId = user.userId || user.id;
+                const name = user.profile?.fullName || user.name || 'N/A';
+                const photo = user.profile?.profilePhoto || user.profilePhoto || 'https://via.placeholder.com/38';
                 const quotaVal = user.quota?.freeMessagesLeft !== undefined ? user.quota.freeMessagesLeft : 5;
                 return (
                   <tr key={targetUserId} style={{ borderBottom: '1px solid var(--border-light)', transition: 'var(--transition-fast)' }} className="table-row-hover">
                     <td style={{ padding: '12px 20px' }}>
-                      <img src={user.profilePhoto || 'https://via.placeholder.com/38'} alt={user.name} style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover' }} />
+                      <img src={photo} alt={name} style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover' }} />
                     </td>
                     <td style={{ padding: '12px 20px', color: 'var(--text-main)' }}><strong>{user.username}</strong></td>
-                    <td style={{ padding: '12px 20px', color: 'var(--text-main)' }}>{user.name || 'N/A'}</td>
+                    <td style={{ padding: '12px 20px', color: 'var(--text-main)' }}>{name}</td>
                     <td style={{ padding: '12px 20px', color: 'var(--text-main)' }}><code>{user.mobileNumber}</code></td>
                     <td style={{ padding: '12px 20px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>{user.email}</td>
                     <td style={{ padding: '12px 20px' }}>
@@ -288,6 +267,15 @@ export default function AdminUsers({
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      <Pagination
+        page={usersPage}
+        totalPages={totalPages}
+        totalCount={totalCount}
+        pageSize={pageSize}
+        onPageChange={setUsersPage}
+      />
     </div>
   );
 }

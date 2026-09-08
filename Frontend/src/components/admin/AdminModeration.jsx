@@ -1,18 +1,38 @@
 import React, { useState } from 'react';
+import Pagination from './Pagination';
 
 export default function AdminModeration({
-  keywords = [],
-  moderationLogs = [],
+  keywords = { items: [], totalCount: 0, page: 1, pageSize: 10, totalPages: 1 },
+  keywordsPage = 1,
+  setKeywordsPage = () => {},
+  keywordsSearch = '',
+  setKeywordsSearch = () => {},
+  moderationLogs = { items: [], totalCount: 0, page: 1, pageSize: 10, totalPages: 1 },
+  moderationLogsPage = 1,
+  setModerationLogsPage = () => {},
+  moderationLogsSearch = '',
+  setModerationLogsSearch = () => {},
+  moderationLogsStatus = 'all',
+  setModerationLogsStatus = () => {},
   onCreateKeyword,
   onToggleKeyword,
-  onDeleteKeyword,
-  onRefreshLogs
+  onDeleteKeyword
 }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newKeyword, setNewKeyword] = useState('');
   const [newCategory, setNewCategory] = useState('Sensitive');
   const [newAction, setNewAction] = useState('flag');
   const [activeSubTab, setActiveSubTab] = useState('rules'); // rules | logs
+
+  const keywordsList = keywords.items || (Array.isArray(keywords) ? keywords : []);
+  const keywordsTotalCount = keywords.totalCount !== undefined ? keywords.totalCount : keywordsList.length;
+  const keywordsTotalPages = keywords.totalPages || 1;
+  const keywordsPageSize = keywords.pageSize || 10;
+
+  const moderationLogsList = moderationLogs.items || (Array.isArray(moderationLogs) ? moderationLogs : []);
+  const moderationLogsTotalCount = moderationLogs.totalCount !== undefined ? moderationLogs.totalCount : moderationLogsList.length;
+  const moderationLogsTotalPages = moderationLogs.totalPages || 1;
+  const moderationLogsPageSize = moderationLogs.pageSize || 10;
 
   const handleSubmitKeyword = (e) => {
     e.preventDefault();
@@ -91,10 +111,10 @@ export default function AdminModeration({
             cursor: 'pointer'
           }}
         >
-          📋 Quy Tắc Từ Khóa ({keywords.length})
+          📋 Quy Tắc Từ Khóa ({keywordsTotalCount})
         </button>
         <button
-          onClick={() => { setActiveSubTab('logs'); onRefreshLogs && onRefreshLogs(); }}
+          onClick={() => setActiveSubTab('logs')}
           style={{
             padding: '10px 16px',
             background: 'none',
@@ -105,112 +125,254 @@ export default function AdminModeration({
             cursor: 'pointer'
           }}
         >
-          🚨 Nhật Ký Kiểm Duyệt AI ({moderationLogs.length})
+          🚨 Nhật Ký Kiểm Duyệt AI ({moderationLogsTotalCount})
         </button>
       </div>
 
       {/* TAB 1: KEYWORD RULES */}
       {activeSubTab === 'rules' && (
-        <div className="admin-table-container" style={{ background: 'var(--bg-sidebar)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', overflowX: 'auto' }}>
-          <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-light)', background: 'rgba(255,255,255,0.02)' }}>
-                <th style={{ padding: '14px 20px', fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Từ Khóa</th>
-                <th style={{ padding: '14px 20px', fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Danh Mục</th>
-                <th style={{ padding: '14px 20px', fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Hành Động Tự Động</th>
-                <th style={{ padding: '14px 20px', fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Trạng Thái</th>
-                <th style={{ padding: '14px 20px', fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Thao Tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {keywords.length === 0 ? (
-                <tr>
-                  <td colSpan="5" style={{ padding: '30px', textAlign: 'center', color: 'var(--text-muted)' }}>Chưa có quy tắc từ khóa nào. Nhấn "Thêm Từ Khóa" để bắt đầu.</td>
-                </tr>
-              ) : (
-                keywords.map((k) => {
-                  const actStyle = getActionColor(k.action);
-                  return (
-                    <tr key={k.ruleId} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                      <td style={{ padding: '14px 20px', color: 'var(--text-main)', fontWeight: '600' }}>
-                        <code>{k.keyword}</code>
-                      </td>
-                      <td style={{ padding: '14px 20px', color: 'var(--text-muted)' }}>{k.category}</td>
-                      <td style={{ padding: '14px 20px' }}>
-                        <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '0.78rem', fontWeight: '600', background: actStyle.bg, color: actStyle.color }}>
-                          {actStyle.text}
-                        </span>
-                      </td>
-                      <td style={{ padding: '14px 20px' }}>
-                        <span style={{ padding: '3px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '600', background: k.isActive ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', color: k.isActive ? '#10b981' : '#ef4444' }}>
-                          {k.isActive ? 'HOẠT ĐỘNG' : 'TẮT'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '14px 20px' }}>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <button
-                            onClick={() => onToggleKeyword(k.ruleId)}
-                            style={{ padding: '5px 10px', fontSize: '0.78rem', background: 'var(--bg-app)', border: '1px solid var(--border-light)', color: 'var(--text-main)', borderRadius: '6px', cursor: 'pointer' }}
-                          >
-                            {k.isActive ? '⏸️ Tắt' : '▶️ Bật'}
-                          </button>
-                          <button
-                            onClick={() => onDeleteKeyword(k.ruleId)}
-                            style={{ padding: '5px 10px', fontSize: '0.78rem', background: 'rgba(239,68,68,0.15)', border: '1px solid #ef4444', color: '#ef4444', borderRadius: '6px', cursor: 'pointer' }}
-                          >
-                            🗑️ Xóa
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
+        <>
+          <div className="admin-filter-bar" style={{
+            background: 'var(--bg-sidebar)',
+            padding: '12px 16px',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--border-light)',
+            marginBottom: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}>
+            <div style={{ position: 'relative', flex: '1', maxWidth: '360px' }}>
+              <input
+                type="text"
+                placeholder="🔍 Tìm kiếm từ khóa, danh mục..."
+                value={keywordsSearch}
+                onChange={(e) => {
+                  setKeywordsSearch(e.target.value);
+                  setKeywordsPage(1);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  paddingRight: keywordsSearch ? '30px' : '12px',
+                  background: 'var(--bg-app)',
+                  border: '1px solid var(--border-light)',
+                  borderRadius: '8px',
+                  color: 'var(--text-main)',
+                  fontSize: '0.85rem'
+                }}
+              />
+              {keywordsSearch && (
+                <button
+                  onClick={() => {
+                    setKeywordsSearch('');
+                    setKeywordsPage(1);
+                  }}
+                  style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                >
+                  ✕
+                </button>
               )}
-            </tbody>
-          </table>
-        </div>
+            </div>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+              Tổng <strong>{keywordsTotalCount}</strong> từ khóa
+            </span>
+          </div>
+
+          <div className="admin-table-container" style={{ background: 'var(--bg-sidebar)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', overflowX: 'auto' }}>
+            <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-light)', background: 'rgba(255,255,255,0.02)' }}>
+                  <th style={{ padding: '14px 20px', fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Từ Khóa</th>
+                  <th style={{ padding: '14px 20px', fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Danh Mục</th>
+                  <th style={{ padding: '14px 20px', fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Hành Động Tự Động</th>
+                  <th style={{ padding: '14px 20px', fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Trạng Thái</th>
+                  <th style={{ padding: '14px 20px', fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                {keywordsList.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" style={{ padding: '30px', textAlign: 'center', color: 'var(--text-muted)' }}>Chưa có quy tắc từ khóa nào. Nhấn "Thêm Từ Khóa" để bắt đầu.</td>
+                  </tr>
+                ) : (
+                  keywordsList.map((k) => {
+                    const actStyle = getActionColor(k.action);
+                    return (
+                      <tr key={k.ruleId} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                        <td style={{ padding: '14px 20px', color: 'var(--text-main)', fontWeight: '600' }}>
+                          <code>{k.keyword}</code>
+                        </td>
+                        <td style={{ padding: '14px 20px', color: 'var(--text-muted)' }}>{k.category}</td>
+                        <td style={{ padding: '14px 20px' }}>
+                          <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '0.78rem', fontWeight: '600', background: actStyle.bg, color: actStyle.color }}>
+                            {actStyle.text}
+                          </span>
+                        </td>
+                        <td style={{ padding: '14px 20px' }}>
+                          <span style={{ padding: '3px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '600', background: k.isActive ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', color: k.isActive ? '#10b981' : '#ef4444' }}>
+                            {k.isActive ? 'HOẠT ĐỘNG' : 'TẮT'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '14px 20px' }}>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button
+                              onClick={() => onToggleKeyword(k.ruleId)}
+                              style={{ padding: '5px 10px', fontSize: '0.78rem', background: 'var(--bg-app)', border: '1px solid var(--border-light)', color: 'var(--text-main)', borderRadius: '6px', cursor: 'pointer' }}
+                            >
+                              {k.isActive ? '⏸️ Tắt' : '▶️ Bật'}
+                            </button>
+                            <button
+                              onClick={() => onDeleteKeyword(k.ruleId)}
+                              style={{ padding: '5px 10px', fontSize: '0.78rem', background: 'rgba(239,68,68,0.15)', border: '1px solid #ef4444', color: '#ef4444', borderRadius: '6px', cursor: 'pointer' }}
+                            >
+                              🗑️ Xóa
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <Pagination
+            page={keywordsPage}
+            totalPages={keywordsTotalPages}
+            totalCount={keywordsTotalCount}
+            pageSize={keywordsPageSize}
+            onPageChange={setKeywordsPage}
+          />
+        </>
       )}
 
       {/* TAB 2: MODERATION LOGS */}
       {activeSubTab === 'logs' && (
-        <div className="admin-table-container" style={{ background: 'var(--bg-sidebar)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', overflowX: 'auto' }}>
-          <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-light)', background: 'rgba(255,255,255,0.02)' }}>
-                <th style={{ padding: '14px 20px', fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>ID</th>
-                <th style={{ padding: '14px 20px', fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Người Gửi</th>
-                <th style={{ padding: '14px 20px', fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Nội Dung Tin Nhắn</th>
-                <th style={{ padding: '14px 20px', fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Đánh Nhãn Spam</th>
-                <th style={{ padding: '14px 20px', fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Lý Do & AI Phân Tích</th>
-                <th style={{ padding: '14px 20px', fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Thời Gian</th>
-              </tr>
-            </thead>
-            <tbody>
-              {moderationLogs.length === 0 ? (
-                <tr>
-                  <td colSpan="6" style={{ padding: '30px', textAlign: 'center', color: 'var(--text-muted)' }}>Chưa có tin nhắn vi phạm hoặc bị can thiệp bởi AI.</td>
+        <>
+          <div className="admin-filter-bar" style={{
+            background: 'var(--bg-sidebar)',
+            padding: '12px 16px',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--border-light)',
+            marginBottom: '16px',
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '12px',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}>
+            <div style={{ display: 'flex', gap: '12px', flex: '1', minWidth: '280px' }}>
+              <div style={{ position: 'relative', flex: '1', maxWidth: '360px' }}>
+                <input
+                  type="text"
+                  placeholder="🔍 Tìm sender, receiver, nội dung..."
+                  value={moderationLogsSearch}
+                  onChange={(e) => {
+                    setModerationLogsSearch(e.target.value);
+                    setModerationLogsPage(1);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    paddingRight: moderationLogsSearch ? '30px' : '12px',
+                    background: 'var(--bg-app)',
+                    border: '1px solid var(--border-light)',
+                    borderRadius: '8px',
+                    color: 'var(--text-main)',
+                    fontSize: '0.85rem'
+                  }}
+                />
+                {moderationLogsSearch && (
+                  <button
+                    onClick={() => {
+                      setModerationLogsSearch('');
+                      setModerationLogsPage(1);
+                    }}
+                    style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              <select
+                value={moderationLogsStatus}
+                onChange={(e) => {
+                  setModerationLogsStatus(e.target.value);
+                  setModerationLogsPage(1);
+                }}
+                style={{
+                  padding: '8px 12px',
+                  background: '#182533',
+                  border: '1px solid var(--border-light)',
+                  borderRadius: '8px',
+                  color: moderationLogsStatus !== 'all' ? 'var(--color-primary)' : 'var(--text-muted)',
+                  fontSize: '0.85rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="all">Tất cả nhãn Spam</option>
+                <option value="suspected_spam">⚠️ Repetitive Spam</option>
+                <option value="sensitive_flagged">🏷️ Sensitive Keyword</option>
+                <option value="blocked">⛔ Blocked</option>
+                <option value="delayed">⏱️ Delayed</option>
+              </select>
+            </div>
+
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+              Tổng <strong>{moderationLogsTotalCount}</strong> vi phạm
+            </span>
+          </div>
+
+          <div className="admin-table-container" style={{ background: 'var(--bg-sidebar)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', overflowX: 'auto' }}>
+            <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-light)', background: 'rgba(255,255,255,0.02)' }}>
+                  <th style={{ padding: '14px 20px', fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>ID</th>
+                  <th style={{ padding: '14px 20px', fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Người Gửi</th>
+                  <th style={{ padding: '14px 20px', fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Nội Dung Tin Nhắn</th>
+                  <th style={{ padding: '14px 20px', fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Đánh Nhãn Spam</th>
+                  <th style={{ padding: '14px 20px', fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Lý Do & AI Phân Tích</th>
+                  <th style={{ padding: '14px 20px', fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Thời Gian</th>
                 </tr>
-              ) : (
-                moderationLogs.map((log) => (
-                  <tr key={log.messageId} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                    <td style={{ padding: '14px 20px', color: 'var(--text-muted)' }}>#{log.messageId}</td>
-                    <td style={{ padding: '14px 20px', color: 'var(--text-main)' }}><strong>{log.senderUsername}</strong></td>
-                    <td style={{ padding: '14px 20px', color: 'var(--text-main)', maxWidth: '280px', wordBreak: 'break-word' }}>
-                      {log.content}
-                    </td>
-                    <td style={{ padding: '14px 20px' }}>{getSpamBadge(log.spamStatus)}</td>
-                    <td style={{ padding: '14px 20px', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
-                      {log.moderationReason || 'Được xử lý tự động'}
-                    </td>
-                    <td style={{ padding: '14px 20px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                      {new Date(log.sentAt).toLocaleString()}
-                    </td>
+              </thead>
+              <tbody>
+                {moderationLogsList.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" style={{ padding: '30px', textAlign: 'center', color: 'var(--text-muted)' }}>Chưa có tin nhắn vi phạm hoặc bị can thiệp bởi AI.</td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : (
+                  moderationLogsList.map((log) => (
+                    <tr key={log.messageId} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                      <td style={{ padding: '14px 20px', color: 'var(--text-muted)' }}>#{log.messageId}</td>
+                      <td style={{ padding: '14px 20px', color: 'var(--text-main)' }}><strong>{log.senderUsername}</strong></td>
+                      <td style={{ padding: '14px 20px', color: 'var(--text-main)', maxWidth: '280px', wordBreak: 'break-word' }}>
+                        {log.content}
+                      </td>
+                      <td style={{ padding: '14px 20px' }}>{getSpamBadge(log.spamStatus)}</td>
+                      <td style={{ padding: '14px 20px', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
+                        {log.moderationReason || 'Được xử lý tự động'}
+                      </td>
+                      <td style={{ padding: '14px 20px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                        {new Date(log.sentAt).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <Pagination
+            page={moderationLogsPage}
+            totalPages={moderationLogsTotalPages}
+            totalCount={moderationLogsTotalCount}
+            pageSize={moderationLogsPageSize}
+            onPageChange={setModerationLogsPage}
+          />
+        </>
       )}
 
       {/* CREATE KEYWORD MODAL */}

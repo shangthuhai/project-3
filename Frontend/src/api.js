@@ -118,8 +118,14 @@ export const loginAdmin = (username, password) =>
 export const getAdminStats = () => 
   api.get('/admin/dashboard/stats').then(res => res.data);
 
-export const getAdminUsers = () => 
-  api.get('/admin/users').then(res => res.data);
+export const getAdminUsers = (page = 1, pageSize = 10, search = '', status = '', quota = '', sortBy = '') => {
+  let url = `/admin/users?page=${page}&pageSize=${pageSize}`;
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+  if (status) url += `&status=${encodeURIComponent(status)}`;
+  if (quota) url += `&quota=${encodeURIComponent(quota)}`;
+  if (sortBy) url += `&sortBy=${encodeURIComponent(sortBy)}`;
+  return api.get(url).then(res => res.data);
+};
 
 export const updateUserStatus = (id, isActive) => 
   api.put(`/admin/users/${id}/status`, { isActive }).then(res => res.data);
@@ -127,14 +133,27 @@ export const updateUserStatus = (id, isActive) =>
 export const updateUserQuota = (id, freeMessagesLeft) => 
   api.put(`/admin/users/${id}/quota`, { freeMessagesLeft }).then(res => res.data);
 
-export const getAdminTransactions = () => 
-  api.get('/admin/transactions').then(res => res.data);
+export const getAdminTransactions = (page = 1, pageSize = 10, search = '', service = '', status = '', sortBy = '') => {
+  let url = `/admin/transactions?page=${page}&pageSize=${pageSize}`;
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+  if (service) url += `&service=${encodeURIComponent(service)}`;
+  if (status) url += `&status=${encodeURIComponent(status)}`;
+  if (sortBy) url += `&sortBy=${encodeURIComponent(sortBy)}`;
+  return api.get(url).then(res => res.data);
+};
 
 export const getAdminSmsLogs = (page = 1, pageSize = 10, search = '', status = '', type = '') => {
   let url = `/admin/sms-logs?page=${page}&pageSize=${pageSize}`;
   if (search) url += `&search=${encodeURIComponent(search)}`;
   if (status) url += `&status=${encodeURIComponent(status)}`;
   if (type) url += `&type=${encodeURIComponent(type)}`;
+  return api.get(url).then(res => res.data);
+};
+
+export const getAdminTemplates = (page = 1, pageSize = 10, search = '', sortBy = '') => {
+  let url = `/admin/templates?page=${page}&pageSize=${pageSize}`;
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+  if (sortBy) url += `&sortBy=${encodeURIComponent(sortBy)}`;
   return api.get(url).then(res => res.data);
 };
 
@@ -157,8 +176,11 @@ export const getConversations = () =>
   api.get('/messages/conversations').then(res => res.data);
 
 // --- Admin Moderation & Keyword Rules ---
-export const getAdminKeywords = () =>
-  api.get('/admin/keywords').then(res => res.data);
+export const getAdminKeywords = (page = 1, pageSize = 10, search = '') => {
+  let url = `/admin/keywords?page=${page}&pageSize=${pageSize}`;
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+  return api.get(url).then(res => res.data);
+};
 
 export const createAdminKeyword = (keyword, category, action) =>
   api.post('/admin/keywords', { keyword, category, action }).then(res => res.data);
@@ -169,8 +191,12 @@ export const toggleAdminKeyword = (id) =>
 export const deleteAdminKeyword = (id) =>
   api.delete(`/admin/keywords/${id}`).then(res => res.data);
 
-export const getAdminModerationLogs = (page = 1, pageSize = 25) =>
-  api.get(`/admin/moderation/logs?page=${page}&pageSize=${pageSize}`).then(res => res.data);
+export const getAdminModerationLogs = (page = 1, pageSize = 10, search = '', status = '') => {
+  let url = `/admin/moderation/logs?page=${page}&pageSize=${pageSize}`;
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+  if (status) url += `&status=${encodeURIComponent(status)}`;
+  return api.get(url).then(res => res.data);
+};
 
 export const seed15DaysData = () =>
   api.post('/admin/seed-15days-data').then(res => res.data);
