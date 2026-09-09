@@ -365,6 +365,19 @@ namespace Backend.Controllers
                 return BadRequest(new { message = "Message content must not exceed 120 characters." });
             }
 
+            // Prevent rapid duplicate submissions (identical content sent to same receiver in last 2 seconds)
+            var twoSecondsAgo = DateTime.UtcNow.AddSeconds(-2);
+            bool isInstantDuplicate = await _context.Messages.AnyAsync(m =>
+                m.SenderId == sender.UserId &&
+                m.ReceiverNumber == dto.ReceiverNumber &&
+                m.SentAt >= twoSecondsAgo &&
+                m.Content == dto.Content);
+
+            if (isInstantDuplicate)
+            {
+                return BadRequest(new { message = "Bạn đang bấm gửi quá nhanh. Tin nhắn trùng lặp đã được chặn." });
+            }
+
             // AI Content Moderation Check
             bool isSafe = await _aiService.ModerateContentAsync(dto.Content);
             if (!isSafe)

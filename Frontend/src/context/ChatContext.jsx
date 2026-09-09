@@ -230,6 +230,8 @@ export function ChatProvider({ children }) {
   const textareaRef = useRef(null);
   const searchListRef = useRef(null);
   const aiMessagesEndRef = useRef(null);
+  const isSubmittingRef = useRef(false);
+  const lastSentInfoRef = useRef({ time: 0, content: '', receiver: '' });
 
   // Chat message pagination
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
@@ -601,6 +603,21 @@ export function ChatProvider({ children }) {
 
     const contentToSend = newMessage.trim();
     const currentScheduleDate = scheduleDate || null;
+    const receiverNumber = selectedContact?.contactNumber;
+    const now = Date.now();
+
+    // Prevent double-clicking or rapid repeated submit of identical content to same contact
+    if (isSubmittingRef.current) return;
+    if (
+      lastSentInfoRef.current.receiver === receiverNumber &&
+      lastSentInfoRef.current.content === contentToSend &&
+      (now - lastSentInfoRef.current.time) < 1500
+    ) {
+      return;
+    }
+
+    isSubmittingRef.current = true;
+    lastSentInfoRef.current = { time: now, content: contentToSend, receiver: receiverNumber };
 
     // 1. Optimistically clear input & reset popovers instantly
     setNewMessage('');
@@ -614,7 +631,7 @@ export function ChatProvider({ children }) {
     const tempMsg = {
       id: tempId,
       senderId: loggedInUser.id,
-      receiverNumber: selectedContact.contactNumber,
+      receiverNumber: receiverNumber,
       content: contentToSend,
       sentTime: new Date().toISOString(),
       scheduledAt: currentScheduleDate,
@@ -633,8 +650,9 @@ export function ChatProvider({ children }) {
     }
 
     // 4. Send API request
-    apiSendMessage(loggedInUser.id, selectedContact.contactNumber, contentToSend, currentScheduleDate)
+    apiSendMessage(loggedInUser.id, receiverNumber, contentToSend, currentScheduleDate)
       .then(msg => {
+        isSubmittingRef.current = false;
         setChatMessages(prev => {
           const exists = prev.some(m => m.id === msg.id);
           if (exists) {
@@ -645,11 +663,12 @@ export function ChatProvider({ children }) {
         loadConversations();
       })
       .catch(err => {
+        isSubmittingRef.current = false;
         // Rollback optimistic message & restore input text
         setChatMessages(prev => prev.filter(m => m.id !== tempId));
         setNewMessage(contentToSend);
         if (remainingQuota && !remainingQuota.isFriend && !currentScheduleDate) {
-          getQuota(loggedInUser.id, selectedContact.contactNumber)
+          getQuota(loggedInUser.id, receiverNumber)
             .then(setRemainingQuota)
             .catch(() => { });
         }
