@@ -189,7 +189,7 @@ namespace Backend.Controllers
                     avatar = avatar,
                     isFriend = isFriend,
                     lastMessageContent = lastMsg.Content,
-                    lastMessageTime = lastMsg.SentAt,
+                    lastMessageTime = DateTime.SpecifyKind(lastMsg.SentAt, DateTimeKind.Utc),
                     isRegistered = registeredUser != null,
                     userId = registeredUser?.UserId
                 });

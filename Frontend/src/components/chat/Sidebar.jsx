@@ -140,7 +140,10 @@ export default function Sidebar() {
 
   const formatMessageTime = (timeStr) => {
     if (!timeStr) return '';
-    const date = new Date(timeStr);
+    const str = String(timeStr);
+    const isoStr = (str.includes('Z') || str.includes('+')) ? str : str.replace(' ', 'T') + 'Z';
+    const date = new Date(isoStr);
+    if (isNaN(date.getTime())) return '';
     const now = new Date();
     if (date.toDateString() === now.toDateString()) {
       return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
