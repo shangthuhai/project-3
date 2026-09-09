@@ -29,8 +29,8 @@
 
 .ai-chat__window {
   position: fixed;
-  right: 24px;
-  bottom: 96px;
+  left: 82px;
+  top: 216px;
   width: 360px;
   height: 480px;
   background: rgba(30, 41, 59, 0.88);

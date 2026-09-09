@@ -1,79 +1,160 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
+import { Download, FileSpreadsheet, FileText } from 'lucide-react';
+import Pagination from './Pagination';
+import { exportToCSV, exportToPDF } from '../../utils/exportUtils';
 
 export default function AdminUsers({
-  adminUsers,
+  adminUsers = { items: [], totalCount: 0, page: 1, pageSize: 10, totalPages: 1 },
+  usersPage = 1,
+  setUsersPage = () => {},
+  usersSearch = '',
+  setUsersSearch = () => {},
+  usersStatus = 'all',
+  setUsersStatus = () => {},
+  usersQuota = 'all',
+  setUsersQuota = () => {},
+  usersSortBy = 'newest',
+  setUsersSortBy = () => {},
   setSelectedUserForQuota,
   setNewQuotaValue,
   setShowQuotaModal,
   handleToggleUserStatus
 }) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [quotaFilter, setQuotaFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('newest');
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const usersList = adminUsers.items || [];
+  const totalCount = adminUsers.totalCount || 0;
+  const totalPages = adminUsers.totalPages || 1;
+  const pageSize = adminUsers.pageSize || 10;
 
-  const filteredUsers = useMemo(() => {
-    let result = [...adminUsers];
-
-    // Filter by search query
-    if (searchQuery.trim()) {
-      const q = searchQuery.trim().toLowerCase();
-      result = result.filter(u =>
-        (u.username && u.username.toLowerCase().includes(q)) ||
-        (u.name && u.name.toLowerCase().includes(q)) ||
-        (u.mobileNumber && u.mobileNumber.toLowerCase().includes(q)) ||
-        (u.email && u.email.toLowerCase().includes(q))
-      );
-    }
-
-    // Filter by account status
-    if (statusFilter === 'active') {
-      result = result.filter(u => u.isActive);
-    } else if (statusFilter === 'locked') {
-      result = result.filter(u => !u.isActive);
-    }
-
-    // Filter by SMS quota
-    if (quotaFilter === 'hasQuota') {
-      result = result.filter(u => (u.quota?.freeMessagesLeft ?? 5) > 0);
-    } else if (quotaFilter === 'zeroQuota') {
-      result = result.filter(u => (u.quota?.freeMessagesLeft ?? 5) === 0);
-    }
-
-    // Sorting
-    result.sort((a, b) => {
-      if (sortBy === 'oldest') return a.id - b.id;
-      if (sortBy === 'username') return a.username.localeCompare(b.username);
-      if (sortBy === 'quotaDesc') {
-        const qA = a.quota?.freeMessagesLeft ?? 5;
-        const qB = b.quota?.freeMessagesLeft ?? 5;
-        return qB - qA;
-      }
-      if (sortBy === 'quotaAsc') {
-        const qA = a.quota?.freeMessagesLeft ?? 5;
-        const qB = b.quota?.freeMessagesLeft ?? 5;
-        return qA - qB;
-      }
-      return b.id - a.id;
-    });
-
-    return result;
-  }, [adminUsers, searchQuery, statusFilter, quotaFilter, sortBy]);
-
-  const hasActiveFilters = searchQuery !== '' || statusFilter !== 'all' || quotaFilter !== 'all' || sortBy !== 'newest';
+  const hasActiveFilters = usersSearch !== '' || usersStatus !== 'all' || usersQuota !== 'all' || usersSortBy !== 'newest';
 
   const resetFilters = () => {
-    setSearchQuery('');
-    setStatusFilter('all');
-    setQuotaFilter('all');
-    setSortBy('newest');
+    setUsersSearch('');
+    setUsersStatus('all');
+    setUsersQuota('all');
+    setUsersSortBy('newest');
+    setUsersPage(1);
+  };
+
+  const userColumns = [
+    { header: 'ID', accessor: 'id' },
+    { header: 'Tài khoản', accessor: 'username' },
+    { header: 'Họ và tên', accessor: item => item.fullName || '—' },
+    { header: 'Số điện thoại', accessor: item => item.phoneNumber || item.phone || '—' },
+    { header: 'Email', accessor: item => item.email || '—' },
+    { header: 'Trạng thái', accessor: item => item.isLocked ? 'Đã khóa' : 'Hoạt động' },
+    { header: 'SMS Khuyến mãi', accessor: item => item.freeSmsQuota ?? 0 },
+    { header: 'Ngày tạo', accessor: item => item.createdAt ? new Date(item.createdAt).toLocaleDateString('vi-VN') : '—' }
+  ];
+
+  const handleExportCSV = () => {
+    exportToCSV(`Bao_Cao_Nguoi_Dung_${new Date().toISOString().slice(0,10)}`, userColumns, usersList);
+    setShowExportMenu(false);
+  };
+
+  const handleExportPDF = () => {
+    const summary = [
+      usersSearch ? `Từ khóa: "${usersSearch}"` : null,
+      usersStatus !== 'all' ? `Trạng thái: ${usersStatus}` : null,
+      usersQuota !== 'all' ? `Quota: ${usersQuota}` : null
+    ].filter(Boolean).join(' | ') || 'Tất cả người dùng';
+
+    exportToPDF('BÁO CÁO DANH SÁCH NGƯỜI DÙNG', userColumns, usersList, summary);
+    setShowExportMenu(false);
   };
 
   return (
     <div className="admin-tab-content">
-      <div className="admin-header" style={{ marginBottom: '20px' }}>
-        <h2 style={{ fontSize: '1.8rem', fontWeight: '600', color: 'var(--text-main)', marginBottom: '6px' }}>User Accounts Management</h2>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>Block/unlock user accounts, verify verification records, and configure free message quotas.</p>
+      <div className="admin-header" style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div>
+          <h2 style={{ fontSize: '1.8rem', fontWeight: '600', color: 'var(--text-main)', marginBottom: '6px' }}>User Accounts Management</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>Block/unlock user accounts, verify verification records, and configure free message quotas.</p>
+        </div>
+
+        {/* Export Report Dropdown */}
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => setShowExportMenu(!showExportMenu)}
+            className="btn btn-secondary"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '9px 16px',
+              borderRadius: '8px',
+              fontSize: '0.88rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              background: 'var(--bg-sidebar)',
+              border: '1px solid var(--border-light)',
+              color: 'var(--text-main)',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+            }}
+          >
+            <Download size={16} /> Xuất Báo Cáo
+          </button>
+
+          {showExportMenu && (
+            <div style={{
+              position: 'absolute',
+              right: 0,
+              top: 'calc(100% + 6px)',
+              background: 'var(--bg-sidebar)',
+              border: '1px solid var(--border-light)',
+              borderRadius: '8px',
+              padding: '6px',
+              boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+              zIndex: 100,
+              minWidth: '180px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '4px'
+            }}>
+              <button
+                onClick={handleExportCSV}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 12px',
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'var(--text-main)',
+                  fontSize: '0.86rem',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  width: '100%'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <FileSpreadsheet size={15} style={{ color: '#10b981' }} /> Xuất Excel / CSV
+              </button>
+              <button
+                onClick={handleExportPDF}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 12px',
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'var(--text-main)',
+                  fontSize: '0.86rem',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  width: '100%'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <FileText size={15} style={{ color: '#ef4444' }} /> Xuất PDF
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Filter and Search Controls Bar */}
@@ -95,12 +176,15 @@ export default function AdminUsers({
             <input
               type="text"
               placeholder="Search username, name, mobile, email..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={usersSearch}
+              onChange={(e) => {
+                setUsersSearch(e.target.value);
+                setUsersPage(1);
+              }}
               style={{
                 width: '100%',
                 padding: '9px 12px',
-                paddingRight: searchQuery ? '32px' : '12px',
+                paddingRight: usersSearch ? '32px' : '12px',
                 background: 'var(--bg-app)',
                 border: '1px solid var(--border-light)',
                 borderRadius: '8px',
@@ -109,9 +193,12 @@ export default function AdminUsers({
                 outline: 'none'
               }}
             />
-            {searchQuery && (
+            {usersSearch && (
               <button
-                onClick={() => setSearchQuery('')}
+                onClick={() => {
+                  setUsersSearch('');
+                  setUsersPage(1);
+                }}
                 style={{
                   position: 'absolute',
                   right: '10px',
@@ -131,14 +218,17 @@ export default function AdminUsers({
 
           {/* Account Status Filter */}
           <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            value={usersStatus}
+            onChange={(e) => {
+              setUsersStatus(e.target.value);
+              setUsersPage(1);
+            }}
             style={{
               padding: '9px 12px',
-              background: '#182533',
+              background: 'var(--bg-app)',
               border: '1px solid var(--border-light)',
               borderRadius: '8px',
-              color: statusFilter !== 'all' ? 'var(--color-primary)' : 'var(--text-muted)',
+              color: usersStatus !== 'all' ? 'var(--color-primary)' : 'var(--text-muted)',
               fontSize: '0.88rem',
               cursor: 'pointer'
             }}
@@ -150,14 +240,17 @@ export default function AdminUsers({
 
           {/* Quota Filter */}
           <select
-            value={quotaFilter}
-            onChange={(e) => setQuotaFilter(e.target.value)}
+            value={usersQuota}
+            onChange={(e) => {
+              setUsersQuota(e.target.value);
+              setUsersPage(1);
+            }}
             style={{
               padding: '9px 12px',
-              background: '#182533',
+              background: 'var(--bg-app)',
               border: '1px solid var(--border-light)',
               borderRadius: '8px',
-              color: quotaFilter !== 'all' ? 'var(--color-primary)' : 'var(--text-muted)',
+              color: usersQuota !== 'all' ? 'var(--color-primary)' : 'var(--text-muted)',
               fontSize: '0.88rem',
               cursor: 'pointer'
             }}
@@ -169,11 +262,14 @@ export default function AdminUsers({
 
           {/* Sort Select */}
           <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
+            value={usersSortBy}
+            onChange={(e) => {
+              setUsersSortBy(e.target.value);
+              setUsersPage(1);
+            }}
             style={{
               padding: '9px 12px',
-              background: '#182533',
+              background: 'var(--bg-app)',
               border: '1px solid var(--border-light)',
               borderRadius: '8px',
               color: 'var(--text-muted)',
@@ -192,7 +288,7 @@ export default function AdminUsers({
         {/* Filter Stats & Reset */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            Showing <strong>{filteredUsers.length}</strong> / <strong>{adminUsers.length}</strong> users
+            Total <strong>{totalCount}</strong> users
           </span>
           {hasActiveFilters && (
             <button
@@ -230,22 +326,25 @@ export default function AdminUsers({
             </tr>
           </thead>
           <tbody>
-            {filteredUsers.length === 0 ? (
+            {usersList.length === 0 ? (
               <tr>
                 <td colSpan="8" style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-muted)' }}>
                   No users found matching your filter criteria.
                 </td>
               </tr>
             ) : (
-              filteredUsers.map(user => {
+              usersList.map(user => {
+                const targetUserId = user.userId || user.id;
+                const name = user.profile?.fullName || user.name || 'N/A';
+                const photo = user.profile?.profilePhoto || user.profilePhoto || 'https://via.placeholder.com/38';
                 const quotaVal = user.quota?.freeMessagesLeft !== undefined ? user.quota.freeMessagesLeft : 5;
                 return (
-                  <tr key={user.id} style={{ borderBottom: '1px solid var(--border-light)', transition: 'var(--transition-fast)' }} className="table-row-hover">
+                  <tr key={targetUserId} style={{ borderBottom: '1px solid var(--border-light)', transition: 'var(--transition-fast)' }} className="table-row-hover">
                     <td style={{ padding: '12px 20px' }}>
-                      <img src={user.profilePhoto || 'https://via.placeholder.com/38'} alt={user.name} style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover' }} />
+                      <img src={photo} alt={name} style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover' }} />
                     </td>
                     <td style={{ padding: '12px 20px', color: 'var(--text-main)' }}><strong>{user.username}</strong></td>
-                    <td style={{ padding: '12px 20px', color: 'var(--text-main)' }}>{user.name || 'N/A'}</td>
+                    <td style={{ padding: '12px 20px', color: 'var(--text-main)' }}>{name}</td>
                     <td style={{ padding: '12px 20px', color: 'var(--text-main)' }}><code>{user.mobileNumber}</code></td>
                     <td style={{ padding: '12px 20px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>{user.email}</td>
                     <td style={{ padding: '12px 20px' }}>
@@ -261,7 +360,7 @@ export default function AdminUsers({
                         <button
                           className="btn btn-secondary"
                           onClick={() => {
-                            setSelectedUserForQuota(user);
+                            setSelectedUserForQuota({ ...user, id: targetUserId });
                             setNewQuotaValue(quotaVal);
                             setShowQuotaModal(true);
                           }}
@@ -271,7 +370,7 @@ export default function AdminUsers({
                         </button>
                         <button
                           className={`btn ${user.isActive ? 'btn-danger' : 'btn-accent'}`}
-                          onClick={() => handleToggleUserStatus(user.id, user.isActive)}
+                          onClick={() => handleToggleUserStatus(targetUserId, user.isActive)}
                           style={{ padding: '6px 12px', fontSize: '0.78rem', minWidth: '75px', background: user.isActive ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)', border: '1px solid ' + (user.isActive ? 'var(--color-danger)' : 'var(--color-accent)'), color: user.isActive ? 'var(--color-danger)' : 'var(--color-accent)' }}
                         >
                           {user.isActive ? '🔒 Lock' : '🔓 Unlock'}
@@ -285,6 +384,15 @@ export default function AdminUsers({
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      <Pagination
+        page={usersPage}
+        totalPages={totalPages}
+        totalCount={totalCount}
+        pageSize={pageSize}
+        onPageChange={setUsersPage}
+      />
     </div>
   );
 }

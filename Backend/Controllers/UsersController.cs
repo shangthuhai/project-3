@@ -16,11 +16,19 @@ namespace Backend.Controllers
     {
         private readonly AppDbContext _context;
         private readonly Microsoft.AspNetCore.SignalR.IHubContext<Backend.Hubs.ChatHub> _hubContext;
+        private readonly Backend.Services.IS3StorageService _s3StorageService;
+        private readonly Backend.Services.ICloudinaryService _cloudinaryService;
 
-        public UsersController(AppDbContext context, Microsoft.AspNetCore.SignalR.IHubContext<Backend.Hubs.ChatHub> hubContext)
+        public UsersController(
+            AppDbContext context, 
+            Microsoft.AspNetCore.SignalR.IHubContext<Backend.Hubs.ChatHub> hubContext,
+            Backend.Services.IS3StorageService s3StorageService,
+            Backend.Services.ICloudinaryService cloudinaryService)
         {
             _context = context;
             _hubContext = hubContext;
+            _s3StorageService = s3StorageService;
+            _cloudinaryService = cloudinaryService;
         }
 
         private int AuthenticatedUserId => 
@@ -87,25 +95,49 @@ namespace Backend.Controllers
                 return NotFound(new { message = "User not found" });
             }
 
-            // Update details via the flat properties (which forwards to dbUser.Profile)
-            dbUser.Name = user.Name;
-            dbUser.Gender = user.Gender;
-            dbUser.Dob = user.Dob;
-            dbUser.Address = user.Address;
-            dbUser.MaritalStatus = user.MaritalStatus;
-            dbUser.Hobbies = user.Hobbies;
-            dbUser.Likes = user.Likes;
-            dbUser.Dislikes = user.Dislikes;
-            dbUser.Cuisines = user.Cuisines;
-            dbUser.Sports = user.Sports;
-            dbUser.ProfilePhoto = user.ProfilePhoto;
-            
-            dbUser.Qualification = user.Qualification;
-            dbUser.School = user.School;
-            dbUser.College = user.College;
-            dbUser.WorkStatus = user.WorkStatus;
-            dbUser.Organization = user.Organization;
-            dbUser.Designation = user.Designation;
+            if (dbUser.Profile == null)
+            {
+                dbUser.Profile = new Profile { UserId = dbUser.UserId };
+                _context.Profiles.Add(dbUser.Profile);
+            }
+
+            // Upload photo to Cloudinary (or AWS S3) if it's base64 data
+            if (!string.IsNullOrWhiteSpace(user.ProfilePhoto) && user.ProfilePhoto.StartsWith("data:image/"))
+            {
+                var cloudinaryUrl = await _cloudinaryService.UploadBase64ImageAsync(user.ProfilePhoto, "avatars");
+                if (!string.IsNullOrEmpty(cloudinaryUrl) && (cloudinaryUrl.StartsWith("http://") || cloudinaryUrl.StartsWith("https://")))
+                {
+                    user.ProfilePhoto = cloudinaryUrl;
+                }
+                else
+                {
+                    var s3Url = await _s3StorageService.UploadBase64ImageAsync(user.ProfilePhoto, "avatars");
+                    if (!string.IsNullOrEmpty(s3Url))
+                    {
+                        user.ProfilePhoto = s3Url;
+                    }
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(user.Name)) dbUser.Profile.FullName = user.Name;
+            if (!string.IsNullOrWhiteSpace(user.Gender)) dbUser.Profile.Gender = user.Gender;
+            dbUser.Profile.Dob = user.Dob;
+            dbUser.Profile.Address = user.Address ?? string.Empty;
+            dbUser.Profile.MaritalStatus = user.MaritalStatus ?? string.Empty;
+            dbUser.Profile.Hobbies = user.Hobbies ?? string.Empty;
+            dbUser.Profile.Likes = user.Likes ?? string.Empty;
+            dbUser.Profile.Dislikes = user.Dislikes ?? string.Empty;
+            dbUser.Profile.Cuisines = user.Cuisines ?? string.Empty;
+            dbUser.Profile.Sports = user.Sports ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(user.ProfilePhoto)) dbUser.Profile.ProfilePhoto = user.ProfilePhoto;
+            dbUser.Profile.Qualification = user.Qualification ?? string.Empty;
+            dbUser.Profile.School = user.School ?? string.Empty;
+            dbUser.Profile.College = user.College ?? string.Empty;
+            dbUser.Profile.WorkStatus = user.WorkStatus ?? string.Empty;
+            dbUser.Profile.Organization = user.Organization ?? string.Empty;
+            dbUser.Profile.Designation = user.Designation ?? string.Empty;
+
+            _context.Entry(dbUser.Profile).State = dbUser.Profile.ProfileId == 0 ? EntityState.Added : EntityState.Modified;
 
             try
             {
@@ -118,6 +150,12 @@ namespace Backend.Controllers
                     return NotFound();
                 }
                 throw;
+            }
+
+            string? bearerToken = HttpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", "").Trim();
+            if (!string.IsNullOrEmpty(bearerToken))
+            {
+                dbUser.Token = bearerToken;
             }
 
             return Ok(dbUser);

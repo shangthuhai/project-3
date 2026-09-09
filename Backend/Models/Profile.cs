@@ -61,7 +61,6 @@ namespace Backend.Models
         [JsonPropertyName("sports")]
         public string? Sports { get; set; }
 
-        [MaxLength(255)]
         [Column("profile_photo")]
         [JsonPropertyName("profilePhoto")]
         public string? ProfilePhoto { get; set; }

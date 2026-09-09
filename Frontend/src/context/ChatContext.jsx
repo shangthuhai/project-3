@@ -1,7 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { HubConnectionBuilder } from '@microsoft/signalr';
 import { useAuth } from './AuthContext';
+import { useLanguage } from './LanguageContext';
 import {
+  getUser,
+  updateUser,
   getContacts,
   addContact as apiAddContact,
   deleteContact as apiDeleteContact,
@@ -40,8 +43,47 @@ import {
 
 const ChatContext = createContext(null);
 
+export const getInitialAiChatPosition = () => {
+  const btn = document.getElementById('ai-chatbot-icon-btn');
+  const chatWidth = 360;
+  const chatHeight = 480;
+  const margin = 12;
+
+  if (btn) {
+    const rect = btn.getBoundingClientRect();
+    if (window.innerWidth <= 1024) {
+      let x = rect.left + rect.width / 2 - chatWidth / 2;
+      let y = rect.top - chatHeight - margin;
+
+      x = Math.max(margin, Math.min(window.innerWidth - chatWidth - margin, x));
+      y = Math.max(margin, Math.min(window.innerHeight - chatHeight - margin, y));
+      return { x, y };
+    } else {
+      let x = rect.right + margin;
+      let y = rect.top;
+
+      x = Math.max(margin, Math.min(window.innerWidth - chatWidth - margin, x));
+      y = Math.max(margin, Math.min(window.innerHeight - chatHeight - margin, y));
+      return { x, y };
+    }
+  }
+
+  if (window.innerWidth <= 1024) {
+    return {
+      x: Math.max(12, Math.floor((window.innerWidth - chatWidth) / 2)),
+      y: Math.max(12, window.innerHeight - chatHeight - 72)
+    };
+  }
+
+  return {
+    x: 82,
+    y: Math.max(12, Math.min(window.innerHeight - chatHeight - 12, 216))
+  };
+};
+
 export function ChatProvider({ children }) {
   const { loggedInUser, triggerAlert, updateLoggedInUserLocal } = useAuth();
+  const { language, t } = useLanguage();
 
   // Navigation and generic tabs
   const [activeTab, setActiveTab] = useState('chats');
@@ -177,10 +219,7 @@ export function ChatProvider({ children }) {
   const [aiMessages, setAiMessages] = useState([]);
   const [aiNewMessage, setAiNewMessage] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const [aiChatPosition, setAiChatPosition] = useState({
-    x: Math.max(10, window.innerWidth - 384),
-    y: Math.max(10, window.innerHeight - 520)
-  });
+  const [aiChatPosition, setAiChatPosition] = useState(getInitialAiChatPosition);
 
   // Refs for tracking active values inside async events / timeouts
   const connectionRef = useRef(null);
@@ -203,6 +242,13 @@ export function ChatProvider({ children }) {
   // Load backend private details when loggedInUser becomes available
   const refreshDashboardData = () => {
     if (!loggedInUser) return;
+    getUser(loggedInUser.id)
+      .then(freshUser => {
+        updateLoggedInUserLocal(freshUser);
+        setProfileForm(freshUser);
+      })
+      .catch(() => setProfileForm(loggedInUser));
+
     getContacts(loggedInUser.id).then(setContacts).catch(() => { });
     getFriends(loggedInUser.id).then(setFriends).catch(() => { });
     loadConversations();
@@ -210,7 +256,6 @@ export function ChatProvider({ children }) {
     getActivatedServices(loggedInUser.id)
       .then(data => setActivatedServices(data.map(s => s.serviceName)))
       .catch(() => { });
-    setProfileForm(loggedInUser);
 
     loadTemplates();
     loadGroups();
@@ -349,7 +394,7 @@ export function ChatProvider({ children }) {
       conn.stop();
       connectionRef.current = null;
     };
-  }, [loggedInUser]);
+  }, [loggedInUser?.id]);
 
   // Typing status inactivity timeout
   useEffect(() => {
@@ -472,12 +517,40 @@ export function ChatProvider({ children }) {
   // User details & profile submission
   const handleProfileSubmit = (e) => {
     e.preventDefault();
-    updateUser(loggedInUser.id, profileForm)
+    if (!loggedInUser) return;
+
+    if (!profileForm.name || !profileForm.name.trim()) {
+      triggerAlert('error', language === 'vi' ? 'Vui lòng nhập Họ và Tên.' : 'Full Name is required.');
+      return;
+    }
+
+    // Sanitize empty string date values to null so ASP.NET Core JSON deserializer won't fail with 400
+    const sanitizedDob = profileForm.dob && String(profileForm.dob).trim() !== '' ? profileForm.dob : null;
+
+    const payload = {
+      ...profileForm,
+      id: loggedInUser.id,
+      dob: sanitizedDob
+    };
+
+    updateUser(loggedInUser.id, payload)
       .then(updated => {
         updateLoggedInUserLocal(updated);
-        triggerAlert('success', 'Profile updated successfully.');
+        setProfileForm(updated);
+        triggerAlert('success', t('profile_saved_success'));
       })
-      .catch(() => triggerAlert('error', 'Failed to update profile.'));
+      .catch(err => {
+        let errorMsg = (language === 'vi' ? 'Không thể cập nhật hồ sơ.' : 'Failed to update profile.');
+        if (err.response?.data?.message) {
+          errorMsg = err.response.data.message;
+        } else if (err.response?.data?.errors) {
+          const firstKey = Object.keys(err.response.data.errors)[0];
+          if (firstKey && err.response.data.errors[firstKey]?.length > 0) {
+            errorMsg = err.response.data.errors[firstKey][0];
+          }
+        }
+        triggerAlert('error', errorMsg);
+      });
   };
 
   // Contacts
@@ -695,16 +768,43 @@ export function ChatProvider({ children }) {
       .catch(() => { });
   };
 
-  const handleAddGroupMember = (e) => {
-    e.preventDefault();
-    if (!selectedGroup || !newGroupMemberId) return;
-    apiAddGroupMember(selectedGroup.id, parseInt(newGroupMemberId))
+  const handleAddGroupMember = (payloadOrEvent) => {
+    let payload = null;
+    if (payloadOrEvent && typeof payloadOrEvent.preventDefault === 'function') {
+      payloadOrEvent.preventDefault();
+      if (!newGroupMemberId) return;
+      if (typeof newGroupMemberId === 'string' && newGroupMemberId.startsWith('friend_')) {
+        payload = { friendUserId: parseInt(newGroupMemberId.replace('friend_', '')) };
+      } else if (typeof newGroupMemberId === 'string' && newGroupMemberId.startsWith('contact_')) {
+        payload = { contactId: parseInt(newGroupMemberId.replace('contact_', '')) };
+      } else {
+        payload = { contactId: parseInt(newGroupMemberId) };
+      }
+    } else {
+      payload = payloadOrEvent;
+    }
+
+    if (!selectedGroup || !payload) return Promise.reject(new Error('No group selected or invalid payload.'));
+
+    return apiAddGroupMember(selectedGroup.id, payload)
       .then(res => {
-        setGroupMembers(prev => [...prev, res.contact]);
+        if (res.contact) {
+          setGroupMembers(prev => {
+            if (prev.some(m => m.id === res.contact.id)) return prev;
+            return [...prev, res.contact];
+          });
+          setContacts(prev => {
+            if (prev.some(c => c.id === res.contact.id)) return prev;
+            return [...prev, res.contact];
+          });
+        }
         setNewGroupMemberId('');
         triggerAlert('success', res.message);
+        return res;
       })
-      .catch(err => triggerAlert('error', err.response?.data?.message || 'Failed to add member.'));
+      .catch(err => {
+        triggerAlert('error', err.response?.data?.message || 'Failed to add member.');
+      });
   };
 
   const handleRemoveGroupMember = (contactId) => {
@@ -721,9 +821,17 @@ export function ChatProvider({ children }) {
     e.preventDefault();
     if (!selectedGroup || !bulkContent.trim()) return;
 
-    setBulkResultsLog('Sending bulk messages, please wait...');
+    setBulkResultsLog('Processing bulk message send...');
 
-    sendBulkMessage(selectedGroup.id, bulkContent.trim(), bulkScheduleDate || null)
+    let scheduledUtcString = null;
+    if (bulkScheduleDate) {
+      const dt = new Date(bulkScheduleDate);
+      if (!isNaN(dt.getTime())) {
+        scheduledUtcString = dt.toISOString();
+      }
+    }
+
+    sendBulkMessage(selectedGroup.id, bulkContent.trim(), scheduledUtcString)
       .then(res => {
         setBulkContent('');
         setBulkScheduleDate('');

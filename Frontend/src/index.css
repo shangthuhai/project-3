@@ -709,23 +709,53 @@ select option {
 
 
 /* ==================== ADMIN PANEL EXTRA STYLES ==================== */
+.admin-nav-btn {
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
 .admin-nav-btn:hover {
-  background: rgba(255, 255, 255, 0.03) !important;
-  color: #fff !important;
+  background: rgba(125, 125, 125, 0.08) !important;
+  color: var(--text-main) !important;
+}
+
+.theme-light .admin-nav-btn:hover {
+  background: rgba(0, 0, 0, 0.06) !important;
+  color: var(--text-main) !important;
+}
+
+.theme-dark .admin-nav-btn:hover,
+.theme-glass .admin-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+.admin-nav-btn.active {
+  background: rgba(36, 129, 204, 0.14) !important;
+  color: var(--color-primary) !important;
 }
 
 .admin-nav-btn.active:hover {
-  background: rgba(36, 129, 204, 0.18) !important;
+  background: rgba(36, 129, 204, 0.22) !important;
+  color: var(--color-primary) !important;
 }
 
 .table-row-hover:hover {
-  background: rgba(255, 255, 255, 0.02) !important;
+  background: rgba(125, 125, 125, 0.05) !important;
+}
+
+.theme-light .table-row-hover:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+
+.theme-dark .table-row-hover:hover,
+.theme-glass .table-row-hover:hover {
+  background: rgba(255, 255, 255, 0.04) !important;
 }
 
 .admin-stat-card:hover {
   transform: translateY(-2px);
   border-color: rgba(36, 129, 204, 0.3) !important;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4) !important;
+  box-shadow: var(--shadow-md) !important;
 }
 
 .admin-stat-card {
@@ -812,6 +842,119 @@ select option {
     padding: 20px 15px !important;
   }
 }
+
+/* ==================== CUSTOM ALERT BANNER STYLES ==================== */
+.custom-alert-wrapper {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.custom-alert {
+  pointer-events: auto;
+  min-width: 300px;
+  max-width: 450px;
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  animation: alertSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid transparent;
+}
+
+@keyframes alertSlideIn {
+  from {
+    transform: translateY(-20px) scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.custom-alert.success {
+  background: var(--alert-bg-success, rgba(16, 185, 129, 0.2));
+  border-color: var(--alert-border-success, rgba(16, 185, 129, 0.4));
+  color: var(--alert-text-success, #34d399);
+}
+
+.custom-alert.error {
+  background: var(--alert-bg-error, rgba(239, 68, 68, 0.2));
+  border-color: var(--alert-border-error, rgba(239, 68, 68, 0.4));
+  color: var(--alert-text-error, #f87171);
+}
+
+.custom-alert.warning {
+  background: var(--alert-bg-warning, rgba(245, 158, 11, 0.2));
+  border-color: var(--alert-border-warning, rgba(245, 158, 11, 0.4));
+  color: var(--alert-text-warning, #fbbf24);
+}
+
+.custom-alert.info {
+  background: var(--alert-bg-info, rgba(36, 129, 204, 0.2));
+  border-color: var(--alert-border-info, rgba(36, 129, 204, 0.4));
+  color: var(--alert-text-info, #60a5fa);
+}
+
+.custom-alert__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.custom-alert__content {
+  flex: 1;
+  font-size: 0.92rem;
+  font-weight: 500;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.custom-alert__close {
+  background: transparent;
+  border: none;
+  color: currentColor;
+  opacity: 0.7;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  border-radius: 4px;
+  transition: opacity 0.15s ease;
+}
+
+.custom-alert__close:hover {
+  opacity: 1;
+}
+
+.custom-alert__progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 100%;
+  background: currentColor;
+  opacity: 0.4;
+  animation: alertProgress 5s linear forwards;
+}
+
+@keyframes alertProgress {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
 
 
 

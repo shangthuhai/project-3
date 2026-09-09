@@ -1,37 +1,80 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, BarChart3, Users, FileText, CreditCard, FileCode, LogOut } from 'lucide-react';
+import { Shield, BarChart3, Users, FileText, CreditCard, FileCode, LogOut, ShieldAlert, Settings } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import AdminOverview from '../components/admin/AdminOverview';
 import AdminUsers from '../components/admin/AdminUsers';
 import AdminSmsLogs from '../components/admin/AdminSmsLogs';
 import AdminTransactions from '../components/admin/AdminTransactions';
 import AdminTemplates from '../components/admin/AdminTemplates';
 import AdminAiCopilot from '../components/admin/AdminAiCopilot';
+import AdminModeration from '../components/admin/AdminModeration';
+import AdminSettings from '../components/admin/AdminSettings';
 import {
   getAdminStats,
   getAdminUsers,
   getAdminSmsLogs,
   getAdminTransactions,
-  getTemplates,
+  getAdminTemplates,
   updateUserStatus,
   updateUserQuota,
   createAdminTemplate,
-  deleteAdminTemplate
+  deleteAdminTemplate,
+  getAdminKeywords,
+  createAdminKeyword,
+  toggleAdminKeyword,
+  deleteAdminKeyword,
+  getAdminModerationLogs,
+  seed15DaysData,
+  createFriendUsers,
+  createStrangerUsers
 } from '../api';
 
 export default function AdminDashboard() {
-  const { loggedInUser, handleLogout, alert, triggerAlert } = useAuth();
+  const { loggedInUser, handleLogout, triggerAlert } = useAuth();
+  const { t } = useLanguage();
 
   const [adminTab, setAdminTab] = useState('overview');
   const [adminStats, setAdminStats] = useState(null);
-  const [adminUsers, setAdminUsers] = useState([]);
-  const [adminTransactions, setAdminTransactions] = useState([]);
+
+  // Users tab pagination & filter state
+  const [adminUsers, setAdminUsers] = useState({ items: [], totalCount: 0, page: 1, pageSize: 10, totalPages: 1 });
+  const [usersPage, setUsersPage] = useState(1);
+  const [usersSearch, setUsersSearch] = useState('');
+  const [usersStatus, setUsersStatus] = useState('all');
+  const [usersQuota, setUsersQuota] = useState('all');
+  const [usersSortBy, setUsersSortBy] = useState('newest');
+
+  // Transactions tab pagination & filter state
+  const [adminTransactions, setAdminTransactions] = useState({ items: [], totalCount: 0, page: 1, pageSize: 10, totalPages: 1, uniqueServices: [] });
+  const [transactionsPage, setTransactionsPage] = useState(1);
+  const [transactionsSearch, setTransactionsSearch] = useState('');
+  const [transactionsService, setTransactionsService] = useState('all');
+  const [transactionsStatus, setTransactionsStatus] = useState('all');
+  const [transactionsSortBy, setTransactionsSortBy] = useState('newest');
+
+  // SMS Logs tab pagination & filter state
   const [adminSmsLogs, setAdminSmsLogs] = useState({ items: [], totalCount: 0, page: 1, pageSize: 10, totalPages: 1 });
   const [smsLogsPage, setSmsLogsPage] = useState(1);
   const [smsLogsSearch, setSmsLogsSearch] = useState('');
   const [smsLogsStatus, setSmsLogsStatus] = useState('all');
   const [smsLogsType, setSmsLogsType] = useState('all');
-  const [adminTemplates, setAdminTemplates] = useState([]);
+
+  // AI Moderation tab pagination & filter state
+  const [adminKeywords, setAdminKeywords] = useState({ items: [], totalCount: 0, page: 1, pageSize: 10, totalPages: 1 });
+  const [keywordsPage, setKeywordsPage] = useState(1);
+  const [keywordsSearch, setKeywordsSearch] = useState('');
+
+  const [adminModerationLogs, setAdminModerationLogs] = useState({ items: [], totalCount: 0, page: 1, pageSize: 10, totalPages: 1 });
+  const [moderationLogsPage, setModerationLogsPage] = useState(1);
+  const [moderationLogsSearch, setModerationLogsSearch] = useState('');
+  const [moderationLogsStatus, setModerationLogsStatus] = useState('all');
+
+  // System Templates tab pagination & filter state
+  const [adminTemplates, setAdminTemplates] = useState({ items: [], totalCount: 0, page: 1, pageSize: 10, totalPages: 1 });
+  const [templatesPage, setTemplatesPage] = useState(1);
+  const [templatesSearch, setTemplatesSearch] = useState('');
+  const [templatesSortBy, setTemplatesSortBy] = useState('newest');
 
   // Quota Modal Form
   const [showQuotaModal, setShowQuotaModal] = useState(false);
@@ -41,7 +84,43 @@ export default function AdminDashboard() {
   // Template Form
   const [adminTemplateForm, setAdminTemplateForm] = useState({ title: '', body: '' });
 
-  const loadAdminDashboardData = () => {
+  const fetchUsers = () => {
+    getAdminUsers(usersPage, 10, usersSearch, usersStatus, usersQuota, usersSortBy)
+      .then(setAdminUsers)
+      .catch(() => triggerAlert('error', 'Cannot load users.'));
+  };
+
+  const fetchTransactions = () => {
+    getAdminTransactions(transactionsPage, 10, transactionsSearch, transactionsService, transactionsStatus, transactionsSortBy)
+      .then(setAdminTransactions)
+      .catch(() => triggerAlert('error', 'Cannot load transactions.'));
+  };
+
+  const fetchSmsLogs = () => {
+    getAdminSmsLogs(smsLogsPage, 10, smsLogsSearch, smsLogsStatus, smsLogsType)
+      .then(setAdminSmsLogs)
+      .catch(() => triggerAlert('error', 'Cannot load SMS logs.'));
+  };
+
+  const fetchKeywords = () => {
+    getAdminKeywords(keywordsPage, 10, keywordsSearch)
+      .then(setAdminKeywords)
+      .catch(() => triggerAlert('error', 'Cannot load keywords.'));
+  };
+
+  const fetchModerationLogs = () => {
+    getAdminModerationLogs(moderationLogsPage, 10, moderationLogsSearch, moderationLogsStatus)
+      .then(setAdminModerationLogs)
+      .catch(() => triggerAlert('error', 'Cannot load moderation logs.'));
+  };
+
+  const fetchTemplates = () => {
+    getAdminTemplates(templatesPage, 10, templatesSearch, templatesSortBy)
+      .then(setAdminTemplates)
+      .catch(() => triggerAlert('error', 'Cannot load templates.'));
+  };
+
+  useEffect(() => {
     if (!loggedInUser || !loggedInUser.isAdmin) return;
 
     if (adminTab === 'overview') {
@@ -49,36 +128,34 @@ export default function AdminDashboard() {
         .then(setAdminStats)
         .catch(() => triggerAlert('error', 'Cannot load dashboard stats.'));
     } else if (adminTab === 'users') {
-      getAdminUsers()
-        .then(setAdminUsers)
-        .catch(() => triggerAlert('error', 'Cannot load users.'));
-    } else if (adminTab === 'logs') {
-      getAdminSmsLogs(smsLogsPage, 10, smsLogsSearch, smsLogsStatus, smsLogsType)
-        .then(setAdminSmsLogs)
-        .catch(() => triggerAlert('error', 'Cannot load SMS logs.'));
+      fetchUsers();
     } else if (adminTab === 'transactions') {
-      getAdminTransactions()
-        .then(setAdminTransactions)
-        .catch(() => triggerAlert('error', 'Cannot load transactions.'));
+      fetchTransactions();
+    } else if (adminTab === 'logs') {
+      fetchSmsLogs();
+    } else if (adminTab === 'moderation') {
+      fetchKeywords();
+      fetchModerationLogs();
     } else if (adminTab === 'templates') {
-      getTemplates()
-        .then(setAdminTemplates)
-        .catch(() => triggerAlert('error', 'Cannot load templates.'));
+      fetchTemplates();
     }
-  };
-
-  useEffect(() => {
-    if (loggedInUser && loggedInUser.isAdmin) {
-      loadAdminDashboardData();
-    }
-  }, [adminTab, smsLogsPage, smsLogsSearch, smsLogsStatus, smsLogsType]);
+  }, [
+    loggedInUser,
+    adminTab,
+    usersPage, usersSearch, usersStatus, usersQuota, usersSortBy,
+    transactionsPage, transactionsSearch, transactionsService, transactionsStatus, transactionsSortBy,
+    smsLogsPage, smsLogsSearch, smsLogsStatus, smsLogsType,
+    keywordsPage, keywordsSearch,
+    moderationLogsPage, moderationLogsSearch, moderationLogsStatus,
+    templatesPage, templatesSearch, templatesSortBy
+  ]);
 
   const handleToggleUserStatus = (id, currentActive) => {
     const newActive = !currentActive;
     updateUserStatus(id, newActive)
       .then(res => {
         triggerAlert('success', res.message);
-        getAdminUsers().then(setAdminUsers);
+        fetchUsers();
         if (adminTab === 'overview') {
           getAdminStats().then(setAdminStats);
         }
@@ -96,7 +173,7 @@ export default function AdminDashboard() {
         triggerAlert('success', res.message);
         setShowQuotaModal(false);
         setSelectedUserForQuota(null);
-        getAdminUsers().then(setAdminUsers);
+        fetchUsers();
       })
       .catch(err => {
         const errorMsg = err.response?.data?.message || 'Failed to update quota.';
@@ -112,7 +189,7 @@ export default function AdminDashboard() {
       .then(() => {
         triggerAlert('success', 'System template created successfully!');
         setAdminTemplateForm({ title: '', body: '' });
-        getTemplates().then(setAdminTemplates);
+        fetchTemplates();
       })
       .catch(err => {
         const errorMsg = err.response?.data?.message || 'Failed to create system template.';
@@ -125,12 +202,88 @@ export default function AdminDashboard() {
     deleteAdminTemplate(id)
       .then(res => {
         triggerAlert('success', res.message || 'Template deleted successfully.');
-        getTemplates().then(setAdminTemplates);
+        fetchTemplates();
       })
       .catch(err => {
         const errorMsg = err.response?.data?.message || 'Failed to delete system template.';
         triggerAlert('error', errorMsg);
       });
+  };
+
+  const handleCreateKeyword = (keyword, category, action) => {
+    createAdminKeyword(keyword, category, action)
+      .then(res => {
+        triggerAlert('success', res.message);
+        fetchKeywords();
+      })
+      .catch(err => {
+        triggerAlert('error', err.response?.data?.message || 'Failed to add keyword rule.');
+      });
+  };
+
+  const handleToggleKeyword = (id) => {
+    toggleAdminKeyword(id)
+      .then(res => {
+        triggerAlert('success', res.message);
+        fetchKeywords();
+      })
+      .catch(err => {
+        triggerAlert('error', err.response?.data?.message || 'Failed to toggle keyword rule.');
+      });
+  };
+
+  const handleDeleteKeyword = (id) => {
+    if (!window.confirm('Are you sure you want to delete this keyword rule?')) return;
+    deleteAdminKeyword(id)
+      .then(res => {
+        triggerAlert('success', res.message);
+        fetchKeywords();
+      })
+      .catch(err => {
+        triggerAlert('error', err.response?.data?.message || 'Failed to delete keyword rule.');
+      });
+  };
+
+  const handleSeed15DaysData = async () => {
+    try {
+      const res = await seed15DaysData();
+      triggerAlert('success', res.message);
+      getAdminStats().then(setAdminStats);
+      return res;
+    } catch (err) {
+      triggerAlert('error', err.response?.data?.message || 'Failed to seed sample data.');
+      throw err;
+    }
+  };
+
+  const handleCreateFriendUsers = async () => {
+    try {
+      const res = await createFriendUsers();
+      triggerAlert('success', res.message);
+      getAdminStats().then(setAdminStats);
+      if (adminTab === 'users') {
+        fetchUsers();
+      }
+      return res;
+    } catch (err) {
+      triggerAlert('error', err.response?.data?.message || 'Failed to create friend users.');
+      throw err;
+    }
+  };
+
+  const handleCreateStrangerUsers = async () => {
+    try {
+      const res = await createStrangerUsers();
+      triggerAlert('success', res.message);
+      getAdminStats().then(setAdminStats);
+      if (adminTab === 'users') {
+        fetchUsers();
+      }
+      return res;
+    } catch (err) {
+      triggerAlert('error', err.response?.data?.message || 'Failed to create stranger users.');
+      throw err;
+    }
   };
 
   return (
@@ -142,8 +295,8 @@ export default function AdminDashboard() {
             <Shield size={28} />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <h3 style={{ color: 'var(--text-main)', fontSize: '1.05rem', fontWeight: '600' }}>Admin Workspace</h3>
-            <span className="admin-role-badge" style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: '600', marginTop: '2px' }}>System Administrator</span>
+            <h3 style={{ color: 'var(--text-main)', fontSize: '1.05rem', fontWeight: '600' }}>{t('admin_workspace')}</h3>
+            <span className="admin-role-badge" style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: '600', marginTop: '2px' }}>{t('system_admin')}</span>
           </div>
         </div>
 
@@ -154,7 +307,15 @@ export default function AdminDashboard() {
             style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'overview' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'overview' ? 'var(--color-primary)' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '600', textAlign: 'left', transition: 'var(--transition-fast)' }}
           >
             <BarChart3 size={18} />
-            <span>Dashboard</span>
+            <span>{t('admin_nav_dashboard')}</span>
+          </button>
+          <button
+            className={`admin-nav-btn ${adminTab === 'moderation' ? 'active' : ''}`}
+            onClick={() => setAdminTab('moderation')}
+            style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'moderation' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'moderation' ? 'var(--color-primary)' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '600', textAlign: 'left', transition: 'var(--transition-fast)' }}
+          >
+            <ShieldAlert size={18} />
+            <span>{t('admin_nav_moderation')}</span>
           </button>
           <button
             className={`admin-nav-btn ${adminTab === 'users' ? 'active' : ''}`}
@@ -162,7 +323,7 @@ export default function AdminDashboard() {
             style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'users' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'users' ? 'var(--color-primary)' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '600', textAlign: 'left', transition: 'var(--transition-fast)' }}
           >
             <Users size={18} />
-            <span>User Accounts</span>
+            <span>{t('admin_nav_users')}</span>
           </button>
           <button
             className={`admin-nav-btn ${adminTab === 'logs' ? 'active' : ''}`}
@@ -170,7 +331,7 @@ export default function AdminDashboard() {
             style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'logs' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'logs' ? 'var(--color-primary)' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '600', textAlign: 'left', transition: 'var(--transition-fast)' }}
           >
             <FileText size={18} />
-            <span>SMS Logs</span>
+            <span>{t('admin_nav_sms_logs')}</span>
           </button>
           <button
             className={`admin-nav-btn ${adminTab === 'transactions' ? 'active' : ''}`}
@@ -178,7 +339,7 @@ export default function AdminDashboard() {
             style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'transactions' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'transactions' ? 'var(--color-primary)' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '600', textAlign: 'left', transition: 'var(--transition-fast)' }}
           >
             <CreditCard size={18} />
-            <span>Transactions</span>
+            <span>{t('admin_nav_transactions')}</span>
           </button>
           <button
             className={`admin-nav-btn ${adminTab === 'templates' ? 'active' : ''}`}
@@ -186,7 +347,15 @@ export default function AdminDashboard() {
             style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'templates' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'templates' ? 'var(--color-primary)' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '600', textAlign: 'left', transition: 'var(--transition-fast)' }}
           >
             <FileCode size={18} />
-            <span>System Templates</span>
+            <span>{t('admin_nav_templates')}</span>
+          </button>
+          <button
+            className={`admin-nav-btn ${adminTab === 'settings' ? 'active' : ''}`}
+            onClick={() => setAdminTab('settings')}
+            style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '12px 16px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: adminTab === 'settings' ? 'rgba(36, 129, 204, 0.12)' : 'transparent', color: adminTab === 'settings' ? 'var(--color-primary)' : 'var(--text-muted)', fontSize: '0.92rem', fontWeight: '600', textAlign: 'left', transition: 'var(--transition-fast)' }}
+          >
+            <Settings size={18} />
+            <span>{t('admin_nav_settings')}</span>
           </button>
         </div>
 
@@ -201,17 +370,53 @@ export default function AdminDashboard() {
             style={{ width: '100%', padding: '10px', border: '1px solid var(--color-danger)', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-danger)', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer', transition: 'var(--transition-fast)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
           >
             <LogOut size={16} />
-            <span>Log Out</span>
+            <span>{t('logout')}</span>
           </button>
         </div>
       </div>
 
       {/* Content Area */}
       <div className="admin-content" style={{ flex: '1', padding: '30px 40px', overflowY: 'auto', background: 'var(--bg-app)' }}>
-        {adminTab === 'overview' && <AdminOverview adminStats={adminStats} />}
+        {adminTab === 'overview' && (
+          <AdminOverview
+            adminStats={adminStats}
+            onSeedData={handleSeed15DaysData}
+            onCreateFriends={handleCreateFriendUsers}
+            onCreateStrangers={handleCreateStrangerUsers}
+          />
+        )}
+        {adminTab === 'moderation' && (
+          <AdminModeration
+            keywords={adminKeywords}
+            keywordsPage={keywordsPage}
+            setKeywordsPage={setKeywordsPage}
+            keywordsSearch={keywordsSearch}
+            setKeywordsSearch={setKeywordsSearch}
+            moderationLogs={adminModerationLogs}
+            moderationLogsPage={moderationLogsPage}
+            setModerationLogsPage={setModerationLogsPage}
+            moderationLogsSearch={moderationLogsSearch}
+            setModerationLogsSearch={setModerationLogsSearch}
+            moderationLogsStatus={moderationLogsStatus}
+            setModerationLogsStatus={setModerationLogsStatus}
+            onCreateKeyword={handleCreateKeyword}
+            onToggleKeyword={handleToggleKeyword}
+            onDeleteKeyword={handleDeleteKeyword}
+          />
+        )}
         {adminTab === 'users' && (
           <AdminUsers
             adminUsers={adminUsers}
+            usersPage={usersPage}
+            setUsersPage={setUsersPage}
+            usersSearch={usersSearch}
+            setUsersSearch={setUsersSearch}
+            usersStatus={usersStatus}
+            setUsersStatus={setUsersStatus}
+            usersQuota={usersQuota}
+            setUsersQuota={setUsersQuota}
+            usersSortBy={usersSortBy}
+            setUsersSortBy={setUsersSortBy}
             setSelectedUserForQuota={setSelectedUserForQuota}
             setNewQuotaValue={setNewQuotaValue}
             setShowQuotaModal={setShowQuotaModal}
@@ -230,15 +435,38 @@ export default function AdminDashboard() {
             setSmsLogsType={setSmsLogsType}
           />
         )}
-        {adminTab === 'transactions' && <AdminTransactions adminTransactions={adminTransactions} />}
+        {adminTab === 'transactions' && (
+          <AdminTransactions
+            adminTransactions={adminTransactions}
+            transactionsPage={transactionsPage}
+            setTransactionsPage={setTransactionsPage}
+            transactionsSearch={transactionsSearch}
+            setTransactionsSearch={setTransactionsSearch}
+            transactionsService={transactionsService}
+            setTransactionsService={setTransactionsService}
+            transactionsStatus={transactionsStatus}
+            setTransactionsStatus={setTransactionsStatus}
+            transactionsSortBy={transactionsSortBy}
+            setTransactionsSortBy={setTransactionsSortBy}
+          />
+        )}
         {adminTab === 'templates' && (
           <AdminTemplates
             adminTemplates={adminTemplates}
+            templatesPage={templatesPage}
+            setTemplatesPage={setTemplatesPage}
+            templatesSearch={templatesSearch}
+            setTemplatesSearch={setTemplatesSearch}
+            templatesSortBy={templatesSortBy}
+            setTemplatesSortBy={setTemplatesSortBy}
             adminTemplateForm={adminTemplateForm}
             setAdminTemplateForm={setAdminTemplateForm}
             handleCreateSystemTemplate={handleCreateSystemTemplate}
             handleDeleteSystemTemplate={handleDeleteSystemTemplate}
           />
+        )}
+        {adminTab === 'settings' && (
+          <AdminSettings />
         )}
       </div>
 

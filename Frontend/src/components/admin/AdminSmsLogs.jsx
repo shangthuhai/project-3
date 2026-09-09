@@ -1,4 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Download, FileSpreadsheet, FileText } from 'lucide-react';
+import Pagination from './Pagination';
+import { exportToCSV, exportToPDF } from '../../utils/exportUtils';
 
 export default function AdminSmsLogs({
   adminSmsLogs,
@@ -10,6 +13,8 @@ export default function AdminSmsLogs({
   smsLogsType = 'all',
   setSmsLogsType = () => {}
 }) {
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const smsLogsList = adminSmsLogs?.items || [];
   const hasActiveFilters = smsLogsSearch !== '' || smsLogsStatus !== 'all' || smsLogsType !== 'all';
 
   const handleResetFilters = () => {
@@ -19,11 +24,125 @@ export default function AdminSmsLogs({
     setSmsLogsPage(1);
   };
 
+  const smsColumns = [
+    { header: 'ID', accessor: 'id' },
+    { header: 'Người gửi', accessor: item => item.senderUsername || item.sender || '—' },
+    { header: 'Số nhận', accessor: item => item.receiverNumber || item.receiver || '—' },
+    { header: 'Nội dung SMS', accessor: item => item.messageContent || item.message || '—' },
+    { header: 'Loại', accessor: item => item.type || 'Standard' },
+    { header: 'Trạng thái', accessor: item => item.status || 'Sent' },
+    { header: 'Mã Gateway', accessor: item => item.gatewayCode || '—' },
+    { header: 'Thời gian', accessor: item => item.sentAt ? new Date(item.sentAt).toLocaleString('vi-VN') : '—' }
+  ];
+
+  const handleExportCSV = () => {
+    exportToCSV(`Bao_Cao_SMS_Logs_${new Date().toISOString().slice(0,10)}`, smsColumns, smsLogsList);
+    setShowExportMenu(false);
+  };
+
+  const handleExportPDF = () => {
+    const summary = [
+      smsLogsSearch ? `Từ khóa: "${smsLogsSearch}"` : null,
+      smsLogsStatus !== 'all' ? `Trạng thái: ${smsLogsStatus}` : null,
+      smsLogsType !== 'all' ? `Loại: ${smsLogsType}` : null
+    ].filter(Boolean).join(' | ') || 'Tất cả nhật ký SMS';
+
+    exportToPDF('BÁO CÁO NHẬT KÝ GỬI SMS', smsColumns, smsLogsList, summary);
+    setShowExportMenu(false);
+  };
+
   return (
     <div className="admin-tab-content">
-      <div className="admin-header" style={{ marginBottom: '20px' }}>
-        <h2 style={{ fontSize: '1.8rem', fontWeight: '600', color: 'var(--text-main)', marginBottom: '6px' }}>System SMS Delivery Logs</h2>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>Comprehensive database audit trail for all outbound text messages and gateway delivery status codes.</p>
+      <div className="admin-header" style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div>
+          <h2 style={{ fontSize: '1.8rem', fontWeight: '600', color: 'var(--text-main)', marginBottom: '6px' }}>System SMS Delivery Logs</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>Comprehensive database audit trail for all outbound text messages and gateway delivery status codes.</p>
+        </div>
+
+        {/* Export Report Dropdown */}
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => setShowExportMenu(!showExportMenu)}
+            className="btn btn-secondary"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '9px 16px',
+              borderRadius: '8px',
+              fontSize: '0.88rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              background: 'var(--bg-sidebar)',
+              border: '1px solid var(--border-light)',
+              color: 'var(--text-main)',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+            }}
+          >
+            <Download size={16} /> Xuất Báo Cáo
+          </button>
+
+          {showExportMenu && (
+            <div style={{
+              position: 'absolute',
+              right: 0,
+              top: 'calc(100% + 6px)',
+              background: 'var(--bg-sidebar)',
+              border: '1px solid var(--border-light)',
+              borderRadius: '8px',
+              padding: '6px',
+              boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+              zIndex: 100,
+              minWidth: '180px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '4px'
+            }}>
+              <button
+                onClick={handleExportCSV}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 12px',
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'var(--text-main)',
+                  fontSize: '0.86rem',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  width: '100%'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <FileSpreadsheet size={15} style={{ color: '#10b981' }} /> Xuất Excel / CSV
+              </button>
+              <button
+                onClick={handleExportPDF}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 12px',
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'var(--text-main)',
+                  fontSize: '0.86rem',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  width: '100%'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <FileText size={15} style={{ color: '#ef4444' }} /> Xuất PDF
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Filter and Search Controls Bar */}
@@ -94,7 +213,7 @@ export default function AdminSmsLogs({
             }}
             style={{
               padding: '9px 12px',
-              background: '#182533',
+              background: 'var(--bg-app)',
               border: '1px solid var(--border-light)',
               borderRadius: '8px',
               color: smsLogsStatus !== 'all' ? 'var(--color-primary)' : 'var(--text-muted)',
@@ -117,7 +236,7 @@ export default function AdminSmsLogs({
             }}
             style={{
               padding: '9px 12px',
-              background: '#182533',
+              background: 'var(--bg-app)',
               border: '1px solid var(--border-light)',
               borderRadius: '8px',
               color: smsLogsType !== 'all' ? 'var(--color-primary)' : 'var(--text-muted)',
@@ -214,82 +333,13 @@ export default function AdminSmsLogs({
       </div>
 
       {/* Pagination Controls */}
-      {adminSmsLogs && adminSmsLogs.totalPages > 1 && (
-        <div className="pagination-container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', padding: '12px 20px', background: 'var(--bg-sidebar)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)' }}>
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-            Hiển thị trang <strong>{adminSmsLogs.page}</strong> / <strong>{adminSmsLogs.totalPages}</strong> (Tổng cộng <strong>{adminSmsLogs.totalCount}</strong> bản ghi)
-          </span>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              onClick={() => setSmsLogsPage(prev => Math.max(prev - 1, 1))}
-              disabled={adminSmsLogs.page <= 1}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '6px',
-                background: adminSmsLogs.page <= 1 ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.08)',
-                color: adminSmsLogs.page <= 1 ? 'var(--text-muted)' : '#fff',
-                border: '1px solid var(--border-light)',
-                cursor: adminSmsLogs.page <= 1 ? 'not-allowed' : 'pointer',
-                fontSize: '0.85rem',
-                fontWeight: '500',
-                transition: 'all 0.2s'
-              }}
-            >
-              Trước
-            </button>
-            
-            {/* Dynamic page numbers */}
-            {Array.from({ length: adminSmsLogs.totalPages }, (_, idx) => idx + 1)
-              .filter(p => Math.abs(p - adminSmsLogs.page) <= 2 || p === 1 || p === adminSmsLogs.totalPages)
-              .map((p, idx, arr) => {
-                const elements = [];
-                if (idx > 0 && p - arr[idx - 1] > 1) {
-                  elements.push(
-                    <span key={`dots-${p}`} style={{ color: 'var(--text-muted)', alignSelf: 'center', padding: '0 4px' }}>...</span>
-                  );
-                }
-                elements.push(
-                  <button
-                    key={p}
-                    onClick={() => setSmsLogsPage(p)}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      background: adminSmsLogs.page === p ? 'var(--color-primary, #2481cc)' : 'rgba(255,255,255,0.04)',
-                      color: '#fff',
-                      border: adminSmsLogs.page === p ? '1px solid var(--color-primary, #2481cc)' : '1px solid var(--border-light)',
-                      cursor: 'pointer',
-                      fontSize: '0.85rem',
-                      fontWeight: adminSmsLogs.page === p ? '600' : '500',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    {p}
-                  </button>
-                );
-                return elements;
-              })}
-
-            <button
-              onClick={() => setSmsLogsPage(prev => Math.min(prev + 1, adminSmsLogs.totalPages))}
-              disabled={adminSmsLogs.page >= adminSmsLogs.totalPages}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '6px',
-                background: adminSmsLogs.page >= adminSmsLogs.totalPages ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.08)',
-                color: adminSmsLogs.page >= adminSmsLogs.totalPages ? 'var(--text-muted)' : '#fff',
-                border: '1px solid var(--border-light)',
-                cursor: adminSmsLogs.page >= adminSmsLogs.totalPages ? 'not-allowed' : 'pointer',
-                fontSize: '0.85rem',
-                fontWeight: '500',
-                transition: 'all 0.2s'
-              }}
-            >
-              Sau
-            </button>
-          </div>
-        </div>
-      )}
+      <Pagination
+        page={adminSmsLogs.page}
+        totalPages={adminSmsLogs.totalPages}
+        totalCount={adminSmsLogs.totalCount}
+        pageSize={adminSmsLogs.pageSize || 10}
+        onPageChange={setSmsLogsPage}
+      />
     </div>
   );
 }

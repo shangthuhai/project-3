@@ -160,6 +160,7 @@ export default function LeftSidebar() {
 
         {/* AI Chatbot Icon */}
         <button
+          id="ai-chatbot-icon-btn"
           className={cx('left-sidebar__btn', { 'left-sidebar__btn--active': isAiBubbleOpen })}
           onClick={() => setIsAiBubbleOpen(prev => !prev)}
           title={t('ai_chatbot_title') || 'AI Chatbot'}
