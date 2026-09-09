@@ -356,6 +356,7 @@ export default function ChatWindow() {
                     type="datetime-local"
                     value={scheduleDate}
                     onChange={(e) => setScheduleDate(e.target.value)}
+                    onClick={(e) => { try { e.target.showPicker?.(); } catch (err) {} }}
                     min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
                   />
                   <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>

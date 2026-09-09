@@ -405,9 +405,9 @@
 }
 
 .chat-window__scheduler-popover input::-webkit-calendar-picker-indicator {
-  filter: var(--calendar-icon-filter, invert(0.85));
+  filter: var(--calendar-icon-filter, brightness(0) invert(1)) !important;
   cursor: pointer;
-  opacity: 0.85;
+  opacity: 0.95;
   transition: opacity 0.2s ease;
 }
 

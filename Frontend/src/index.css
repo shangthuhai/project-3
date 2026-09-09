@@ -57,7 +57,7 @@
   --alert-border-info: rgba(36, 129, 204, 0.35);
   --alert-text-info: #60a5fa;
 
-  --calendar-icon-filter: invert(0.85);
+  --calendar-icon-filter: brightness(0) invert(1);
   --color-scheme: dark;
 }
 
@@ -107,7 +107,7 @@
   --alert-border-info: rgba(36, 129, 204, 0.35);
   --alert-text-info: #60a5fa;
 
-  --calendar-icon-filter: invert(0.85);
+  --calendar-icon-filter: brightness(0) invert(1);
   --color-scheme: dark;
 }
 
@@ -211,7 +211,7 @@
   --alert-border-info: rgba(139, 92, 246, 0.45);
   --alert-text-info: #c4b5fd;
 
-  --calendar-icon-filter: invert(0.85);
+  --calendar-icon-filter: brightness(0) invert(1);
   --color-scheme: dark;
 }
 
@@ -220,9 +220,9 @@ input[type="datetime-local"] {
 }
 
 input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-  filter: var(--calendar-icon-filter, invert(0.85));
+  filter: var(--calendar-icon-filter, brightness(0) invert(1)) !important;
   cursor: pointer;
-  opacity: 0.85;
+  opacity: 0.95;
   transition: opacity 0.2s ease;
 }
 
