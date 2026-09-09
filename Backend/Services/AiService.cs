@@ -246,51 +246,16 @@ namespace Backend.Services
 
         public async Task<bool> ModerateContentAsync(string content)
         {
-            string systemInstruction =
-                "Bạn là một hệ thống kiểm duyệt nội dung tin nhắn tự động. " +
-                "Hãy phân tích tin nhắn sau xem có chứa nội dung rác (spam), lừa đảo (phishing), ngôn từ thù hận, chửi thề tục tĩu, quấy rối hoặc nội dung độc hại hay không. " +
-                "Hãy trả về đúng một từ duy nhất: \"SAFE\" nếu tin nhắn hoàn toàn an toàn và lành mạnh, hoặc \"UNSAFE\" nếu tin nhắn vi phạm các tiêu chuẩn trên. " +
-                "Không trả về thêm bất kỳ từ nào khác.";
-
-            var (success, responseString, _) = await PostChatCompletionsWithFallbackAsync(model => new
+            // Fast local keyword moderation check first (< 1ms)
+            bool isLocalSafe = LocalContentModerationCheck(content);
+            if (!isLocalSafe)
             {
-                model = model,
-                messages = new[]
-                {
-                    new { role = "system", content = systemInstruction },
-                    new { role = "user", content = $"Tin nhắn cần kiểm tra: \"{content}\"" }
-                },
-                max_tokens = 100,
-                temperature = 0.0
-            });
-
-            if (!success)
-            {
-                _logger.LogWarning("AI API moderation check failed across all cloud & local LLMs. Falling back to local keyword check.");
-                return LocalContentModerationCheck(content);
+                _logger.LogInformation($"Content flagged as UNSAFE by local filter: '{content}'");
+                return false;
             }
 
-            try
-            {
-                using var doc = JsonDocument.Parse(responseString);
-                if (doc.RootElement.TryGetProperty("choices", out var choices) && choices.GetArrayLength() > 0)
-                {
-                    var text = choices[0].GetProperty("message").GetProperty("content").GetString();
-                    string result = StripThinkingProcess(text ?? string.Empty).ToUpper();
-                    
-                    if (result.Contains("UNSAFE"))
-                    {
-                        _logger.LogInformation($"Content flagged as UNSAFE by AI: '{content}'");
-                        return false;
-                    }
-                }
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Exception during content moderation parsing. Falling back to local keyword check.");
-                return LocalContentModerationCheck(content);
-            }
+            // Messages passing local filter are approved instantly to ensure zero sending latency.
+            return true;
         }
 
         private bool LocalContentModerationCheck(string content)

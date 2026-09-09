@@ -599,19 +599,60 @@ export function ChatProvider({ children }) {
     if (e) e.preventDefault();
     if (!newMessage.trim() || newMessage.length > 120) return;
 
-    apiSendMessage(loggedInUser.id, selectedContact.contactNumber, newMessage.trim(), scheduleDate || null)
+    const contentToSend = newMessage.trim();
+    const currentScheduleDate = scheduleDate || null;
+
+    // 1. Optimistically clear input & reset popovers instantly
+    setNewMessage('');
+    setScheduleDate('');
+    setShowScheduler(false);
+    setShowTemplatePicker(false);
+    setShowAiAssistant(false);
+
+    // 2. Create temporary optimistic message for immediate UI feedback
+    const tempId = `temp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const tempMsg = {
+      id: tempId,
+      senderId: loggedInUser.id,
+      receiverNumber: selectedContact.contactNumber,
+      content: contentToSend,
+      sentTime: new Date().toISOString(),
+      scheduledAt: currentScheduleDate,
+      isPending: true
+    };
+
+    setChatMessages(prev => [...prev, tempMsg]);
+
+    // 3. Update quota count optimistically if non-friend & not scheduled
+    if (remainingQuota && !remainingQuota.isFriend && remainingQuota.remaining > 0 && !currentScheduleDate) {
+      setRemainingQuota(prev => ({
+        ...prev,
+        remaining: Math.max(0, prev.remaining - 1),
+        sentCount: (prev.sentCount || 0) + 1
+      }));
+    }
+
+    // 4. Send API request
+    apiSendMessage(loggedInUser.id, selectedContact.contactNumber, contentToSend, currentScheduleDate)
       .then(msg => {
-        setChatMessages(prev => [...prev, msg]);
-        setNewMessage('');
-        setScheduleDate('');
-        setShowScheduler(false);
-        getQuota(loggedInUser.id, selectedContact.contactNumber)
-          .then(setRemainingQuota)
-          .catch(() => { });
-        loadAnalyticsStats();
+        setChatMessages(prev => {
+          const exists = prev.some(m => m.id === msg.id);
+          if (exists) {
+            return prev.filter(m => m.id !== tempId);
+          }
+          return prev.map(m => m.id === tempId ? msg : m);
+        });
         loadConversations();
       })
       .catch(err => {
+        // Rollback optimistic message & restore input text
+        setChatMessages(prev => prev.filter(m => m.id !== tempId));
+        setNewMessage(contentToSend);
+        if (remainingQuota && !remainingQuota.isFriend && !currentScheduleDate) {
+          getQuota(loggedInUser.id, selectedContact.contactNumber)
+            .then(setRemainingQuota)
+            .catch(() => { });
+        }
         const errorMsg = err.response?.data?.message || 'Failed to send message.';
         triggerAlert('error', errorMsg);
       });
@@ -923,9 +964,19 @@ export function ChatProvider({ children }) {
     setAiNewMessage('');
     setIsAiLoading(true);
 
+    const tempMsg = {
+      id: `temp_ai_${Date.now()}`,
+      senderId: loggedInUser.id,
+      receiverNumber: '9999999999',
+      receiverId: 999,
+      content: messageText,
+      sentTime: new Date().toISOString()
+    };
+
+    setAiMessages(prev => [...prev, tempMsg]);
+
     apiSendMessage(loggedInUser.id, '9999999999', messageText)
       .then((sentMsg) => {
-        setAiMessages(prev => [...prev, sentMsg]);
         getChatHistory(loggedInUser.id, '9999999999')
           .then(msgs => {
             setAiMessages(msgs);
@@ -934,6 +985,8 @@ export function ChatProvider({ children }) {
           .catch(() => setIsAiLoading(false));
       })
       .catch((err) => {
+        setAiMessages(prev => prev.filter(m => m.id !== tempMsg.id));
+        setAiNewMessage(messageText);
         const errorMsg = err.response?.data?.message || 'Failed to send message to AI';
         triggerAlert('error', errorMsg);
         setIsAiLoading(false);
