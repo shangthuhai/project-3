@@ -20,3 +20,5 @@ Frontend/yarn-error.log*
 *.userosscache
 *.sln.docstates
 .vs/
+Backend/appsettings.Production.json
+scratch/

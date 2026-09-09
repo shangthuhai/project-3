@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add DB context
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite("Data Source=smschat.db"));
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=smschat.db"));
 
 // Register background scheduled message processor
 builder.Services.AddHostedService<Backend.Services.SMSBackgroundService>();
