@@ -395,10 +395,24 @@
   background: var(--bg-app);
   border: 1px solid var(--border-light);
   color: var(--text-main);
+  color-scheme: var(--color-scheme, dark);
   padding: 6px 10px;
   border-radius: var(--radius-sm);
   outline: none;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.chat-window__scheduler-popover input::-webkit-calendar-picker-indicator {
+  filter: var(--calendar-icon-filter, invert(0.85));
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+
+.chat-window__scheduler-popover input::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 }
 
 .chat-window__template-picker {

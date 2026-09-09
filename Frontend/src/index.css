@@ -56,6 +56,9 @@
   --alert-bg-info: rgba(36, 129, 204, 0.16);
   --alert-border-info: rgba(36, 129, 204, 0.35);
   --alert-text-info: #60a5fa;
+
+  --calendar-icon-filter: invert(0.85);
+  --color-scheme: dark;
 }
 
 .theme-dark {
@@ -103,6 +106,9 @@
   --alert-bg-info: rgba(36, 129, 204, 0.16);
   --alert-border-info: rgba(36, 129, 204, 0.35);
   --alert-text-info: #60a5fa;
+
+  --calendar-icon-filter: invert(0.85);
+  --color-scheme: dark;
 }
 
 .theme-light {
@@ -154,6 +160,9 @@
   --alert-bg-info: #eff6ff;
   --alert-border-info: #93c5fd;
   --alert-text-info: #1e40af;
+
+  --calendar-icon-filter: none;
+  --color-scheme: light;
 }
 
 .theme-glass {
@@ -201,6 +210,24 @@
   --alert-bg-info: rgba(139, 92, 246, 0.22);
   --alert-border-info: rgba(139, 92, 246, 0.45);
   --alert-text-info: #c4b5fd;
+
+  --calendar-icon-filter: invert(0.85);
+  --color-scheme: dark;
+}
+
+input[type="datetime-local"] {
+  color-scheme: var(--color-scheme, dark);
+}
+
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: var(--calendar-icon-filter, invert(0.85));
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 }
 
 .theme-glass .app-container,

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Send } from 'lucide-react';
+import { Send, Bot } from 'lucide-react';
 import { useChat, getInitialAiChatPosition } from '../../context/ChatContext';
 import { useLanguage } from '../../context/LanguageContext';
 import styles from './UserAiChat.module.css';
@@ -135,8 +135,11 @@ export default function UserAiChat() {
       }}
     >
       <div className={cx('ai-chat__header')} onMouseDown={handleAiChatMouseDown}>
-        <h3>{t('ai_chatbot_title')}</h3>
-        <button className={cx('ai-chat__close-btn')} onClick={handleCloseAiChat}>×</button>
+        <div className={cx('ai-chat__header-title')}>
+          <Bot size={18} className={cx('ai-chat__header-icon')} />
+          <h3>{t('ai_chatbot_title')}</h3>
+        </div>
+        <button className={cx('ai-chat__close-btn')} onClick={handleCloseAiChat} title="Đóng">✕</button>
       </div>
 
       <div className={cx('ai-chat__messages-wrapper')}>
