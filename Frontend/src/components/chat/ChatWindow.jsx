@@ -248,15 +248,26 @@ export default function ChatWindow() {
               const isSentByMe = msg.senderId === loggedInUser.id;
               const date = new Date(msg.sentTime);
               const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-              const isPending = msg.scheduledAt && new Date(msg.scheduledAt) > new Date();
+              const isPending = (() => {
+                if (!msg.scheduledAt) return false;
+                const str = String(msg.scheduledAt);
+                const isoStr = (str.includes('Z') || str.includes('+')) ? str : str.replace(' ', 'T') + 'Z';
+                return new Date(isoStr) > new Date();
+              })();
+              const schedTimeStr = msg.scheduledAt ? (() => {
+                const str = String(msg.scheduledAt);
+                const isoStr = (str.includes('Z') || str.includes('+')) ? str : str.replace(' ', 'T') + 'Z';
+                return new Date(isoStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              })() : '';
+              const displayTime = isPending && schedTimeStr ? schedTimeStr : formattedTime;
               return (
                 <div key={msg.id} className={cx('chat-window__message-row', isSentByMe ? 'chat-window__message-row--sent' : 'chat-window__message-row--received')}>
                   <div className={cx('chat-window__message-bubble', isSentByMe ? 'chat-window__message-bubble--sent' : 'chat-window__message-bubble--received')}>
                     <span className={cx('chat-window__message-text')}>{msg.content}</span>
                     <span className={cx('chat-window__message-time')}>
-                      {formattedTime}
+                      {displayTime}
                       {isPending && (
-                        <span className={cx('chat-window__msg-scheduled-badge')}><Clock size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} /> {language === 'en' ? 'Scheduled' : 'Hẹn giờ'}: {new Date(msg.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span className={cx('chat-window__msg-scheduled-badge')}><Clock size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} /> {language === 'en' ? 'Scheduled' : 'Hẹn giờ'}: {schedTimeStr}</span>
                       )}
                     </span>
                   </div>

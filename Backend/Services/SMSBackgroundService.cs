@@ -52,48 +52,71 @@ namespace Backend.Services
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 var hubContext = scope.ServiceProvider.GetService<Microsoft.AspNetCore.SignalR.IHubContext<Backend.Hubs.ChatHub>>();
                 
-                // Get all pending logs where scheduled time is in the past or now
+                // Get all pending logs where message is set and has a ScheduledAt value
                 var pendingLogs = await context.SMSLogs
                     .Include(l => l.Message)
                     .Where(l => l.DeliveryStatus == "pending" && 
                                 l.Message != null && 
-                                l.Message.ScheduledAt != null && 
-                                l.Message.ScheduledAt <= DateTime.UtcNow)
+                                l.Message.ScheduledAt != null)
                     .ToListAsync();
 
                 if (pendingLogs.Count > 0)
                 {
-                    _logger.LogInformation($"Found {pendingLogs.Count} scheduled message(s) ready to send.");
+                    var nowUtc = DateTime.UtcNow;
+                    var readyLogs = pendingLogs
+                        .Where(l => l.Message != null && 
+                                    l.Message.ScheduledAt.HasValue && 
+                                    DateTime.SpecifyKind(l.Message.ScheduledAt.Value, DateTimeKind.Utc) <= nowUtc)
+                        .ToList();
 
-                    foreach (var log in pendingLogs)
+                    if (readyLogs.Count > 0)
                     {
-                        log.DeliveryStatus = "delivered";
-                        log.UpdatedAt = DateTime.UtcNow;
+                        _logger.LogInformation($"Found {readyLogs.Count} scheduled message(s) ready to send.");
 
-                        if (log.Message != null)
+                        foreach (var log in readyLogs)
                         {
-                            _logger.LogInformation($"Scheduled Message ID {log.MessageId} to {log.Message.ReceiverNumber} delivered successfully.");
+                            log.DeliveryStatus = "delivered";
+                            log.UpdatedAt = DateTime.UtcNow;
 
-                            if (hubContext != null && log.Message.ReceiverId.HasValue)
+                            if (log.Message != null)
                             {
-                                var senderUser = await context.Users.FindAsync(log.Message.SenderId);
-                                await hubContext.Clients.User(log.Message.ReceiverId.Value.ToString()).SendAsync("ReceiveMessage", new
+                                log.Message.SentAt = DateTime.UtcNow;
+                                _logger.LogInformation($"Scheduled Message ID {log.MessageId} to {log.Message.ReceiverNumber} delivered successfully.");
+
+                                var schedUtc = log.Message.ScheduledAt.HasValue 
+                                    ? DateTime.SpecifyKind(log.Message.ScheduledAt.Value, DateTimeKind.Utc) 
+                                    : (DateTime?)null;
+                                var sentUtc = DateTime.SpecifyKind(log.Message.SentAt, DateTimeKind.Utc);
+
+                                if (hubContext != null)
                                 {
-                                    id = log.Message.MessageId,
-                                    senderId = log.Message.SenderId,
-                                    senderMobileNumber = senderUser?.MobileNumber ?? "",
-                                    receiverId = log.Message.ReceiverId,
-                                    receiverNumber = log.Message.ReceiverNumber,
-                                    content = log.Message.Content,
-                                    isFreeFriendMsg = log.Message.IsFreeFriendMsg,
-                                    scheduledAt = log.Message.ScheduledAt,
-                                    sentTime = log.Message.SentAt
-                                });
+                                    var senderUser = await context.Users.FindAsync(log.Message.SenderId);
+                                    var payload = new
+                                    {
+                                        id = log.Message.MessageId,
+                                        senderId = log.Message.SenderId,
+                                        senderMobileNumber = senderUser?.MobileNumber ?? "",
+                                        receiverId = log.Message.ReceiverId,
+                                        receiverNumber = log.Message.ReceiverNumber,
+                                        content = log.Message.Content,
+                                        isFreeFriendMsg = log.Message.IsFreeFriendMsg,
+                                        scheduledAt = schedUtc,
+                                        sentTime = sentUtc
+                                    };
+
+                                    if (log.Message.ReceiverId.HasValue)
+                                    {
+                                        await hubContext.Clients.User(log.Message.ReceiverId.Value.ToString()).SendAsync("ReceiveMessage", payload);
+                                    }
+
+                                    // Send to sender as well so sender UI updates status live
+                                    await hubContext.Clients.User(log.Message.SenderId.ToString()).SendAsync("ReceiveMessage", payload);
+                                }
                             }
                         }
-                    }
 
-                    await context.SaveChangesAsync();
+                        await context.SaveChangesAsync();
+                    }
                 }
             }
         }

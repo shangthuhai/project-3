@@ -249,6 +249,14 @@ namespace Backend.Controllers
                 .ToListAsync();
 
             messages.Reverse();
+            foreach (var m in messages)
+            {
+                m.SentAt = DateTime.SpecifyKind(m.SentAt, DateTimeKind.Utc);
+                if (m.ScheduledAt.HasValue)
+                {
+                    m.ScheduledAt = DateTime.SpecifyKind(m.ScheduledAt.Value, DateTimeKind.Utc);
+                }
+            }
             return messages;
         }
 
@@ -591,6 +599,12 @@ namespace Backend.Controllers
                     scheduledAt = message.ScheduledAt,
                     sentTime = message.SentAt
                 });
+            }
+
+            message.SentAt = DateTime.SpecifyKind(message.SentAt, DateTimeKind.Utc);
+            if (message.ScheduledAt.HasValue)
+            {
+                message.ScheduledAt = DateTime.SpecifyKind(message.ScheduledAt.Value, DateTimeKind.Utc);
             }
 
             return Ok(message);

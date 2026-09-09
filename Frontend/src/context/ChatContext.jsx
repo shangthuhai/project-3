@@ -348,13 +348,18 @@ export function ChatProvider({ children }) {
           });
         } else if (
           message.senderMobileNumber === active.contactNumber ||
-          (message.senderId.toString() === active.id?.toString() && active.isFriend)
+          (message.senderId.toString() === active.id?.toString() && active.isFriend) ||
+          message.receiverNumber === active.contactNumber
         ) {
           setChatMessages(prev => {
-            if (prev.some(m => m.id === message.id)) return prev;
+            const exists = prev.some(m => m.id === message.id);
+            if (exists) {
+              return prev.map(m => m.id === message.id ? { ...m, ...message } : m);
+            }
             return [...prev, message];
           });
         }
+        loadConversations();
       }
 
       if (message.senderId === 999) {
