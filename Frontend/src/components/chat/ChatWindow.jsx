@@ -272,9 +272,24 @@ export default function ChatWindow() {
           ) : (
             (() => {
               let lastDateKey = null;
-              return chatMessages.map((msg, index) => {
+              const sortedMessages = [...chatMessages].sort((a, b) => {
+                const getEffectiveTime = (m) => {
+                  const raw = m.scheduledAt || m.sentTime;
+                  if (!raw) return 0;
+                  const str = String(raw);
+                  const isoStr = (str.includes('Z') || str.includes('+')) ? str : str.replace(' ', 'T') + 'Z';
+                  const d = new Date(isoStr);
+                  return isNaN(d.getTime()) ? 0 : d.getTime();
+                };
+                const timeA = getEffectiveTime(a);
+                const timeB = getEffectiveTime(b);
+                if (timeA !== timeB) return timeA - timeB;
+                return (a.id || 0) - (b.id || 0);
+              });
+
+              return sortedMessages.map((msg, index) => {
                 const isSentByMe = msg.senderId === loggedInUser.id;
-                const rawTime = msg.sentTime || msg.scheduledAt;
+                const rawTime = msg.scheduledAt || msg.sentTime;
                 const date = rawTime ? new Date(rawTime) : null;
                 const isValidDate = date && !isNaN(date.getTime());
 

@@ -682,7 +682,7 @@ namespace Backend.Controllers
 
             int totalCount = await query.CountAsync();
             var items = await query
-                .OrderByDescending(m => m.SentAt)
+                .OrderByDescending(m => m.ScheduledAt ?? m.SentAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .Select(m => new {

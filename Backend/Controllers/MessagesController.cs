@@ -111,7 +111,7 @@ namespace Backend.Controllers
                 })
                 .Where(g => !string.IsNullOrEmpty(g.Key) && g.Key != currentUserMobile && g.Key != "9999999999") // Exclude self and AI
                 .Select(g => {
-                    var lastMsg = g.OrderByDescending(m => m.SentAt).ThenByDescending(m => m.MessageId).First();
+                    var lastMsg = g.OrderByDescending(m => m.ScheduledAt ?? m.SentAt).ThenByDescending(m => m.MessageId).First();
                     return new {
                         MobileNumber = g.Key,
                         LastMessage = lastMsg
@@ -189,7 +189,7 @@ namespace Backend.Controllers
                     avatar = avatar,
                     isFriend = isFriend,
                     lastMessageContent = lastMsg.Content,
-                    lastMessageTime = DateTime.SpecifyKind(lastMsg.SentAt, DateTimeKind.Utc),
+                    lastMessageTime = DateTime.SpecifyKind(lastMsg.ScheduledAt ?? lastMsg.SentAt, DateTimeKind.Utc),
                     isRegistered = registeredUser != null,
                     userId = registeredUser?.UserId
                 });
@@ -239,11 +239,11 @@ namespace Backend.Controllers
 
             if (before.HasValue)
             {
-                query = query.Where(m => m.SentAt < before.Value);
+                query = query.Where(m => (m.ScheduledAt ?? m.SentAt) < before.Value);
             }
 
             var messages = await query
-                .OrderByDescending(m => m.SentAt)
+                .OrderByDescending(m => m.ScheduledAt ?? m.SentAt)
                 .ThenByDescending(m => m.MessageId)
                 .Take(limit)
                 .ToListAsync();
@@ -379,7 +379,7 @@ namespace Backend.Controllers
                 var history = await _context.Messages
                     .Where(m => (m.SenderId == sender.UserId && m.ReceiverNumber == "9999999999") ||
                                 (m.SenderId == 999 && m.ReceiverId == sender.UserId))
-                    .OrderByDescending(m => m.SentAt)
+                    .OrderByDescending(m => m.ScheduledAt ?? m.SentAt)
                     .Take(10)
                     .ToListAsync();
                 history.Reverse();
