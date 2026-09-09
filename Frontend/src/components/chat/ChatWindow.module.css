@@ -112,6 +112,29 @@
   }
 }
 
+.chat-window__date-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 12px 0 6px 0;
+  width: 100%;
+  position: relative;
+}
+
+.chat-window__date-divider-label {
+  background: var(--bg-card, #17212b);
+  color: var(--text-muted, rgba(255, 255, 255, 0.7));
+  border: 1px solid var(--border-light, rgba(255, 255, 255, 0.12));
+  backdrop-filter: blur(8px);
+  padding: 4px 14px;
+  border-radius: 16px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  user-select: none;
+}
+
 .chat-window__message-row {
   display: flex;
   width: 100%;

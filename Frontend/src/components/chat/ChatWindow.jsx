@@ -56,6 +56,32 @@ export default function ChatWindow() {
     return cx('chat-window__char-counter', 'chat-window__char-counter--safe');
   };
 
+  const getDateLabel = (dateObj, lang) => {
+    if (!dateObj || isNaN(dateObj.getTime())) return '';
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const targetDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+    
+    const diffTime = today.getTime() - targetDate.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 3600 * 24));
+
+    if (diffDays === 0) {
+      return lang === 'en' ? 'Today' : 'Hôm nay';
+    }
+    if (diffDays === 1) {
+      return lang === 'en' ? 'Yesterday' : 'Hôm qua';
+    }
+    if (diffDays === -1) {
+      return lang === 'en' ? 'Tomorrow' : 'Ngày mai';
+    }
+    
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const year = dateObj.getFullYear();
+
+    return `${day}/${month}/${year}`;
+  };
+
   const [showScrollBottom, setShowScrollBottom] = React.useState(false);
 
   const scrollToBottom = (behavior = 'smooth') => {
@@ -244,36 +270,62 @@ export default function ChatWindow() {
               {language === 'en' ? 'No messages yet. Say hello!' : 'Chưa có tin nhắn. Hãy chào nhau nào!'}
             </div>
           ) : (
-            chatMessages.map(msg => {
-              const isSentByMe = msg.senderId === loggedInUser.id;
-              const date = new Date(msg.sentTime);
-              const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-              const isPending = (() => {
-                if (!msg.scheduledAt) return false;
-                const str = String(msg.scheduledAt);
-                const isoStr = (str.includes('Z') || str.includes('+')) ? str : str.replace(' ', 'T') + 'Z';
-                return new Date(isoStr) > new Date();
-              })();
-              const schedTimeStr = msg.scheduledAt ? (() => {
-                const str = String(msg.scheduledAt);
-                const isoStr = (str.includes('Z') || str.includes('+')) ? str : str.replace(' ', 'T') + 'Z';
-                return new Date(isoStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-              })() : '';
-              const displayTime = isPending && schedTimeStr ? schedTimeStr : formattedTime;
-              return (
-                <div key={msg.id} className={cx('chat-window__message-row', isSentByMe ? 'chat-window__message-row--sent' : 'chat-window__message-row--received')}>
-                  <div className={cx('chat-window__message-bubble', isSentByMe ? 'chat-window__message-bubble--sent' : 'chat-window__message-bubble--received')}>
-                    <span className={cx('chat-window__message-text')}>{msg.content}</span>
-                    <span className={cx('chat-window__message-time')}>
-                      {displayTime}
-                      {isPending && (
-                        <span className={cx('chat-window__msg-scheduled-badge')}><Clock size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} /> {language === 'en' ? 'Scheduled' : 'Hẹn giờ'}: {schedTimeStr}</span>
-                      )}
-                    </span>
-                  </div>
-                </div>
-              );
-            })
+            (() => {
+              let lastDateKey = null;
+              return chatMessages.map((msg, index) => {
+                const isSentByMe = msg.senderId === loggedInUser.id;
+                const rawTime = msg.sentTime || msg.scheduledAt;
+                const date = rawTime ? new Date(rawTime) : null;
+                const isValidDate = date && !isNaN(date.getTime());
+
+                let showDateDivider = false;
+                if (isValidDate) {
+                  const dateKey = date.toDateString();
+                  if (dateKey !== lastDateKey) {
+                    showDateDivider = true;
+                    lastDateKey = dateKey;
+                  }
+                }
+
+                const formattedTime = isValidDate
+                  ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                  : '';
+                const isPending = (() => {
+                  if (!msg.scheduledAt) return false;
+                  const str = String(msg.scheduledAt);
+                  const isoStr = (str.includes('Z') || str.includes('+')) ? str : str.replace(' ', 'T') + 'Z';
+                  return new Date(isoStr) > new Date();
+                })();
+                const schedTimeStr = msg.scheduledAt ? (() => {
+                  const str = String(msg.scheduledAt);
+                  const isoStr = (str.includes('Z') || str.includes('+')) ? str : str.replace(' ', 'T') + 'Z';
+                  return new Date(isoStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                })() : '';
+                const displayTime = isPending && schedTimeStr ? schedTimeStr : formattedTime;
+                const dateLabel = isValidDate ? getDateLabel(date, language) : '';
+
+                return (
+                  <React.Fragment key={msg.id || index}>
+                    {showDateDivider && dateLabel && (
+                      <div className={cx('chat-window__date-divider')}>
+                        <span className={cx('chat-window__date-divider-label')}>{dateLabel}</span>
+                      </div>
+                    )}
+                    <div className={cx('chat-window__message-row', isSentByMe ? 'chat-window__message-row--sent' : 'chat-window__message-row--received')}>
+                      <div className={cx('chat-window__message-bubble', isSentByMe ? 'chat-window__message-bubble--sent' : 'chat-window__message-bubble--received')}>
+                        <span className={cx('chat-window__message-text')}>{msg.content}</span>
+                        <span className={cx('chat-window__message-time')}>
+                          {displayTime}
+                          {isPending && (
+                            <span className={cx('chat-window__msg-scheduled-badge')}><Clock size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} /> {language === 'en' ? 'Scheduled' : 'Hẹn giờ'}: {schedTimeStr}</span>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  </React.Fragment>
+                );
+              });
+            })()
           )}
           {contactIsTyping && (
             <div className={cx('chat-window__message-row', 'chat-window__message-row--received')}>
