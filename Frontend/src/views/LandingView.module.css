@@ -99,6 +99,41 @@
   backdrop-filter: blur(10px);
 }
 
+.landing__auth-divider {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+.landing__google-btn {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #d7dce2;
+  border-radius: var(--radius-sm);
+  color: #202124;
+  cursor: pointer;
+  display: flex;
+  font-size: 0.9rem;
+  gap: 10px;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 12px;
+  transition: var(--transition-fast);
+  width: 100%;
+}
+
+.landing__google-btn:hover {
+  background: #f7f8fa;
+  border-color: #b7bec8;
+}
+
+.landing__google-mark {
+  color: #4285f4;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
 .landing__auth-title {
   font-size: 1.6rem;
   font-weight: 700;

@@ -3,8 +3,20 @@ using Backend.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
 
 var builder = WebApplication.CreateBuilder(args);
+var firebaseCredentialsPath = builder.Configuration["Firebase:CredentialsPath"]
+    ?? Environment.GetEnvironmentVariable("FIREBASE_CREDENTIALS_PATH")
+    ?? Path.Combine(builder.Environment.ContentRootPath, "firebase-service-account.json");
+if (!string.IsNullOrWhiteSpace(firebaseCredentialsPath) && File.Exists(firebaseCredentialsPath))
+{
+    FirebaseApp.Create(new AppOptions
+    {
+        Credential = GoogleCredential.FromFile(firebaseCredentialsPath)
+    });
+}
 var databaseFile = Environment.GetEnvironmentVariable("SMSCHAT_DB") ?? "smschat-v2.db";
 
 // Add DB context
