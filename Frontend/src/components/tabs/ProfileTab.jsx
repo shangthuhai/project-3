@@ -90,6 +90,35 @@ export default function ProfileTab() {
 
         <div className={cx('profile__details-column')}>
           <div className={cx('profile__section-card')}>
+            <h3 className={cx('profile__section-title')}>{t('contact_details')}</h3>
+            <div className="form-row">
+              <div className="form-group">
+                <label>{t('phone_number')} *</label>
+                <input
+                  type="text"
+                  name="mobileNumber"
+                  value={profileForm.mobileNumber ?? loggedInUser?.mobileNumber ?? ''}
+                  onChange={handleProfileFormChange}
+                  maxLength={10}
+                  placeholder="0912345678"
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>{t('email_address')} *</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={profileForm.email ?? loggedInUser?.email ?? ''}
+                  onChange={handleProfileFormChange}
+                  placeholder="example@domain.com"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className={cx('profile__section-card')}>
             <h3 className={cx('profile__section-title')}>{t('personal_details')}</h3>
             <div className="form-row">
               <div className="form-group">

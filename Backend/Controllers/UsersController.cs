@@ -130,6 +130,38 @@ namespace Backend.Controllers
                 }
             }
 
+            // Update MobileNumber if provided and changed
+            if (!string.IsNullOrWhiteSpace(user.MobileNumber) && user.MobileNumber.Trim() != dbUser.MobileNumber)
+            {
+                var newMobile = user.MobileNumber.Trim();
+                if (newMobile.Length != 10 || !System.Text.RegularExpressions.Regex.IsMatch(newMobile, @"^\d{10}$"))
+                {
+                    return BadRequest(new { message = "Số điện thoại phải bao gồm đúng 10 chữ số." });
+                }
+                var mobileExists = await _context.Users.AnyAsync(u => u.MobileNumber == newMobile && u.UserId != id);
+                if (mobileExists)
+                {
+                    return BadRequest(new { message = "Số điện thoại này đã được đăng ký bởi tài khoản khác." });
+                }
+                dbUser.MobileNumber = newMobile;
+            }
+
+            // Update Email if provided and changed
+            if (!string.IsNullOrWhiteSpace(user.Email) && user.Email.Trim().ToLower() != dbUser.Email.ToLower())
+            {
+                var newEmail = user.Email.Trim().ToLower();
+                if (!newEmail.Contains("@") || !newEmail.Contains("."))
+                {
+                    return BadRequest(new { message = "Địa chỉ Email không hợp lệ." });
+                }
+                var emailExists = await _context.Users.AnyAsync(u => u.Email.ToLower() == newEmail && u.UserId != id);
+                if (emailExists)
+                {
+                    return BadRequest(new { message = "Địa chỉ Email này đã được sử dụng bởi tài khoản khác." });
+                }
+                dbUser.Email = newEmail;
+            }
+
             if (!string.IsNullOrWhiteSpace(user.Name)) dbUser.Profile.FullName = user.Name;
             if (!string.IsNullOrWhiteSpace(user.Gender)) dbUser.Profile.Gender = user.Gender;
             dbUser.Profile.Dob = user.Dob;

@@ -531,11 +531,29 @@ export function ChatProvider({ children }) {
       return;
     }
 
+    if (profileForm.mobileNumber && profileForm.mobileNumber.trim()) {
+      const cleanMobile = profileForm.mobileNumber.trim();
+      if (cleanMobile.length !== 10 || !/^\d{10}$/.test(cleanMobile)) {
+        triggerAlert('error', t('phone_required_invalid'));
+        return;
+      }
+    }
+
+    if (profileForm.email && profileForm.email.trim()) {
+      const cleanEmail = profileForm.email.trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+        triggerAlert('error', t('email_required_invalid'));
+        return;
+      }
+    }
+
     // Sanitize empty string date values to null so ASP.NET Core JSON deserializer won't fail with 400
     const sanitizedDob = profileForm.dob && String(profileForm.dob).trim() !== '' ? profileForm.dob : null;
 
     const payload = {
       ...profileForm,
+      mobileNumber: profileForm.mobileNumber ? profileForm.mobileNumber.trim() : loggedInUser.mobileNumber,
+      email: profileForm.email ? profileForm.email.trim() : loggedInUser.email,
       id: loggedInUser.id,
       dob: sanitizedDob
     };

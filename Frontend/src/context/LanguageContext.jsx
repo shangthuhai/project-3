@@ -173,6 +173,11 @@ const translations = {
     // Profile Tab
     "edit_profile": "Edit Profile",
     "edit_profile_desc": "Customize your personal and professional profile details.",
+    "contact_details": "Account & Contact Information",
+    "phone_number": "Phone Number",
+    "email_address": "Email Address",
+    "phone_required_invalid": "Phone number must be exactly 10 digits.",
+    "email_required_invalid": "Invalid email address format.",
     "personal_details": "Personal Details",
     "gender": "Gender",
     "dob": "Date of Birth",
@@ -520,6 +525,11 @@ const translations = {
     // Profile Tab
     "edit_profile": "Cập nhật cá nhân",
     "edit_profile_desc": "Tùy chỉnh thông tin chi tiết và hồ sơ nghề nghiệp của bạn.",
+    "contact_details": "Thông tin tài khoản & Liên hệ",
+    "phone_number": "Số điện thoại",
+    "email_address": "Địa chỉ Email",
+    "phone_required_invalid": "Số điện thoại phải bao gồm đúng 10 chữ số.",
+    "email_required_invalid": "Địa chỉ Email không hợp lệ.",
     "personal_details": "Thông tin cá nhân",
     "gender": "Giới tính",
     "dob": "Ngày sinh",
