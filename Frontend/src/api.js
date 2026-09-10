@@ -181,6 +181,12 @@ export const getTypingStatus = (contactNumber) =>
 export const getConversations = () => 
   api.get('/messages/conversations').then(res => res.data);
 
+// Social feed API
+export const getPosts = () => api.get('/posts').then(res => res.data);
+export const createPost = (content, mediaData = null, mediaType = null) =>
+  api.post('/posts', { content, mediaData, mediaType }, { timeout: 120000 }).then(res => res.data);
+export const deletePost = (id) => api.delete(`/posts/${id}`).then(res => res.data);
+
 // --- Admin Moderation & Keyword Rules ---
 export const getAdminKeywords = (page = 1, pageSize = 10, search = '') => {
   let url = `/admin/keywords?page=${page}&pageSize=${pageSize}`;

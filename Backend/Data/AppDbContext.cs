@@ -26,6 +26,7 @@ namespace Backend.Data
         public DbSet<SMSTemplate> SMSTemplates { get; set; } = null!;
         public DbSet<Blocklist> Blocklists { get; set; } = null!;
         public DbSet<KeywordRule> KeywordRules { get; set; } = null!;
+        public DbSet<Post> Posts { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

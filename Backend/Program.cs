@@ -112,6 +112,21 @@ using (var scope = app.Services.CreateScope())
 
     try
     {
+            dbContext.Database.ExecuteSqlRaw(@"
+                CREATE TABLE IF NOT EXISTS ""Posts"" (
+                    ""post_id"" INTEGER NOT NULL CONSTRAINT ""PK_Posts"" PRIMARY KEY AUTOINCREMENT,
+                    ""user_id"" INTEGER NOT NULL,
+                    ""content"" TEXT NOT NULL,
+                    ""media_url"" TEXT NULL,
+                    ""media_type"" TEXT NULL,
+                    ""created_at"" TEXT NOT NULL,
+                    CONSTRAINT ""FK_Posts_Users_user_id"" FOREIGN KEY (""user_id"") REFERENCES ""Users"" (""user_id"") ON DELETE CASCADE
+                );
+                CREATE INDEX IF NOT EXISTS ""IX_Posts_user_id_created_at"" ON ""Posts"" (""user_id"", ""created_at"");
+            ");
+            try { dbContext.Database.ExecuteSqlRaw(@"ALTER TABLE ""Posts"" ADD COLUMN ""media_url"" TEXT NULL;"); } catch {}
+            try { dbContext.Database.ExecuteSqlRaw(@"ALTER TABLE ""Posts"" ADD COLUMN ""media_type"" TEXT NULL;"); } catch {}
+
         dbContext.Database.ExecuteSqlRaw(@"
             CREATE TABLE IF NOT EXISTS ""Keyword_Rules"" (
                 ""rule_id"" INTEGER NOT NULL CONSTRAINT ""PK_Keyword_Rules"" PRIMARY KEY AUTOINCREMENT,

@@ -14,6 +14,7 @@ import GroupsTab from '../components/tabs/GroupsTab';
 import SecurityTab from '../components/tabs/SecurityTab';
 import SettingsTab from '../components/tabs/SettingsTab';
 import FriendsTab from '../components/tabs/FriendsTab';
+import PostsTab from '../components/tabs/PostsTab';
 import OtpInput from '../components/common/OtpInput';
 import styles from './UserDashboard.module.css';
 import classNames from 'classnames/bind';
@@ -80,6 +81,7 @@ export default function UserDashboard() {
         {activeTab === 'security' && <SecurityTab />}
         {activeTab === 'settings' && <SettingsTab />}
         {activeTab === 'friends' && <FriendsTab />}
+        {activeTab === 'posts' && <PostsTab />}
       </div>
 
 

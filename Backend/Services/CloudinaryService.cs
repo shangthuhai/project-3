@@ -76,5 +76,40 @@ namespace Backend.Services
                 return base64Data;
             }
         }
+
+        public async Task<string?> UploadBase64MediaAsync(string base64Data, string mediaType, string folder = "posts")
+        {
+            if (string.IsNullOrWhiteSpace(base64Data)) return null;
+
+            var cloudSection = _configuration.GetSection("Cloudinary");
+            var cloudName = cloudSection["CloudName"];
+            var apiKey = cloudSection["ApiKey"];
+            var apiSecret = cloudSection["ApiSecret"];
+            if (string.IsNullOrWhiteSpace(cloudName) || string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(apiSecret))
+                return base64Data;
+
+            try
+            {
+                var cloudinary = new Cloudinary(new Account(cloudName, apiKey, apiSecret)) { Api = { Secure = true } };
+                var file = new FileDescription(Guid.NewGuid().ToString(), base64Data);
+                if (mediaType == "video")
+                {
+                    var result = await cloudinary.UploadAsync(new VideoUploadParams { File = file, Folder = folder });
+                    return result.StatusCode == System.Net.HttpStatusCode.OK && result.SecureUrl != null
+                        ? result.SecureUrl.AbsoluteUri
+                        : base64Data;
+                }
+
+                var imageResult = await cloudinary.UploadAsync(new ImageUploadParams { File = file, Folder = folder });
+                return imageResult.StatusCode == System.Net.HttpStatusCode.OK && imageResult.SecureUrl != null
+                    ? imageResult.SecureUrl.AbsoluteUri
+                    : base64Data;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Post media upload failed.");
+                return base64Data;
+            }
+        }
     }
 }

@@ -18,6 +18,7 @@ import {
   Sparkles,
   Bot,
   MessageSquare
+  ,Newspaper
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
@@ -98,6 +99,13 @@ export default function LeftSidebar() {
     setActiveSubmenu(null);
   };
 
+  const handlePostsClick = () => {
+    setActiveTab('posts');
+    setSelectedContact(null);
+    setDropdownOpen(false);
+    setActiveSubmenu(null);
+  };
+
   const toggleDropdown = () => {
     setDropdownOpen(prev => !prev);
     if (dropdownOpen) setActiveSubmenu(null);
@@ -154,6 +162,14 @@ export default function LeftSidebar() {
           title={t('tab_friends') || 'Friends'}
         >
           <Users className={cx('left-sidebar__icon')} size={22} />
+        </button>
+
+        <button
+          className={cx('left-sidebar__btn', { 'left-sidebar__btn--active': activeTab === 'posts' })}
+          onClick={handlePostsClick}
+          title="Bảng tin"
+        >
+          <Newspaper className={cx('left-sidebar__icon')} size={22} />
         </button>
 
         {/* AI Chatbot Icon */}
