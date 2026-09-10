@@ -47,6 +47,8 @@ export const register = (data) => api.post('/auth/register', data).then(res => r
 export const loginWithGoogle = (idToken) => api.post('/auth/google', { idToken }).then(res => res.data);
 export const checkUsername = (username) => api.get(`/users/check-username?username=${username}`).then(res => res.data);
 export const checkMobile = (mobile) => api.get(`/users/check-mobile?mobile=${mobile}`).then(res => res.data);
+export const checkEmail = (email) => api.get(`/users/check-email?email=${encodeURIComponent(email)}`).then(res => res.data);
+export const sendRegisterOtp = (email) => api.post('/auth/send-register-otp', { email }).then(res => res.data);
 export const verify2Fa = (username, code) => api.post('/auth/verify-2fa', { username, code }).then(res => res.data);
 export const toggle2Fa = (enabled) => api.post('/users/2fa/toggle', { enabled }).then(res => res.data);
 export const togglePrivacy = (enabled) => api.post('/users/privacy/toggle', { enabled }).then(res => res.data);

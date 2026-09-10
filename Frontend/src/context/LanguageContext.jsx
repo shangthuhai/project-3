@@ -43,6 +43,14 @@ const translations = {
     "mobile_available": "Mobile number is available!",
     "mobile_taken": "This mobile number is already registered.",
     "mobile_invalid": "Mobile number must be exactly 10 digits.",
+    "email_available": "Email is available!",
+    "email_taken": "This email is already registered.",
+    "send_otp": "Send OTP",
+    "sending_otp": "Sending...",
+    "resend_otp_in": "Resend in",
+    "email_otp_code": "Email OTP Code",
+    "enter_email_otp": "Enter 6-digit OTP from Email",
+    "otp_sent_alert": "OTP code has been sent to your email! Please check your inbox or console.",
 
     // Sidebar
     "sms_workspace": "SMS Workspace",
@@ -379,6 +387,14 @@ const translations = {
     "mobile_available": "Số điện thoại hợp lệ!",
     "mobile_taken": "Số điện thoại này đã được đăng ký.",
     "mobile_invalid": "Số điện thoại phải có đúng 10 chữ số.",
+    "email_available": "Email hợp lệ và chưa được sử dụng!",
+    "email_taken": "Email này đã được đăng ký tài khoản.",
+    "send_otp": "Gửi mã OTP",
+    "sending_otp": "Đang gửi...",
+    "resend_otp_in": "Gửi lại sau",
+    "email_otp_code": "Mã OTP Email",
+    "enter_email_otp": "Nhập mã OTP 6 chữ số từ Email",
+    "otp_sent_alert": "Mã OTP xác thực đã được gửi về email của bạn! Vui lòng kiểm tra hộp thư hoặc console backend.",
 
     // Sidebar
     "sms_workspace": "SMS Workspace",

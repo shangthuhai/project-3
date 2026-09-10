@@ -35,6 +35,9 @@ builder.Services.AddHttpClient<Backend.Services.ITelegramService, Backend.Servic
 // Register Email Service for OTP
 builder.Services.AddScoped<Backend.Services.IEmailService, Backend.Services.EmailService>();
 
+// Register Register OTP Service
+builder.Services.AddSingleton<Backend.Services.IRegisterOtpService, Backend.Services.RegisterOtpService>();
+
 // Register S3 Storage Service
 builder.Services.AddScoped<Backend.Services.IS3StorageService, Backend.Services.S3StorageService>();
 

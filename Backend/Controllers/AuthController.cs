@@ -23,12 +23,18 @@ namespace Backend.Controllers
         private readonly AppDbContext _context;
         private readonly ITelegramService _telegramService;
         private readonly IEmailService _emailService;
+        private readonly IRegisterOtpService _registerOtpService;
 
-        public AuthController(AppDbContext context, ITelegramService telegramService, IEmailService emailService)
+        public AuthController(
+            AppDbContext context, 
+            ITelegramService telegramService, 
+            IEmailService emailService,
+            IRegisterOtpService registerOtpService)
         {
             _context = context;
             _telegramService = telegramService;
             _emailService = emailService;
+            _registerOtpService = registerOtpService;
         }
 
         private string GenerateJwtToken(User user)
@@ -51,6 +57,35 @@ namespace Backend.Controllers
             return tokenHandler.WriteToken(token);
         }
 
+        // POST: api/auth/send-register-otp
+        [HttpPost("send-register-otp")]
+        public async Task<IActionResult> SendRegisterOtp([FromBody] SendRegisterOtpDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Email))
+            {
+                return BadRequest(new { message = "Email is required." });
+            }
+
+            var trimmedEmail = dto.Email.Trim();
+
+            // Check if email already exists
+            var emailTaken = await _context.Users.AnyAsync(u => u.Email.ToLower() == trimmedEmail.ToLower());
+            if (emailTaken)
+            {
+                return BadRequest(new { message = "Email này đã được đăng ký tài khoản." });
+            }
+
+            var code = _registerOtpService.GenerateOtp(trimmedEmail);
+
+            await _emailService.SendEmailAsync(
+                trimmedEmail,
+                "Mã xác thực OTP Đăng ký - ChatFlow",
+                $"Xin chào,\n\nMã xác nhận OTP đăng ký tài khoản ChatFlow của bạn là: {code}\nMã có hiệu lực trong 5 phút. Vui lòng không chia sẻ mã này với ai."
+            );
+
+            return Ok(new { message = "Mã OTP đã được gửi về email của bạn.", email = trimmedEmail });
+        }
+
         // POST: api/auth/register
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto dto)
@@ -59,9 +94,10 @@ namespace Backend.Controllers
                 string.IsNullOrWhiteSpace(dto.Password) || 
                 string.IsNullOrWhiteSpace(dto.Email) || 
                 string.IsNullOrWhiteSpace(dto.MobileNumber) ||
-                string.IsNullOrWhiteSpace(dto.Name))
+                string.IsNullOrWhiteSpace(dto.Name) ||
+                string.IsNullOrWhiteSpace(dto.EmailOtpCode))
             {
-                return BadRequest(new { message = "All required fields must be filled." });
+                return BadRequest(new { message = "Tất cả các trường bao gồm Mã OTP Email phải được điền đầy đủ." });
             }
 
             if (dto.Password != dto.ConfirmPassword)
@@ -74,8 +110,24 @@ namespace Backend.Controllers
                 return BadRequest(new { message = "Mobile number must be exactly 10 digits." });
             }
 
+            var trimmedEmail = dto.Email.Trim();
+
+            // Verify Email OTP Code
+            var isOtpValid = _registerOtpService.ValidateOtp(trimmedEmail, dto.EmailOtpCode);
+            if (!isOtpValid)
+            {
+                return BadRequest(new { message = "Mã OTP email không hợp lệ hoặc đã hết hạn." });
+            }
+
+            // Check if email already exists
+            var emailTaken = await _context.Users.AnyAsync(u => u.Email.ToLower() == trimmedEmail.ToLower());
+            if (emailTaken)
+            {
+                return BadRequest(new { message = "Email này đã được đăng ký tài khoản." });
+            }
+
             // Check if username already exists
-            var usernameTaken = await _context.Users.AnyAsync(u => u.Username.ToLower() == dto.Username.ToLower());
+            var usernameTaken = await _context.Users.AnyAsync(u => u.Username.ToLower() == dto.Username.Trim().ToLower());
             if (usernameTaken)
             {
                 return BadRequest(new { message = "Username is already taken." });
@@ -106,9 +158,9 @@ namespace Backend.Controllers
 
             var newUser = new User
             {
-                Username = dto.Username,
+                Username = dto.Username.Trim(),
                 PasswordHash = dto.Password, // plain text for testing compatibility
-                Email = dto.Email,
+                Email = trimmedEmail,
                 MobileNumber = dto.MobileNumber,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
@@ -159,11 +211,13 @@ namespace Backend.Controllers
                 return BadRequest(new { message = "Username and Password are required." });
             }
 
-            // 1. Check if user is a standard User
+            var input = dto.Username.Trim().ToLower();
+
+            // 1. Check if user is a standard User (Match by Username OR Email)
             var user = await _context.Users
                 .Include(u => u.Profile)
                 .Include(u => u.Quota)
-                .FirstOrDefaultAsync(u => u.Username.ToLower() == dto.Username.ToLower());
+                .FirstOrDefaultAsync(u => u.Username.ToLower() == input || u.Email.ToLower() == input);
 
             if (user != null)
             {
@@ -400,6 +454,11 @@ namespace Backend.Controllers
         }
     }
 
+    public class SendRegisterOtpDto
+    {
+        public string Email { get; set; } = string.Empty;
+    }
+
     public class Verify2FaDto
     {
         public string Username { get; set; } = string.Empty;
@@ -414,6 +473,7 @@ namespace Backend.Controllers
         public string Email { get; set; } = string.Empty;
         public string MobileNumber { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
+        public string EmailOtpCode { get; set; } = string.Empty;
     }
 
     public class LoginDto

@@ -9,6 +9,8 @@ import {
   getUsers,
   checkUsername,
   checkMobile,
+  checkEmail,
+  sendRegisterOtp,
   verify2Fa,
   loginWithGoogle,
   toggle2Fa as apiToggle2Fa,
@@ -29,6 +31,12 @@ export function AuthProvider({ children }) {
 
   const [usernameValidation, setUsernameValidation] = useState({ checking: false, available: null, message: '' });
   const [mobileValidation, setMobileValidation] = useState({ checking: false, available: null, message: '' });
+  const [emailValidation, setEmailValidation] = useState({ checking: false, available: null, message: '' });
+
+  const [emailOtpCode, setEmailOtpCode] = useState('');
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpTimer, setOtpTimer] = useState(0);
 
   const [captchaCode, setCaptchaCode] = useState('');
   const [captchaInput, setCaptchaInput] = useState('');
@@ -75,6 +83,17 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     generateCaptcha();
   }, [authMode]);
+
+  // OTP Countdown Timer effect
+  useEffect(() => {
+    let timer;
+    if (otpTimer > 0) {
+      timer = setInterval(() => {
+        setOtpTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [otpTimer]);
 
   // Listen to unauthorized event
   useEffect(() => {
@@ -136,6 +155,60 @@ export function AuthProvider({ children }) {
         setMobileValidation({ checking: false, available: null, message: '' });
       });
   }, [registerForm.mobileNumber]);
+
+  // Real-time email check (debounced)
+  useEffect(() => {
+    const email = registerForm.email?.trim();
+    if (!email || !email.includes('@')) {
+      setEmailValidation({ checking: false, available: null, message: '' });
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      setEmailValidation({ checking: true, available: null, message: 'Checking email availability...' });
+      checkEmail(email)
+        .then(res => {
+          if (res.available) {
+            setEmailValidation({ checking: false, available: true, message: 'Email is available!' });
+          } else {
+            setEmailValidation({ checking: false, available: false, message: 'Email is already registered.' });
+          }
+        })
+        .catch(() => {
+          setEmailValidation({ checking: false, available: null, message: '' });
+        });
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [registerForm.email]);
+
+  const handleSendRegisterOtp = () => {
+    const email = registerForm.email?.trim();
+    if (!email || !email.includes('@')) {
+      triggerAlert('error', 'Vui lòng nhập Email hợp lệ trước khi gửi mã OTP.');
+      return;
+    }
+
+    if (emailValidation.available === false) {
+      triggerAlert('error', 'Email này đã được đăng ký tài khoản.');
+      return;
+    }
+
+    setSendingOtp(true);
+    sendRegisterOtp(email)
+      .then(() => {
+        setSendingOtp(false);
+        setOtpSent(true);
+        setOtpTimer(60);
+        triggerAlert('success', `Mã OTP xác thực đã được gửi tới email: ${email}. Vui lòng kiểm tra hộp thư hoặc Console/Terminal backend để lấy mã.`);
+      })
+      .catch((err) => {
+        setSendingOtp(false);
+        const errorMsg = err.response?.data?.message || 'Không thể gửi mã OTP. Vui lòng thử lại.';
+        triggerAlert('error', errorMsg);
+      });
+  };
+
 
   const handleLoginSubmit = (e) => {
     if (e) e.preventDefault();
@@ -201,6 +274,11 @@ export function AuthProvider({ children }) {
 
   const handleRegisterSubmit = (e) => {
     if (e) e.preventDefault();
+    if (!emailOtpCode || emailOtpCode.trim().length !== 6) {
+      triggerAlert('error', 'Vui lòng nhập mã OTP 6 chữ số từ Email.');
+      return;
+    }
+
     if (captchaInput.toLowerCase() !== captchaCode.toLowerCase()) {
       triggerAlert('error', 'Verification code is incorrect.');
       generateCaptcha();
@@ -222,12 +300,20 @@ export function AuthProvider({ children }) {
       return;
     }
 
-    register(registerForm)
+    if (emailValidation.available === false) {
+      triggerAlert('error', 'Email này đã được đăng ký tài khoản.');
+      return;
+    }
+
+    register({ ...registerForm, emailOtpCode: emailOtpCode.trim() })
       .then(user => {
         triggerAlert('success', 'Registration successful! You can now log in.');
         setAuthMode('login');
         setLoginForm({ username: registerForm.username, password: '' });
         setRegisterForm({ username: '', password: '', confirmPassword: '', email: '', mobileNumber: '', name: '' });
+        setEmailOtpCode('');
+        setOtpSent(false);
+        setOtpTimer(0);
         loadUsersList();
       })
       .catch(err => {
@@ -357,6 +443,13 @@ export function AuthProvider({ children }) {
       setRegisterForm,
       usernameValidation,
       mobileValidation,
+      emailValidation,
+      emailOtpCode,
+      setEmailOtpCode,
+      sendingOtp,
+      otpSent,
+      otpTimer,
+      handleSendRegisterOtp,
       captchaCode,
       captchaInput,
       setCaptchaInput,

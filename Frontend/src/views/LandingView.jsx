@@ -22,6 +22,13 @@ export default function LandingView() {
     setRegisterForm,
     usernameValidation,
     mobileValidation,
+    emailValidation,
+    emailOtpCode,
+    setEmailOtpCode,
+    sendingOtp,
+    otpSent,
+    otpTimer,
+    handleSendRegisterOtp,
     captchaCode,
     captchaInput,
     setCaptchaInput,
@@ -230,11 +237,12 @@ export default function LandingView() {
           </div>
         ) : (
           /* REGISTRATION CARD */
-          <div className={cx('landing__auth-card')} style={{ maxWidth: '480px' }}>
-            <h2 className={cx('landing__auth-title')}>{t('create_account')}</h2>
-            <form onSubmit={handleRegisterSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className={cx('landing__auth-card')} style={{ maxWidth: '520px' }}>
+            <h2 className={cx('landing__auth-title')} style={{ marginBottom: '15px' }}>{t('create_account')}</h2>
+            <form onSubmit={handleRegisterSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
 
-              <div className="form-row">
+              {/* Row 1: Full Name & Mobile Number */}
+              <div className="form-row" style={{ marginBottom: 0 }}>
                 <div className="form-group">
                   <label>{t('fullname')}</label>
                   <input
@@ -246,36 +254,120 @@ export default function LandingView() {
                   />
                 </div>
                 <div className="form-group">
-                  <label>{t('email')}</label>
+                  <label>{t('mobile_number')}</label>
                   <input
-                    type="email"
-                    placeholder="e.g. john@example.com"
-                    value={registerForm.email}
-                    onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
+                    type="text"
+                    placeholder="e.g. 0912345678"
+                    value={registerForm.mobileNumber}
+                    onChange={(e) => setRegisterForm({ ...registerForm, mobileNumber: e.target.value.replace(/\D/g, '').substring(0, 10) })}
+                    maxLength={10}
                     required
                   />
+                  {mobileValidation.message && (
+                    <span className={cx('landing__validation', mobileValidation.available === true ? 'landing__validation--success' : mobileValidation.available === false ? 'landing__validation--error' : 'landing__validation--checking')}>
+                      {mobileValidation.available === true && <span style={{ marginRight: '4px' }}>✓</span>}
+                      {mobileValidation.available === false && <span style={{ marginRight: '4px' }}>✗</span>}
+                      <span>
+                        {mobileValidation.message === 'Checking mobile number...' || mobileValidation.message === 'Checking availability...'
+                          ? t('checking_availability')
+                          : mobileValidation.available === true
+                            ? t('mobile_available')
+                            : mobileValidation.available === false
+                              ? t('mobile_taken')
+                              : t('mobile_invalid')}
+                      </span>
+                    </span>
+                  )}
                 </div>
               </div>
 
-              <div className="form-group">
-                <label>{t('username')}</label>
-                <input
-                  type="text"
-                  placeholder="Create username"
-                  value={registerForm.username}
-                  onChange={(e) => setRegisterForm({ ...registerForm, username: e.target.value.toLowerCase().replace(/\s/g, '') })}
-                  required
-                />
-                {usernameValidation.message && (
-                  <span className={cx('landing__validation', usernameValidation.available === true ? 'landing__validation--success' : usernameValidation.available === false ? 'landing__validation--error' : 'landing__validation--checking')}>
-                    {usernameValidation.available === true && <span style={{ marginRight: '4px' }}>✓</span>}
-                    {usernameValidation.available === false && <span style={{ marginRight: '4px' }}>✗</span>}
-                    <span>{usernameValidation.message === 'Checking availability...' ? t('checking_availability') : usernameValidation.available === true ? t('username_available') : t('username_taken')}</span>
-                  </span>
-                )}
+              {/* Row 2: Email & Username */}
+              <div className="form-row" style={{ marginBottom: 0 }}>
+                <div className="form-group">
+                  <label>{t('email')}</label>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <input
+                      type="email"
+                      placeholder="e.g. john@example.com"
+                      value={registerForm.email}
+                      onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
+                      style={{ flex: 1, minWidth: 0 }}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={handleSendRegisterOtp}
+                      disabled={sendingOtp || otpTimer > 0 || emailValidation.available === false || !registerForm.email}
+                      style={{ fontSize: '0.75rem', padding: '0 8px', whiteSpace: 'nowrap' }}
+                    >
+                      {sendingOtp ? '...' : otpTimer > 0 ? `${otpTimer}s` : t('send_otp')}
+                    </button>
+                  </div>
+                  {emailValidation.message && (
+                    <span className={cx('landing__validation', emailValidation.available === true ? 'landing__validation--success' : emailValidation.available === false ? 'landing__validation--error' : 'landing__validation--checking')}>
+                      {emailValidation.available === true && <span style={{ marginRight: '4px' }}>✓</span>}
+                      {emailValidation.available === false && <span style={{ marginRight: '4px' }}>✗</span>}
+                      <span>{emailValidation.available === true ? t('email_available') : emailValidation.available === false ? t('email_taken') : t('checking_availability')}</span>
+                    </span>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label>{t('username')}</label>
+                  <input
+                    type="text"
+                    placeholder="Create username"
+                    value={registerForm.username}
+                    onChange={(e) => setRegisterForm({ ...registerForm, username: e.target.value.toLowerCase().replace(/\s/g, '') })}
+                    required
+                  />
+                  {usernameValidation.message && (
+                    <span className={cx('landing__validation', usernameValidation.available === true ? 'landing__validation--success' : usernameValidation.available === false ? 'landing__validation--error' : 'landing__validation--checking')}>
+                      {usernameValidation.available === true && <span style={{ marginRight: '4px' }}>✓</span>}
+                      {usernameValidation.available === false && <span style={{ marginRight: '4px' }}>✗</span>}
+                      <span>{usernameValidation.message === 'Checking availability...' ? t('checking_availability') : usernameValidation.available === true ? t('username_available') : t('username_taken')}</span>
+                    </span>
+                  )}
+                </div>
               </div>
 
-              <div className="form-row">
+              {/* Row 3: Email OTP Code & Captcha */}
+              <div className="form-row" style={{ marginBottom: 0 }}>
+                <div className="form-group">
+                  <label>{t('email_otp_code')}</label>
+                  <input
+                    type="text"
+                    placeholder={t('enter_email_otp')}
+                    value={emailOtpCode}
+                    onChange={(e) => setEmailOtpCode(e.target.value.replace(/\D/g, '').substring(0, 6))}
+                    maxLength={6}
+                    style={{ letterSpacing: '2px', fontWeight: '600' }}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>{t('verification_code')}</label>
+                  <div className={cx('landing__captcha-container')}>
+                    <div className={cx('landing__captcha-image')} style={{ padding: '0 6px', fontSize: '0.85rem' }}>{captchaCode}</div>
+                    <button type="button" className={cx('landing__captcha-refresh')} onClick={generateCaptcha}>
+                      ↻
+                    </button>
+                    <input
+                      type="text"
+                      placeholder={t('enter_code')}
+                      value={captchaInput}
+                      onChange={(e) => setCaptchaInput(e.target.value.trim())}
+                      style={{ flex: 1, padding: '6px' }}
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Row 4: Password & Confirm Password */}
+              <div className="form-row" style={{ marginBottom: 0 }}>
                 <div className="form-group">
                   <label>{t('password')}</label>
                   <input
@@ -298,67 +390,24 @@ export default function LandingView() {
                 </div>
               </div>
 
-              <div className="form-group">
-                <label>{t('mobile_number')}</label>
-                <input
-                  type="text"
-                  placeholder="e.g. 0912345678"
-                  value={registerForm.mobileNumber}
-                  onChange={(e) => setRegisterForm({ ...registerForm, mobileNumber: e.target.value.replace(/\D/g, '').substring(0, 10) })}
-                  maxLength={10}
-                  required
-                />
-                {mobileValidation.message && (
-                  <span className={cx('landing__validation', mobileValidation.available === true ? 'landing__validation--success' : mobileValidation.available === false ? 'landing__validation--error' : 'landing__validation--checking')}>
-                    {mobileValidation.available === true && <span style={{ marginRight: '4px' }}>✓</span>}
-                    {mobileValidation.available === false && <span style={{ marginRight: '4px' }}>✗</span>}
-                    <span>
-                      {mobileValidation.message === 'Checking mobile number...' || mobileValidation.message === 'Checking availability...'
-                        ? t('checking_availability')
-                        : mobileValidation.available === true
-                          ? t('mobile_available')
-                          : mobileValidation.available === false
-                            ? t('mobile_taken')
-                            : t('mobile_invalid')}
-                    </span>
-                  </span>
-                )}
-              </div>
-
-              {/* Captcha/Verification Code widget */}
-              <div className="form-group">
-                <label>{t('verification_code')}</label>
-                <div className={cx('landing__captcha-container')}>
-                  <div className={cx('landing__captcha-image')}>{captchaCode}</div>
-                  <button type="button" className={cx('landing__captcha-refresh')} onClick={generateCaptcha}>
-                    ↻
-                  </button>
-                  <input
-                    type="text"
-                    placeholder={t('enter_code')}
-                    value={captchaInput}
-                    onChange={(e) => setCaptchaInput(e.target.value.trim())}
-                    style={{ flex: 1, padding: '8px' }}
-                    required
-                  />
-                </div>
-              </div>
-
               <button
                 type="submit"
                 className="btn btn-primary"
-                style={{ marginTop: '10px', padding: '12px' }}
+                style={{ marginTop: '6px', padding: '10px' }}
                 disabled={
                   usernameValidation.available !== true ||
                   mobileValidation.available !== true ||
+                  emailValidation.available === false ||
+                  !emailOtpCode ||
+                  emailOtpCode.length !== 6 ||
                   !captchaInput ||
                   registerForm.password !== registerForm.confirmPassword
                 }
               >
                 {t('create_account')}
               </button>
-              <div className={cx('landing__auth-divider')}>{t('or_continue_with')}</div>
-              <button type="button" className={cx('landing__google-btn')} onClick={handleGoogleSignIn}>
+              <div className={cx('landing__auth-divider')} style={{ margin: '4px 0' }}>{t('or_continue_with')}</div>
+              <button type="button" className={cx('landing__google-btn')} onClick={handleGoogleSignIn} style={{ minHeight: '38px' }}>
                 <span className={cx('landing__google-mark')}>G</span>
                 {t('continue_with_google')}
               </button>

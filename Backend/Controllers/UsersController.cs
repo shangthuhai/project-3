@@ -62,6 +62,17 @@ namespace Backend.Controllers
             return Ok(new { available = !exists });
         }
 
+        // GET: api/users/check-email?email=xyz@example.com
+        [HttpGet("check-email")]
+        [AllowAnonymous] // Allow checking email availability during registration
+        public async Task<IActionResult> CheckEmail([FromQuery] string email)
+        {
+            if (string.IsNullOrWhiteSpace(email)) return BadRequest(new { message = "Email cannot be empty." });
+            var exists = await _context.Users.AnyAsync(u => u.Email.ToLower() == email.Trim().ToLower());
+            return Ok(new { available = !exists });
+        }
+
+
         // GET: api/users/5
         [HttpGet("{id}")]
         public async Task<ActionResult<User>> GetUser(int id)
