@@ -14,6 +14,7 @@ import GroupsTab from '../components/tabs/GroupsTab';
 import SecurityTab from '../components/tabs/SecurityTab';
 import SettingsTab from '../components/tabs/SettingsTab';
 import FriendsTab from '../components/tabs/FriendsTab';
+import OtpInput from '../components/common/OtpInput';
 import styles from './UserDashboard.module.css';
 import classNames from 'classnames/bind';
 
@@ -125,19 +126,16 @@ export default function UserDashboard() {
               </div>
 
               {showPaymentOtpField && (
-                <div className="form-group" style={{ background: 'var(--alert-bg-warning)', padding: '12px', borderRadius: '8px', border: '1px solid var(--alert-border-warning)' }}>
-                  <label style={{ color: 'var(--alert-text-warning)', fontWeight: 'bold' }}>{t('enter_otp_payment')}</label>
-                  <input
-                    type="text"
-                    placeholder={t('enter_6_digit_otp')}
+                <div style={{ background: 'var(--alert-bg-warning)', padding: '12px', borderRadius: '8px', border: '1px solid var(--alert-border-warning)' }}>
+                  <OtpInput
                     value={paymentOtpCode}
-                    onChange={(e) => setPaymentOtpCode(e.target.value.replace(/\D/g, '').substring(0, 6))}
-                    maxLength={6}
+                    onChange={setPaymentOtpCode}
+                    label={t('enter_otp_payment')}
+                    description={t('check_console')}
+                    placeholder="XXXXXX"
+                    variant="github"
                     required
                   />
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
-                    {t('check_console')}
-                  </span>
                 </div>
               )}
 

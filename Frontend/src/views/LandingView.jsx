@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import CustomSelect from '../components/common/CustomSelect';
+import OtpInput from '../components/common/OtpInput';
 import styles from './LandingView.module.css';
 import classNames from 'classnames/bind';
 
@@ -172,17 +173,15 @@ export default function LandingView() {
               {t('two_factor_desc')}
             </p>
             <form onSubmit={handle2FaVerifySubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              <div className="form-group">
-                <label>{t('otp_code')}</label>
-                <input
-                  type="text"
-                  placeholder={t('enter_otp')}
-                  value={otpInput}
-                  onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, '').substring(0, 6))}
-                  maxLength={6}
-                  required
-                />
-              </div>
+              <OtpInput
+                value={otpInput}
+                onChange={setOtpInput}
+                label={t('otp_code')}
+                placeholder="XXXXXX"
+                variant="github"
+                required
+                autoFocus
+              />
               <button type="submit" className="btn btn-primary" style={{ padding: '12px' }}>
                 {t('verify_and_login')}
               </button>
@@ -237,22 +236,62 @@ export default function LandingView() {
           </div>
         ) : (
           /* REGISTRATION CARD */
-          <div className={cx('landing__auth-card')} style={{ maxWidth: '520px' }}>
+          <div className={cx('landing__auth-card')} style={{ maxWidth: '480px' }}>
             <h2 className={cx('landing__auth-title')} style={{ marginBottom: '15px' }}>{t('create_account')}</h2>
-            <form onSubmit={handleRegisterSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            
+            {/* Google Registration at Top */}
+            <button type="button" className={cx('landing__google-btn')} onClick={handleGoogleSignIn} style={{ minHeight: '40px', marginBottom: '12px' }}>
+              <span className={cx('landing__google-mark')}>G</span>
+              {t('continue_with_google')}
+            </button>
+            <div className={cx('landing__auth-divider')} style={{ marginBottom: '15px' }}>{t('or_continue_with')}</div>
 
-              {/* Row 1: Full Name & Mobile Number */}
-              <div className="form-row" style={{ marginBottom: 0 }}>
+            <form onSubmit={handleRegisterSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
+              <div className={cx('landing__register-fields')}>
+                {/* 1. Email */}
                 <div className="form-group">
-                  <label>{t('fullname')}</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. John Doe"
-                    value={registerForm.name}
-                    onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
+                  <label>{t('email')}</label>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <input
+                      type="email"
+                      placeholder="e.g. john@example.com"
+                      value={registerForm.email}
+                      onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
+                      style={{ flex: 1, minWidth: 0 }}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={handleSendRegisterOtp}
+                      disabled={sendingOtp || otpTimer > 0 || emailValidation.available === false || !registerForm.email}
+                      style={{ fontSize: '0.75rem', padding: '0 10px', whiteSpace: 'nowrap' }}
+                    >
+                      {sendingOtp ? '...' : otpTimer > 0 ? `${otpTimer}s` : t('send_otp')}
+                    </button>
+                  </div>
+                  {emailValidation.message && (
+                    <span className={cx('landing__validation', emailValidation.available === true ? 'landing__validation--success' : emailValidation.available === false ? 'landing__validation--error' : 'landing__validation--checking')}>
+                      {emailValidation.available === true && <span style={{ marginRight: '4px' }}>✓</span>}
+                      {emailValidation.available === false && <span style={{ marginRight: '4px' }}>✗</span>}
+                      <span>{emailValidation.available === true ? t('email_available') : emailValidation.available === false ? t('email_taken') : t('checking_availability')}</span>
+                    </span>
+                  )}
+                </div>
+
+                {/* 2. Mã OTP */}
+                <div className="form-group">
+                  <OtpInput
+                    value={emailOtpCode}
+                    onChange={setEmailOtpCode}
+                    label={t('email_otp_code')}
+                    placeholder="XXXXXX"
+                    variant="github"
                     required
                   />
                 </div>
+
+                {/* 3. Số điện thoại */}
                 <div className="form-group">
                   <label>{t('mobile_number')}</label>
                   <input
@@ -279,40 +318,8 @@ export default function LandingView() {
                     </span>
                   )}
                 </div>
-              </div>
 
-              {/* Row 2: Email & Username */}
-              <div className="form-row" style={{ marginBottom: 0 }}>
-                <div className="form-group">
-                  <label>{t('email')}</label>
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    <input
-                      type="email"
-                      placeholder="e.g. john@example.com"
-                      value={registerForm.email}
-                      onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
-                      style={{ flex: 1, minWidth: 0 }}
-                      required
-                    />
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      onClick={handleSendRegisterOtp}
-                      disabled={sendingOtp || otpTimer > 0 || emailValidation.available === false || !registerForm.email}
-                      style={{ fontSize: '0.75rem', padding: '0 8px', whiteSpace: 'nowrap' }}
-                    >
-                      {sendingOtp ? '...' : otpTimer > 0 ? `${otpTimer}s` : t('send_otp')}
-                    </button>
-                  </div>
-                  {emailValidation.message && (
-                    <span className={cx('landing__validation', emailValidation.available === true ? 'landing__validation--success' : emailValidation.available === false ? 'landing__validation--error' : 'landing__validation--checking')}>
-                      {emailValidation.available === true && <span style={{ marginRight: '4px' }}>✓</span>}
-                      {emailValidation.available === false && <span style={{ marginRight: '4px' }}>✗</span>}
-                      <span>{emailValidation.available === true ? t('email_available') : emailValidation.available === false ? t('email_taken') : t('checking_availability')}</span>
-                    </span>
-                  )}
-                </div>
-
+                {/* 4. Tên đăng nhập */}
                 <div className="form-group">
                   <label>{t('username')}</label>
                   <input
@@ -330,28 +337,37 @@ export default function LandingView() {
                     </span>
                   )}
                 </div>
-              </div>
 
-              {/* Row 3: Email OTP Code & Captcha */}
-              <div className="form-row" style={{ marginBottom: 0 }}>
+                {/* 5. Mật khẩu */}
                 <div className="form-group">
-                  <label>{t('email_otp_code')}</label>
+                  <label>{t('password')}</label>
                   <input
-                    type="text"
-                    placeholder={t('enter_email_otp')}
-                    value={emailOtpCode}
-                    onChange={(e) => setEmailOtpCode(e.target.value.replace(/\D/g, '').substring(0, 6))}
-                    maxLength={6}
-                    style={{ letterSpacing: '2px', fontWeight: '600' }}
+                    type="password"
+                    placeholder="Password"
+                    value={registerForm.password}
+                    onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
                     required
                   />
                 </div>
 
+                {/* 6. Nhập lại mật khẩu */}
+                <div className="form-group">
+                  <label>{t('confirm_password')}</label>
+                  <input
+                    type="password"
+                    placeholder="Confirm"
+                    value={registerForm.confirmPassword}
+                    onChange={(e) => setRegisterForm({ ...registerForm, confirmPassword: e.target.value })}
+                    required
+                  />
+                </div>
+
+                {/* 7. Mã Captcha */}
                 <div className="form-group">
                   <label>{t('verification_code')}</label>
                   <div className={cx('landing__captcha-container')}>
                     <div className={cx('landing__captcha-image')} style={{ padding: '0 6px', fontSize: '0.85rem' }}>{captchaCode}</div>
-                    <button type="button" className={cx('landing__captcha-refresh')} onClick={generateCaptcha}>
+                    <button type="button" className={cx('landing__captcha-refresh')} onClick={generateCaptcha} title="Refresh Captcha">
                       ↻
                     </button>
                     <input
@@ -364,53 +380,25 @@ export default function LandingView() {
                     />
                   </div>
                 </div>
-              </div>
 
-              {/* Row 4: Password & Confirm Password */}
-              <div className="form-row" style={{ marginBottom: 0 }}>
-                <div className="form-group">
-                  <label>{t('password')}</label>
-                  <input
-                    type="password"
-                    placeholder="Password"
-                    value={registerForm.password}
-                    onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>{t('confirm_password')}</label>
-                  <input
-                    type="password"
-                    placeholder="Confirm"
-                    value={registerForm.confirmPassword}
-                    onChange={(e) => setRegisterForm({ ...registerForm, confirmPassword: e.target.value })}
-                    required
-                  />
-                </div>
+                {/* Register Submit Button */}
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  style={{ marginTop: '8px', padding: '12px', width: '100%', fontWeight: 600 }}
+                  disabled={
+                    usernameValidation.available !== true ||
+                    mobileValidation.available !== true ||
+                    emailValidation.available === false ||
+                    !emailOtpCode ||
+                    emailOtpCode.length !== 6 ||
+                    !captchaInput ||
+                    registerForm.password !== registerForm.confirmPassword
+                  }
+                >
+                  {t('create_account')}
+                </button>
               </div>
-
-              <button
-                type="submit"
-                className="btn btn-primary"
-                style={{ marginTop: '6px', padding: '10px' }}
-                disabled={
-                  usernameValidation.available !== true ||
-                  mobileValidation.available !== true ||
-                  emailValidation.available === false ||
-                  !emailOtpCode ||
-                  emailOtpCode.length !== 6 ||
-                  !captchaInput ||
-                  registerForm.password !== registerForm.confirmPassword
-                }
-              >
-                {t('create_account')}
-              </button>
-              <div className={cx('landing__auth-divider')} style={{ margin: '4px 0' }}>{t('or_continue_with')}</div>
-              <button type="button" className={cx('landing__google-btn')} onClick={handleGoogleSignIn} style={{ minHeight: '38px' }}>
-                <span className={cx('landing__google-mark')}>G</span>
-                {t('continue_with_google')}
-              </button>
             </form>
           </div>
         )}

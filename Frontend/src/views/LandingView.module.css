@@ -1,9 +1,11 @@
 .landing {
   display: grid;
   grid-template-columns: 1.2fr 1fr;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
   background: var(--bg-landing);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .landing__left {
@@ -74,10 +76,12 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  padding: 30px 40px;
+  align-items: center;
+  padding: 24px 20px 60px 20px;
   position: relative;
   overflow-y: auto;
   height: 100vh;
+  -webkit-overflow-scrolling: touch;
 }
 
 .landing__header {
@@ -97,9 +101,17 @@
   padding: 28px 32px;
   width: 100%;
   max-width: 480px;
-  margin: auto auto;
+  margin: 0 auto 20px auto;
   box-shadow: var(--shadow-lg);
   backdrop-filter: blur(10px);
+  flex-shrink: 0;
+}
+
+.landing__register-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
 }
 
 .landing__auth-divider {
@@ -331,14 +343,15 @@
 @media (max-width: 1024px) {
   .landing {
     grid-template-columns: 1fr;
-    padding: 16px 10px;
-    min-height: 100vh;
-    height: auto;
+    padding: 16px 10px 40px 10px;
+    height: 100vh;
+    height: 100dvh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .landing__left {
@@ -346,7 +359,7 @@
   }
 
   .landing__right {
-    padding: 10px 0 20px 0;
+    padding: 10px 0 30px 0;
     width: 100%;
     max-width: 520px;
     margin: 0 auto;
@@ -355,11 +368,20 @@
     justify-content: flex-start;
     height: auto;
     min-height: auto;
+    overflow: visible;
   }
 
   .landing__auth-card {
     padding: 20px 16px;
     margin: 0 auto;
+    height: auto;
+    max-height: none;
+  }
+
+  .landing__register-fields {
+    max-height: none !important;
+    overflow-y: visible !important;
+    padding-right: 0;
   }
 
   .landing__header {
@@ -373,7 +395,7 @@
     max-width: 450px;
     margin: 20px auto 0 auto;
     gap: 15px;
-    padding: 0 10px;
+    padding: 0 10px 40px 10px;
   }
 
   .landing__mobile-register {

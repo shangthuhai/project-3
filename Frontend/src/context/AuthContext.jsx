@@ -305,7 +305,11 @@ export function AuthProvider({ children }) {
       return;
     }
 
-    register({ ...registerForm, emailOtpCode: emailOtpCode.trim() })
+    register({
+      ...registerForm,
+      name: registerForm.name || registerForm.username,
+      emailOtpCode: emailOtpCode.trim()
+    })
       .then(user => {
         triggerAlert('success', 'Registration successful! You can now log in.');
         setAuthMode('login');
