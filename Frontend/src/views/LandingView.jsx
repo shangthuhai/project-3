@@ -248,7 +248,19 @@ export default function LandingView() {
 
             <form onSubmit={handleRegisterSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
               <div className={cx('landing__register-fields')}>
-                {/* 1. Email */}
+                {/* 1. Họ và tên */}
+                <div className="form-group">
+                  <label>{t('fullname')}</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. John Doe"
+                    value={registerForm.name || ''}
+                    onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
+                    required
+                  />
+                </div>
+
+                {/* 2. Email */}
                 <div className="form-group">
                   <label>{t('email')}</label>
                   <div style={{ display: 'flex', gap: '6px' }}>
