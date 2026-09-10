@@ -1,7 +1,10 @@
 # SQLite database files
-Backend/smschat.db
-Backend/smschat.db-shm
-Backend/smschat.db-wal
+*.db
+*.db-shm
+*.db-wal
+Backend/*.db
+Backend/*.db-shm
+Backend/*.db-wal
 
 # dotnet build outputs
 Backend/bin/
