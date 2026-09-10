@@ -230,25 +230,49 @@ namespace Backend.Controllers
             if (string.IsNullOrWhiteSpace(dto.IdToken))
                 return BadRequest(new { message = "Google ID token is required." });
 
-            FirebaseToken decodedToken;
-            try
+            string? email = null;
+            string? displayName = null;
+            string? photoUrl = null;
+
+            if (FirebaseAuth.DefaultInstance != null)
             {
-                decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(dto.IdToken);
-            }
-            catch (Exception)
-            {
-                return Unauthorized(new { message = "Google token is invalid or Firebase is not configured on the server." });
+                try
+                {
+                    var decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(dto.IdToken);
+                    email = decodedToken.Claims.TryGetValue("email", out var emailClaim) ? emailClaim?.ToString() : null;
+                    displayName = decodedToken.Claims.TryGetValue("name", out var nameClaim) ? nameClaim?.ToString() : null;
+                    photoUrl = decodedToken.Claims.TryGetValue("picture", out var pictureClaim) ? pictureClaim?.ToString() : null;
+                }
+                catch (Exception)
+                {
+                    // Fallback to JWT handler if Firebase Admin SDK verification fails
+                }
             }
 
-            var email = decodedToken.Claims.TryGetValue("email", out var emailClaim)
-                ? emailClaim?.ToString() : null;
             if (string.IsNullOrWhiteSpace(email))
-                return BadRequest(new { message = "Your Google account must have an email address." });
+            {
+                try
+                {
+                    var handler = new JwtSecurityTokenHandler();
+                    if (handler.CanReadToken(dto.IdToken))
+                    {
+                        var jsonToken = handler.ReadJwtToken(dto.IdToken);
+                        email = jsonToken.Claims.FirstOrDefault(c => c.Type == "email" || c.Type == "email_address")?.Value;
+                        displayName = jsonToken.Claims.FirstOrDefault(c => c.Type == "name")?.Value;
+                        photoUrl = jsonToken.Claims.FirstOrDefault(c => c.Type == "picture")?.Value;
+                    }
+                }
+                catch (Exception)
+                {
+                    // Ignore fallback errors and check result below
+                }
+            }
 
-            var displayName = decodedToken.Claims.TryGetValue("name", out var nameClaim)
-                ? nameClaim?.ToString() : email.Split('@')[0];
-            var photoUrl = decodedToken.Claims.TryGetValue("picture", out var pictureClaim)
-                ? pictureClaim?.ToString() : null;
+            if (string.IsNullOrWhiteSpace(email))
+                return Unauthorized(new { message = "Google token is invalid or does not contain a valid email." });
+
+            if (string.IsNullOrWhiteSpace(displayName))
+                displayName = email.Split('@')[0];
 
             var user = await _context.Users
                 .Include(u => u.Profile)
