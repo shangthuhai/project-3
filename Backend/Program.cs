@@ -38,6 +38,10 @@ builder.Services.AddScoped<Backend.Services.IEmailService, Backend.Services.Emai
 // Register Register OTP Service
 builder.Services.AddSingleton<Backend.Services.IRegisterOtpService, Backend.Services.RegisterOtpService>();
 
+// Register Forgot Password OTP Service
+builder.Services.AddSingleton<Backend.Services.IForgotPasswordOtpService, Backend.Services.ForgotPasswordOtpService>();
+
+
 // Register S3 Storage Service
 builder.Services.AddScoped<Backend.Services.IS3StorageService, Backend.Services.S3StorageService>();
 

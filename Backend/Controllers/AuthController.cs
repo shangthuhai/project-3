@@ -24,17 +24,20 @@ namespace Backend.Controllers
         private readonly ITelegramService _telegramService;
         private readonly IEmailService _emailService;
         private readonly IRegisterOtpService _registerOtpService;
+        private readonly IForgotPasswordOtpService _forgotPasswordOtpService;
 
         public AuthController(
             AppDbContext context, 
             ITelegramService telegramService, 
             IEmailService emailService,
-            IRegisterOtpService registerOtpService)
+            IRegisterOtpService registerOtpService,
+            IForgotPasswordOtpService forgotPasswordOtpService)
         {
             _context = context;
             _telegramService = telegramService;
             _emailService = emailService;
             _registerOtpService = registerOtpService;
+            _forgotPasswordOtpService = forgotPasswordOtpService;
         }
 
         private string GenerateJwtToken(User user)
@@ -85,6 +88,79 @@ namespace Backend.Controllers
 
             return Ok(new { message = "Mã OTP đã được gửi về email của bạn.", email = trimmedEmail });
         }
+
+        // POST: api/auth/send-forgot-password-otp
+        [HttpPost("send-forgot-password-otp")]
+        public async Task<IActionResult> SendForgotPasswordOtp([FromBody] SendForgotPasswordOtpDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Email))
+            {
+                return BadRequest(new { message = "Email is required." });
+            }
+
+            var trimmedEmail = dto.Email.Trim().ToLower();
+
+            // Check if user exists with this email
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == trimmedEmail);
+            if (user == null)
+            {
+                return BadRequest(new { message = "Địa chỉ Email này chưa được đăng ký tài khoản trong hệ thống." });
+            }
+
+            var code = _forgotPasswordOtpService.GenerateOtp(trimmedEmail);
+
+            await _emailService.SendEmailAsync(
+                trimmedEmail,
+                "Mã xác thực OTP Khôi phục mật khẩu - ChatFlow",
+                $"Xin chào {user.Username},\n\nMã OTP đặt lại mật khẩu tài khoản ChatFlow của bạn là: {code}\nMã có hiệu lực trong 5 phút. Vui lòng không chia sẻ mã này với ai."
+            );
+
+            return Ok(new { message = "Mã OTP khôi phục mật khẩu đã được gửi về email của bạn.", email = trimmedEmail });
+        }
+
+        // POST: api/auth/reset-password
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Email) ||
+                string.IsNullOrWhiteSpace(dto.OtpCode) ||
+                string.IsNullOrWhiteSpace(dto.NewPassword) ||
+                string.IsNullOrWhiteSpace(dto.ConfirmNewPassword))
+            {
+                return BadRequest(new { message = "Tất cả các trường bao gồm Email, Mã OTP và Mật khẩu mới phải được điền đầy đủ." });
+            }
+
+            if (dto.NewPassword != dto.ConfirmNewPassword)
+            {
+                return BadRequest(new { message = "Mật khẩu mới và xác nhận mật khẩu không trùng khớp." });
+            }
+
+            if (dto.NewPassword.Length < 6)
+            {
+                return BadRequest(new { message = "Mật khẩu mới phải có từ 6 ký tự trở lên." });
+            }
+
+            var trimmedEmail = dto.Email.Trim().ToLower();
+
+            // Verify OTP
+            var isValidOtp = _forgotPasswordOtpService.ValidateOtp(trimmedEmail, dto.OtpCode);
+            if (!isValidOtp)
+            {
+                return BadRequest(new { message = "Mã OTP khôi phục mật khẩu không hợp lệ hoặc đã hết hạn." });
+            }
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == trimmedEmail);
+            if (user == null)
+            {
+                return NotFound(new { message = "Người dùng không tồn tại." });
+            }
+
+            user.PasswordHash = dto.NewPassword;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Đặt lại mật khẩu thành công! Vui lòng đăng nhập bằng mật khẩu mới." });
+        }
+
 
         // POST: api/auth/register
         [HttpPost("register")]
@@ -486,4 +562,18 @@ namespace Backend.Controllers
     {
         public string IdToken { get; set; } = string.Empty;
     }
+
+    public class SendForgotPasswordOtpDto
+    {
+        public string Email { get; set; } = string.Empty;
+    }
+
+    public class ResetPasswordDto
+    {
+        public string Email { get; set; } = string.Empty;
+        public string OtpCode { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
+        public string ConfirmNewPassword { get; set; } = string.Empty;
+    }
 }
+

@@ -49,6 +49,9 @@ export const checkUsername = (username) => api.get(`/users/check-username?userna
 export const checkMobile = (mobile) => api.get(`/users/check-mobile?mobile=${mobile}`).then(res => res.data);
 export const checkEmail = (email) => api.get(`/users/check-email?email=${encodeURIComponent(email)}`).then(res => res.data);
 export const sendRegisterOtp = (email) => api.post('/auth/send-register-otp', { email }).then(res => res.data);
+export const sendForgotPasswordOtp = (email) => api.post('/auth/send-forgot-password-otp', { email }).then(res => res.data);
+export const resetPassword = (data) => api.post('/auth/reset-password', data).then(res => res.data);
+export const changePassword = (data) => api.post('/users/change-password', data).then(res => res.data);
 export const verify2Fa = (username, code) => api.post('/auth/verify-2fa', { username, code }).then(res => res.data);
 export const toggle2Fa = (enabled) => api.post('/users/2fa/toggle', { enabled }).then(res => res.data);
 export const togglePrivacy = (enabled) => api.post('/users/privacy/toggle', { enabled }).then(res => res.data);

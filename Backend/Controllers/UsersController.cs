@@ -230,6 +230,48 @@ namespace Backend.Controllers
             return Ok(new { message = $"Privacy filter (Only friends) has been {(dto.Enabled ? "enabled" : "disabled")}." });
         }
 
+        // POST: api/users/change-password
+        [HttpPost("change-password")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
+        {
+            int userId = AuthenticatedUserId;
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return NotFound(new { message = "Người dùng không tồn tại." });
+
+            if (string.IsNullOrWhiteSpace(dto.OldPassword) ||
+                string.IsNullOrWhiteSpace(dto.NewPassword) ||
+                string.IsNullOrWhiteSpace(dto.ConfirmNewPassword))
+            {
+                return BadRequest(new { message = "Vui lòng nhập đầy đủ Mật khẩu hiện tại, Mật khẩu mới và Xác nhận mật khẩu mới." });
+            }
+
+            if (user.PasswordHash != dto.OldPassword)
+            {
+                return BadRequest(new { message = "Mật khẩu hiện tại không chính xác." });
+            }
+
+            if (dto.NewPassword.Length < 6)
+            {
+                return BadRequest(new { message = "Mật khẩu mới phải có ít nhất 6 ký tự." });
+            }
+
+            if (dto.NewPassword != dto.ConfirmNewPassword)
+            {
+                return BadRequest(new { message = "Mật khẩu mới và xác nhận mật khẩu không trùng khớp." });
+            }
+
+            if (dto.OldPassword == dto.NewPassword)
+            {
+                return BadRequest(new { message = "Mật khẩu mới không được giống với mật khẩu hiện tại." });
+            }
+
+            user.PasswordHash = dto.NewPassword;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Cập nhật mật khẩu mới thành công!" });
+        }
+
+
         // GET: api/users/blocklist
         [HttpGet("blocklist")]
         public async Task<ActionResult<IEnumerable<object>>> GetBlocklist()
@@ -424,4 +466,12 @@ namespace Backend.Controllers
     {
         public string Number { get; set; } = string.Empty;
     }
+
+    public class ChangePasswordDto
+    {
+        public string OldPassword { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
+        public string ConfirmNewPassword { get; set; } = string.Empty;
+    }
 }
+

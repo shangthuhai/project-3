@@ -30,6 +30,13 @@ export default function LandingView() {
     otpSent,
     otpTimer,
     handleSendRegisterOtp,
+    forgotForm,
+    setForgotForm,
+    sendingForgotOtp,
+    forgotOtpSent,
+    forgotOtpTimer,
+    handleSendForgotPasswordOtp,
+    handleResetPasswordSubmit,
     captchaCode,
     captchaInput,
     setCaptchaInput,
@@ -310,7 +317,6 @@ export default function LandingView() {
             </form>
           </div>
         ) : authMode === 'login' ? (
-          /* LOGIN CARD */
           <div className={cx('landing__auth-card')}>
             <h2 className={cx('landing__auth-title')}>{t('login')}</h2>
             <form onSubmit={onLoginFormSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }} noValidate>
@@ -338,6 +344,24 @@ export default function LandingView() {
                   className={loginPassStatus?.type === 'error' ? 'input-error' : loginPassStatus?.type === 'success' ? 'input-success' : ''}
                 />
                 {renderValidationMessage(loginPassStatus)}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setAuthMode('forgot_password')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--color-primary)',
+                      fontSize: '0.82rem',
+                      cursor: 'pointer',
+                      textDecoration: 'none',
+                      padding: 0,
+                      fontWeight: 500
+                    }}
+                  >
+                    {t('forgot_password')}
+                  </button>
+                </div>
               </div>
 
               <button type="submit" className="btn btn-primary" style={{ marginTop: '10px', padding: '12px' }}>
@@ -350,8 +374,84 @@ export default function LandingView() {
               </button>
             </form>
           </div>
+        ) : authMode === 'forgot_password' ? (
+          <div className={cx('landing__auth-card')} style={{ maxWidth: '440px' }}>
+            <h2 className={cx('landing__auth-title')}>{t('forgot_password_title')}</h2>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '15px' }}>
+              {t('forgot_password_desc')}
+            </p>
+            <form onSubmit={handleResetPasswordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }} noValidate>
+              {/* Email Input with Send OTP */}
+              <div className="form-group">
+                <label>{t('email')} *</label>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <input
+                    type="email"
+                    placeholder="e.g. john@example.com"
+                    value={forgotForm.email}
+                    onChange={(e) => setForgotForm({ ...forgotForm, email: e.target.value })}
+                    style={{ flex: 1, minWidth: 0 }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={handleSendForgotPasswordOtp}
+                    disabled={sendingForgotOtp || forgotOtpTimer > 0 || !forgotForm.email}
+                    style={{ fontSize: '0.75rem', padding: '0 10px', whiteSpace: 'nowrap' }}
+                  >
+                    {sendingForgotOtp ? '...' : forgotOtpTimer > 0 ? `${forgotOtpTimer}s` : t('send_otp')}
+                  </button>
+                </div>
+              </div>
+
+              {/* OTP Input */}
+              <div className="form-group">
+                <OtpInput
+                  value={forgotForm.otpCode}
+                  onChange={(val) => setForgotForm({ ...forgotForm, otpCode: val })}
+                  label={`${t('email_otp_code')} *`}
+                  placeholder="XXXXXX"
+                  variant="github"
+                />
+              </div>
+
+              {/* New Password */}
+              <div className="form-group">
+                <label>{t('new_password')} *</label>
+                <input
+                  type="password"
+                  placeholder="At least 6 characters"
+                  value={forgotForm.newPassword}
+                  onChange={(e) => setForgotForm({ ...forgotForm, newPassword: e.target.value })}
+                />
+              </div>
+
+              {/* Confirm New Password */}
+              <div className="form-group">
+                <label>{t('confirm_new_password')} *</label>
+                <input
+                  type="password"
+                  placeholder="Re-enter new password"
+                  value={forgotForm.confirmNewPassword}
+                  onChange={(e) => setForgotForm({ ...forgotForm, confirmNewPassword: e.target.value })}
+                />
+              </div>
+
+              <button type="submit" className="btn btn-primary" style={{ marginTop: '10px', padding: '12px', width: '100%', fontWeight: 600 }}>
+                {t('reset_password_btn')}
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setAuthMode('login')}
+                style={{ width: '100%' }}
+              >
+                {t('back_to_login')}
+              </button>
+            </form>
+          </div>
         ) : (
-          /* REGISTRATION CARD */
           <div className={cx('landing__auth-card')} style={{ maxWidth: '480px' }}>
             <h2 className={cx('landing__auth-title')} style={{ marginBottom: '15px' }}>{t('create_account')}</h2>
             

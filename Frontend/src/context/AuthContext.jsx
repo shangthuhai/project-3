@@ -11,6 +11,8 @@ import {
   checkMobile,
   checkEmail,
   sendRegisterOtp,
+  sendForgotPasswordOtp,
+  resetPassword,
   verify2Fa,
   loginWithGoogle,
   toggle2Fa as apiToggle2Fa,
@@ -37,6 +39,18 @@ export function AuthProvider({ children }) {
   const [sendingOtp, setSendingOtp] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otpTimer, setOtpTimer] = useState(0);
+
+  // Forgot Password State
+  const [forgotForm, setForgotForm] = useState({
+    email: '',
+    otpCode: '',
+    newPassword: '',
+    confirmNewPassword: ''
+  });
+  const [sendingForgotOtp, setSendingForgotOtp] = useState(false);
+  const [forgotOtpSent, setForgotOtpSent] = useState(false);
+  const [forgotOtpTimer, setForgotOtpTimer] = useState(0);
+
 
   const [captchaCode, setCaptchaCode] = useState('');
   const [captchaInput, setCaptchaInput] = useState('');
@@ -94,6 +108,88 @@ export function AuthProvider({ children }) {
     }
     return () => clearInterval(timer);
   }, [otpTimer]);
+
+  // Forgot Password OTP Countdown Timer effect
+  useEffect(() => {
+    let timer;
+    if (forgotOtpTimer > 0) {
+      timer = setInterval(() => {
+        setForgotOtpTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [forgotOtpTimer]);
+
+  const handleSendForgotPasswordOtp = () => {
+    const email = forgotForm.email?.trim();
+    if (!email || !email.includes('@')) {
+      triggerAlert('error', 'Vui lòng nhập địa chỉ Email hợp lệ trước khi gửi mã OTP.');
+      return;
+    }
+
+    setSendingForgotOtp(true);
+    sendForgotPasswordOtp(email)
+      .then(() => {
+        setSendingForgotOtp(false);
+        setForgotOtpSent(true);
+        setForgotOtpTimer(60);
+        triggerAlert('success', `Mã OTP khôi phục mật khẩu đã được gửi tới email: ${email}. Vui lòng kiểm tra hộp thư hoặc Console/Terminal backend để lấy mã.`);
+      })
+      .catch((err) => {
+        setSendingForgotOtp(false);
+        const errorMsg = err.response?.data?.message || 'Không thể gửi mã OTP. Vui lòng thử lại.';
+        triggerAlert('error', errorMsg);
+      });
+  };
+
+  const handleResetPasswordSubmit = (e) => {
+    if (e) e.preventDefault();
+
+    if (!forgotForm.email?.trim()) {
+      triggerAlert('error', 'Vui lòng nhập địa chỉ Email.');
+      return;
+    }
+    if (!forgotForm.otpCode?.trim() || forgotForm.otpCode.trim().length !== 6) {
+      triggerAlert('error', 'Vui lòng nhập đủ 6 chữ số mã OTP đã gửi qua Email.');
+      return;
+    }
+    if (!forgotForm.newPassword) {
+      triggerAlert('error', 'Vui lòng nhập Mật khẩu mới.');
+      return;
+    }
+    if (forgotForm.newPassword.length < 6) {
+      triggerAlert('error', 'Mật khẩu mới phải có ít nhất 6 ký tự.');
+      return;
+    }
+    if (!forgotForm.confirmNewPassword) {
+      triggerAlert('error', 'Vui lòng xác nhận lại Mật khẩu mới.');
+      return;
+    }
+    if (forgotForm.newPassword !== forgotForm.confirmNewPassword) {
+      triggerAlert('error', 'Mật khẩu mới và xác nhận mật khẩu không trùng khớp.');
+      return;
+    }
+
+    resetPassword({
+      email: forgotForm.email.trim(),
+      otpCode: forgotForm.otpCode.trim(),
+      newPassword: forgotForm.newPassword,
+      confirmNewPassword: forgotForm.confirmNewPassword
+    })
+      .then((res) => {
+        triggerAlert('success', res.message || 'Đặt lại mật khẩu thành công! Vui lòng đăng nhập bằng mật khẩu mới.');
+        setAuthMode('login');
+        setLoginForm({ username: forgotForm.email.trim(), password: '' });
+        setForgotForm({ email: '', otpCode: '', newPassword: '', confirmNewPassword: '' });
+        setForgotOtpSent(false);
+        setForgotOtpTimer(0);
+      })
+      .catch((err) => {
+        const errorMsg = err.response?.data?.message || 'Đặt lại mật khẩu thất bại.';
+        triggerAlert('error', errorMsg);
+      });
+  };
+
 
   // Listen to unauthorized event
   useEffect(() => {
@@ -512,6 +608,13 @@ export function AuthProvider({ children }) {
       otpSent,
       otpTimer,
       handleSendRegisterOtp,
+      forgotForm,
+      setForgotForm,
+      sendingForgotOtp,
+      forgotOtpSent,
+      forgotOtpTimer,
+      handleSendForgotPasswordOtp,
+      handleResetPasswordSubmit,
       captchaCode,
       captchaInput,
       setCaptchaInput,
