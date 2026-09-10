@@ -101,7 +101,7 @@
   padding: 28px 32px;
   width: 100%;
   max-width: 480px;
-  margin: 0 auto 20px auto;
+  margin: auto;
   box-shadow: var(--shadow-lg);
   backdrop-filter: blur(10px);
   flex-shrink: 0;
