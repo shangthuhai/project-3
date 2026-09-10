@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { LogOut } from 'lucide-react';
+import { signInWithPopup } from 'firebase/auth';
 import { useLanguage } from './LanguageContext';
+import { firebaseAuth, googleProvider, isFirebaseConfigured } from '../firebase';
 import {
   login,
   register,
@@ -8,6 +10,7 @@ import {
   checkUsername,
   checkMobile,
   verify2Fa,
+  loginWithGoogle,
   toggle2Fa as apiToggle2Fa,
   togglePrivacy as apiTogglePrivacy
 } from '../api';
@@ -155,6 +158,27 @@ export function AuthProvider({ children }) {
       })
       .catch(err => {
         const errorMsg = err.response?.data?.message || 'Login failed.';
+        triggerAlert('error', errorMsg);
+      });
+  };
+
+  const handleGoogleSignIn = () => {
+    if (!isFirebaseConfigured || !firebaseAuth) {
+      triggerAlert('error', 'Google sign-in is not configured. Add the Firebase VITE_* variables first.');
+      return;
+    }
+
+    signInWithPopup(firebaseAuth, googleProvider)
+      .then(async ({ user }) => {
+        const idToken = await user.getIdToken();
+        const result = await loginWithGoogle(idToken);
+        const userPayload = { ...result, name: result.name || result.fullName || result.username };
+        localStorage.setItem('user', JSON.stringify(userPayload));
+        setLoggedInUser(userPayload);
+        triggerAlert('success', `Welcome, ${userPayload.name}!`);
+      })
+      .catch(err => {
+        const errorMsg = err.response?.data?.message || err.message || 'Google sign-in failed.';
         triggerAlert('error', errorMsg);
       });
   };
@@ -346,6 +370,7 @@ export function AuthProvider({ children }) {
       setAlert,
       triggerAlert,
       handleLoginSubmit,
+      handleGoogleSignIn,
       handle2FaVerifySubmit,
       handleRegisterSubmit,
       handleLogout,

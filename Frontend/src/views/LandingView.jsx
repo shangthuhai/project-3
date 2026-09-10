@@ -31,6 +31,7 @@ export default function LandingView() {
     otpInput,
     setOtpInput,
     handleLoginSubmit,
+    handleGoogleSignIn,
     handle2FaVerifySubmit,
     handleRegisterSubmit,
     handleDemoUserSwitch
@@ -220,6 +221,11 @@ export default function LandingView() {
               <button type="submit" className="btn btn-primary" style={{ marginTop: '10px', padding: '12px' }}>
                 {t('login')}
               </button>
+              <div className={cx('landing__auth-divider')}>{t('or_continue_with')}</div>
+              <button type="button" className={cx('landing__google-btn')} onClick={handleGoogleSignIn}>
+                <span className={cx('landing__google-mark')}>G</span>
+                {t('continue_with_google')}
+              </button>
             </form>
           </div>
         ) : (
@@ -350,6 +356,11 @@ export default function LandingView() {
                 }
               >
                 {t('create_account')}
+              </button>
+              <div className={cx('landing__auth-divider')}>{t('or_continue_with')}</div>
+              <button type="button" className={cx('landing__google-btn')} onClick={handleGoogleSignIn}>
+                <span className={cx('landing__google-mark')}>G</span>
+                {t('continue_with_google')}
               </button>
             </form>
           </div>

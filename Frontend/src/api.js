@@ -44,6 +44,7 @@ export const getUser = (id) => api.get(`/users/${id}`).then(res => res.data);
 export const updateUser = (id, data) => api.put(`/users/${id}`, data).then(res => res.data);
 export const login = (username, password) => api.post('/auth/login', { username, password }).then(res => res.data);
 export const register = (data) => api.post('/auth/register', data).then(res => res.data);
+export const loginWithGoogle = (idToken) => api.post('/auth/google', { idToken }).then(res => res.data);
 export const checkUsername = (username) => api.get(`/users/check-username?username=${username}`).then(res => res.data);
 export const checkMobile = (mobile) => api.get(`/users/check-mobile?mobile=${mobile}`).then(res => res.data);
 export const verify2Fa = (username, code) => api.post('/auth/verify-2fa', { username, code }).then(res => res.data);

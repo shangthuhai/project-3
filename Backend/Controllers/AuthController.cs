@@ -11,6 +11,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using FirebaseAdmin.Auth;
 
 namespace Backend.Controllers
 {
@@ -222,6 +223,80 @@ namespace Backend.Controllers
             return Unauthorized(new { message = "Invalid Username or Password." });
         }
 
+        // POST: api/auth/google
+        [HttpPost("google")]
+        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.IdToken))
+                return BadRequest(new { message = "Google ID token is required." });
+
+            FirebaseToken decodedToken;
+            try
+            {
+                decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(dto.IdToken);
+            }
+            catch (Exception)
+            {
+                return Unauthorized(new { message = "Google token is invalid or Firebase is not configured on the server." });
+            }
+
+            var email = decodedToken.Claims.TryGetValue("email", out var emailClaim)
+                ? emailClaim?.ToString() : null;
+            if (string.IsNullOrWhiteSpace(email))
+                return BadRequest(new { message = "Your Google account must have an email address." });
+
+            var displayName = decodedToken.Claims.TryGetValue("name", out var nameClaim)
+                ? nameClaim?.ToString() : email.Split('@')[0];
+            var photoUrl = decodedToken.Claims.TryGetValue("picture", out var pictureClaim)
+                ? pictureClaim?.ToString() : null;
+
+            var user = await _context.Users
+                .Include(u => u.Profile)
+                .Include(u => u.Quota)
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
+
+            if (user == null)
+            {
+                var baseUsername = new string(email.Split('@')[0].ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray());
+                if (string.IsNullOrWhiteSpace(baseUsername)) baseUsername = "googleuser";
+                var username = baseUsername;
+                var suffix = 1;
+                while (await _context.Users.AnyAsync(u => u.Username == username))
+                    username = $"{baseUsername}{suffix++}";
+
+                var mobile = $"9{Math.Abs(email.GetHashCode()) % 1000000000:000000000}";
+                while (await _context.Users.AnyAsync(u => u.MobileNumber == mobile))
+                    mobile = $"9{Random.Shared.Next(0, 1000000000):000000000}";
+
+                user = new User
+                {
+                    Username = username,
+                    PasswordHash = Guid.NewGuid().ToString("N"),
+                    Email = email,
+                    MobileNumber = mobile,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    Profile = new Profile
+                    {
+                        FullName = string.IsNullOrWhiteSpace(displayName) ? username : displayName,
+                        ProfilePhoto = photoUrl,
+                        Gender = "Male",
+                        WorkStatus = "Employed",
+                        MaritalStatus = "Single"
+                    },
+                    Quota = new UserQuota { FreeMessagesLeft = 5, UpdatedAt = DateTime.UtcNow }
+                };
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+            }
+
+            if (!user.IsActive)
+                return BadRequest(new { message = "This account is currently inactive. Please contact support." });
+
+            user.Token = GenerateJwtToken(user);
+            return Ok(user);
+        }
+
         // POST: api/auth/verify-2fa
         [HttpPost("verify-2fa")]
         public async Task<IActionResult> Verify2Fa([FromBody] Verify2FaDto dto)
@@ -321,5 +396,10 @@ namespace Backend.Controllers
     {
         public string Username { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
+    }
+
+    public class GoogleLoginDto
+    {
+        public string IdToken { get; set; } = string.Empty;
     }
 }

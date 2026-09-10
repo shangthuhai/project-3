@@ -1,5 +1,13 @@
 # React + Vite
 
+## Google Sign-In
+
+1. Tạo Firebase Web App trong Firebase Console và bật `Authentication > Sign-in method > Google`.
+2. Sao chép `.env.example` thành `.env`, rồi điền các giá trị `VITE_FIREBASE_*` từ Firebase Project settings.
+3. Tạo Firebase service account, tải JSON về máy và đặt biến môi trường Backend:
+	`FIREBASE_CREDENTIALS_PATH=G:\\path\\to\\firebase-service-account.json`
+4. Khởi động lại Backend và Frontend. Nút `Continue with Google` sẽ xác thực Firebase rồi đổi sang JWT nội bộ của ứng dụng.
+
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
 Currently, two official plugins are available:
