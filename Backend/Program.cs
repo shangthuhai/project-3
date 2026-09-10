@@ -108,12 +108,6 @@ if (app.Environment.IsDevelopment())
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var databasePath = Path.Combine(builder.Environment.ContentRootPath, databaseFile);
-    if (File.Exists(databasePath) && !HasCurrentSchema(dbContext))
-    {
-        dbContext.Database.CloseConnection();
-        File.Delete(databasePath);
-    }
     dbContext.Database.EnsureCreated();
 
     try
@@ -162,22 +156,4 @@ app.MapHub<Backend.Hubs.ChatHub>("/chatHub");
 
 app.Run();
 
-static bool HasCurrentSchema(AppDbContext dbContext)
-{
-    var connection = dbContext.Database.GetDbConnection();
-    try
-    {
-        connection.Open();
-        using var command = connection.CreateCommand();
-        command.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name IN ('User_Quotas', 'SMS_Logs')";
-        return Convert.ToInt32(command.ExecuteScalar()) == 2;
-    }
-    catch (Exception)
-    {
-        return false;
-    }
-    finally
-    {
-        connection.Close();
-    }
-}
+
