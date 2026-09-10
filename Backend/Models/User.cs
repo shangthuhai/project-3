@@ -66,7 +66,7 @@ namespace Backend.Models
         [JsonIgnore]
         public Profile? Profile { get; set; }
 
-        [JsonIgnore]
+        [JsonPropertyName("quota")]
         public UserQuota? Quota { get; set; }
 
         // JWT token property for authorization

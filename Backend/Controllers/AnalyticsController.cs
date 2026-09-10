@@ -31,9 +31,9 @@ namespace Backend.Controllers
         {
             int userId = AuthenticatedUserId;
 
-            // Fetch user quota
+            // Fetch user quota limit
             var quota = await _context.UserQuotas.FirstOrDefaultAsync(q => q.UserId == userId);
-            int freeLeft = quota?.FreeMessagesLeft ?? 0;
+            int freeLeft = quota?.FreeMessagesLeft ?? 5;
 
             // Total messages sent by this user
             var userMessages = _context.Messages.Where(m => m.SenderId == userId);

@@ -20,3 +20,7 @@ Frontend/yarn-error.log*
 *.userosscache
 *.sln.docstates
 .vs/
+
+# Firebase and local environment secrets
+Frontend/.env
+Backend/firebase-service-account.json

@@ -25,6 +25,7 @@ namespace Backend.Data
         public DbSet<ContactGroupMember> ContactGroupMembers { get; set; } = null!;
         public DbSet<SMSTemplate> SMSTemplates { get; set; } = null!;
         public DbSet<Blocklist> Blocklists { get; set; } = null!;
+        public DbSet<KeywordRule> KeywordRules { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -201,9 +202,9 @@ namespace Backend.Data
                 }
             );
 
-            // 4. Seed Quotas (Since Alice sent 2 free messages to David, her quota has 3 left. Others have 5.)
+            // 4. Seed Quotas (Default limit of 5 free messages per stranger for all users)
             modelBuilder.Entity<UserQuota>().HasData(
-                new UserQuota { QuotaId = 1, UserId = 1, FreeMessagesLeft = 3, UpdatedAt = DateTime.Parse("2026-08-14T00:00:00Z") },
+                new UserQuota { QuotaId = 1, UserId = 1, FreeMessagesLeft = 5, UpdatedAt = DateTime.Parse("2026-08-14T00:00:00Z") },
                 new UserQuota { QuotaId = 2, UserId = 2, FreeMessagesLeft = 5, UpdatedAt = DateTime.Parse("2026-08-14T00:00:00Z") },
                 new UserQuota { QuotaId = 3, UserId = 3, FreeMessagesLeft = 5, UpdatedAt = DateTime.Parse("2026-08-14T00:00:00Z") },
                 new UserQuota { QuotaId = 999, UserId = 999, FreeMessagesLeft = 999999, UpdatedAt = DateTime.Parse("2026-08-14T00:00:00Z") }
@@ -277,6 +278,15 @@ namespace Backend.Data
                 new SMSTemplate { TemplateId = 2, UserId = null, Title = "Nhắc lịch hẹn", Body = "Xin chào {Name}, đây là tin nhắn nhắc bạn về lịch hẹn của chúng ta vào lúc 15h chiều nay. Hẹn gặp lại bạn nhé!" },
                 new SMSTemplate { TemplateId = 3, UserId = null, Title = "Nhắc thanh toán", Body = "Kính chào quý khách {Name}, vui lòng hoàn thành thanh toán hóa đơn cước dịch vụ tháng này trước ngày 20. Trân trọng cảm ơn!" },
                 new SMSTemplate { TemplateId = 4, UserId = null, Title = "Tin nhắn công việc nhanh", Body = "Hi {Name}, mình đã nhận được tài liệu bạn gửi. Mình sẽ phản hồi lại cho bạn sớm nhất có thể. Cảm ơn nhé!" }
+            );
+
+            // 13. Seed Keyword Rules
+            modelBuilder.Entity<KeywordRule>().HasData(
+                new KeywordRule { RuleId = 1, Keyword = "lừa đảo", Category = "Scam", Action = "block", IsActive = true, CreatedAt = DateTime.Parse("2026-08-14T00:00:00Z") },
+                new KeywordRule { RuleId = 2, Keyword = "cờ bạc", Category = "Scam", Action = "block", IsActive = true, CreatedAt = DateTime.Parse("2026-08-14T00:00:00Z") },
+                new KeywordRule { RuleId = 3, Keyword = "nợ", Category = "Sensitive", Action = "flag", IsActive = true, CreatedAt = DateTime.Parse("2026-08-14T00:00:00Z") },
+                new KeywordRule { RuleId = 4, Keyword = "khuyến mãi khủng", Category = "Spam", Action = "flag", IsActive = true, CreatedAt = DateTime.Parse("2026-08-14T00:00:00Z") },
+                new KeywordRule { RuleId = 5, Keyword = "chuyển tiền gấp", Category = "Scam", Action = "delay", IsActive = true, CreatedAt = DateTime.Parse("2026-08-14T00:00:00Z") }
             );
         }
     }

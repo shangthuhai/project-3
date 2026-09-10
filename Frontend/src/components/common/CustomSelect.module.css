@@ -1,0 +1,109 @@
+.custom-select {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  user-select: none;
+}
+
+.custom-select--disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.custom-select__trigger {
+  width: 100%;
+  background: var(--bg-app);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  color: var(--text-main);
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  box-sizing: border-box;
+}
+
+.custom-select:hover .custom-select__trigger,
+.custom-select__trigger:focus {
+  border-color: var(--color-primary);
+}
+
+.custom-select--open .custom-select__trigger {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(36, 129, 204, 0.25);
+}
+
+.custom-select__arrow {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+  margin-left: 10px;
+}
+
+.custom-select--open .custom-select__arrow {
+  transform: rotate(180deg);
+}
+
+.custom-select__dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 6px;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 240px;
+  overflow-y: auto;
+  animation: selectDropdownFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+@keyframes selectDropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.custom-select__option {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  font-size: 0.88rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.custom-select__option:hover {
+  background: rgba(36, 129, 204, 0.15);
+  color: var(--color-primary-hover);
+}
+
+.custom-select__option--selected {
+  background: var(--color-primary);
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
+.custom-select__check {
+  font-size: 0.85rem;
+  font-weight: bold;
+}

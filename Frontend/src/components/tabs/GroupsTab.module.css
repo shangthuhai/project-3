@@ -1,0 +1,234 @@
+.groups-tab__container {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 25px;
+  height: calc(100vh - 180px);
+}
+
+.groups-tab__sidebar {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.groups-tab__list {
+  flex: 1;
+  overflow-y: auto;
+  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.groups-tab__list-item {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid transparent;
+}
+
+.groups-tab__list-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.groups-tab__list-item--active {
+  background: rgba(36, 129, 204, 0.08);
+  border-color: rgba(36, 129, 204, 0.2);
+  color: var(--color-primary);
+}
+
+.groups-tab__list-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.groups-tab__details-pane {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.groups-tab__pane-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--border-light);
+  margin-bottom: 20px;
+}
+
+.groups-tab__pane-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.groups-tab__members-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 15px;
+  overflow-y: auto;
+  flex: 1;
+  padding-bottom: 20px;
+}
+
+.groups-tab__member-card {
+  background: var(--bg-card);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.groups-tab__member-card:hover {
+  border-color: rgba(36, 129, 204, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(36, 129, 204, 0.15);
+}
+
+.groups-tab__member-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+}
+
+.groups-tab__member-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.groups-tab__member-phone {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.groups-tab__bulk-box {
+  background: var(--bg-app);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-top: 15px;
+}
+
+.groups-tab__datetime-input {
+  color-scheme: dark;
+  cursor: pointer;
+}
+
+.groups-tab__datetime-input::-webkit-calendar-picker-indicator {
+  filter: invert(0.9);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.groups-tab__bulk-log {
+  max-height: 120px;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  padding: 10px;
+  font-family: monospace;
+  font-size: 0.78rem;
+  margin-top: 12px;
+  color: #34d399;
+}
+
+.groups-tab__back-btn {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-light);
+  color: var(--text-main);
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 15px;
+  width: fit-content;
+  transition: var(--transition-fast);
+}
+
+.groups-tab__back-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary-hover);
+}
+
+.groups-tab__add-member-form {
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .groups-tab__container {
+    grid-template-columns: 1fr;
+    height: calc(100vh - 220px);
+    gap: 15px;
+  }
+
+  /* When no group is selected: show sidebar, hide details pane */
+  .groups-tab__container:not(.groups-tab__container--has-selected) .groups-tab__sidebar {
+    display: flex;
+    width: 100%;
+  }
+  .groups-tab__container:not(.groups-tab__container--has-selected) .groups-tab__details-pane {
+    display: none;
+  }
+
+  /* When a group is selected: hide sidebar, show details pane */
+  .groups-tab__container.groups-tab__container--has-selected .groups-tab__sidebar {
+    display: none;
+  }
+  .groups-tab__container.groups-tab__container--has-selected .groups-tab__details-pane {
+    display: flex;
+    width: 100%;
+    padding: 16px;
+  }
+
+  .groups-tab__back-btn {
+    display: inline-flex;
+  }
+
+  .groups-tab__pane-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .groups-tab__add-member-form {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .groups-tab__add-member-form select,
+  .groups-tab__add-member-form button {
+    width: 100%;
+  }
+}

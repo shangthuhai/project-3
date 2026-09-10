@@ -16,10 +16,12 @@ namespace Backend.Controllers
     public class ServicesController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly Services.IEmailService _emailService;
 
-        public ServicesController(AppDbContext context)
+        public ServicesController(AppDbContext context, Services.IEmailService emailService)
         {
             _context = context;
+            _emailService = emailService;
         }
 
         private int AuthenticatedUserId => 
@@ -69,7 +71,13 @@ namespace Backend.Controllers
 
             Console.WriteLine($"[2FA OTP] Generated VAS payment code for user '{user.Username}': {code} (Sent to {user.Email})");
 
-            return Ok(new { message = "OTP has been sent to your email.", email = user.Email });
+            await _emailService.SendEmailAsync(
+                user.Email,
+                "Mã OTP xác thực thanh toán dịch vụ - ChatFlow",
+                $"Xin chào {user.Username},\n\nMã OTP xác thực thanh toán của bạn là: {code}\nMã có hiệu lực trong 5 phút. Vui lòng không chia sẻ mã này với ai."
+            );
+
+            return Ok(new { message = "Mã OTP đã được gửi đến email của bạn.", email = user.Email });
         }
 
         // POST: api/services/activate

@@ -1,0 +1,665 @@
+.friends-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 24px;
+  color: var(--text-main);
+  overflow-y: auto;
+}
+
+.friends-tab__header {
+  margin-bottom: 24px;
+}
+
+.friends-tab__header h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: var(--text-main);
+}
+
+.friends-tab__header p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.friends-tab__container {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 30px;
+  align-items: start;
+}
+
+.friends-tab__left-pane,
+.friends-tab__right-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.friends-tab__section-header {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.friends-tab__section-header h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-primary-hover);
+}
+
+/* Search Box styling */
+.friends-tab__search-box {
+  position: relative;
+  width: 100%;
+}
+
+.friends-tab__search-input {
+  width: 100%;
+  padding: 10px 36px 10px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  background: var(--bg-app);
+  color: var(--text-main);
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.friends-tab__search-input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(36, 129, 204, 0.25);
+}
+
+.friends-tab__search-clear {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 2px;
+  z-index: 2;
+}
+
+.friends-tab__search-clear:hover {
+  color: var(--text-main);
+}
+
+/* Lists and Cards styling */
+.friends-tab__list-wrapper {
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  min-height: 380px;
+  max-height: calc(100vh - 280px);
+  overflow-y: auto;
+}
+
+.friends-tab__status-message {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 40px 20px;
+  font-size: 0.9rem;
+}
+
+.friends-tab__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.friends-tab__card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+
+.friends-tab__card:hover {
+  border-color: rgba(36, 129, 204, 0.3);
+  box-shadow: var(--shadow-sm);
+}
+
+.friends-tab__avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border-light);
+}
+
+.friends-tab__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.friends-tab__name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.friends-tab__subtext {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.friends-tab__email {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.friends-tab__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.friends-tab__actions-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+}
+
+.friends-tab__received-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.friends-tab__action-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+/* Button & Badge styles */
+.friends-tab__btn {
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.friends-tab__btn--chat {
+  background: rgba(36, 129, 204, 0.1);
+  color: var(--color-primary);
+  border: 1px solid rgba(36, 129, 204, 0.2);
+}
+
+.friends-tab__btn--chat:hover {
+  background: var(--color-primary);
+  color: white;
+}
+
+.friends-tab__btn--add {
+  background: var(--color-primary);
+  color: white;
+}
+
+.friends-tab__btn--add:hover {
+  background: var(--color-primary-hover);
+}
+
+.friends-tab__btn--accept {
+  background: var(--color-accent);
+  color: var(--bg-app);
+}
+
+.friends-tab__btn--accept:hover {
+  opacity: 0.9;
+}
+
+.friends-tab__btn--reject {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--color-danger);
+}
+
+.friends-tab__btn--reject:hover {
+  background: rgba(239, 68, 68, 0.25);
+}
+
+.friends-tab__badge {
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.friends-tab__badge--sent {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+/* Right pane specific section card styling */
+.friends-tab__pane-section {
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.friends-tab__requests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.friends-tab__empty-notice {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-style: italic;
+  padding: 10px 0;
+}
+
+.friends-tab__request-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+}
+
+.friends-tab__request-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.friends-tab__request-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.friends-tab__request-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.friends-tab__request-subtext {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.friends-tab__request-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.friends-tab__invite-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.friends-tab__label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  display: block;
+}
+
+.friends-tab__input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  background: var(--bg-app);
+  color: var(--text-main);
+  font-size: 0.9rem;
+}
+
+.friends-tab__input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+.friends-tab__stranger-search-box {
+  position: relative;
+  width: 100%;
+}
+
+.friends-tab__strangers-list-wrapper {
+  background: var(--bg-app);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 10px;
+  min-height: 180px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.friends-tab__status-message-small {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 20px 10px;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.friends-tab__strangers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.friends-tab__stranger-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  transition: all 0.15s ease;
+}
+
+.friends-tab__stranger-card:hover {
+  border-color: rgba(36, 129, 204, 0.2);
+}
+
+.friends-tab__stranger-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.friends-tab__stranger-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.friends-tab__stranger-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.friends-tab__stranger-subtext {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.friends-tab__stranger-actions {
+  display: flex;
+  align-items: center;
+}
+
+.friends-tab__badge--sent-small {
+  background: rgba(245, 158, 11, 0.08);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.15);
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
+.friends-tab__action-buttons-small {
+  display: flex;
+  gap: 4px;
+}
+
+.friends-tab__btn--accept-small {
+  background: var(--color-accent);
+  color: var(--bg-app);
+  font-size: 0.72rem;
+  padding: 4px 8px;
+}
+
+.friends-tab__btn--reject-small {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--color-danger);
+  font-size: 0.72rem;
+  padding: 4px 8px;
+}
+
+.friends-tab__btn--add-small {
+  background: var(--color-primary);
+  color: white;
+  font-size: 0.72rem;
+  padding: 4px 10px;
+}
+
+.friends-tab__btn--add-small:hover {
+  background: var(--color-primary-hover);
+}
+
+.friends-tab__block-search-box {
+  position: relative;
+  width: 100%;
+}
+
+.friends-tab__blocklist-results-wrapper {
+  background: var(--bg-app);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 10px;
+  min-height: 180px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.friends-tab__block-search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.friends-tab__block-candidate-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  transition: all 0.15s ease;
+}
+
+.friends-tab__block-candidate-card:hover {
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.friends-tab__block-candidate-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.friends-tab__block-candidate-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.friends-tab__block-candidate-name {
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.friends-tab__block-candidate-phone {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.friends-tab__block-candidate-actions {
+  display: flex;
+  align-items: center;
+}
+
+.friends-tab__badge--blocked-small {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--color-danger);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
+.friends-tab__btn--block-small {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--color-danger);
+  font-size: 0.72rem;
+  padding: 4px 8px;
+}
+
+.friends-tab__btn--block-small:hover {
+  background: var(--color-danger);
+  color: white;
+}
+
+.friends-tab__blocked-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.friends-tab__blocked-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+}
+
+.friends-tab__blocked-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.friends-tab__blocked-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.friends-tab__blocked-number {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-left: 20px;
+}
+
+.friends-tab__btn--unblock-small {
+  background: rgba(36, 129, 204, 0.1);
+  color: var(--color-primary);
+  border: 1px solid rgba(36, 129, 204, 0.15);
+  font-size: 0.72rem;
+  padding: 4px 8px;
+}
+
+.friends-tab__btn--unblock-small:hover {
+  background: var(--color-primary);
+  color: white;
+}
+
+.friends-tab__search-container-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.friends-tab__search-box-wrapper {
+  position: relative;
+  flex: 1;
+}
+
+.friends-tab__search-box-wrapper .friends-tab__search-input {
+  width: 100%;
+  padding: 10px 36px 10px 14px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--bg-sidebar);
+  color: var(--text-main);
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+.friends-tab__search-box-wrapper .friends-tab__search-clear {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  z-index: 2;
+  font-size: 0.85rem;
+}
+
+.friends-tab__search-filter-select {
+  padding: 10px 14px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--bg-sidebar);
+  color: var(--text-main);
+  font-size: 0.9rem;
+  outline: none;
+  cursor: pointer;
+  min-width: 100px;
+  transition: border-color var(--transition-normal);
+}
+
+.friends-tab__search-filter-select:focus {
+  border-color: var(--color-primary);
+}
+
+/* Responsive styles */
+@media (max-width: 992px) {
+  .friends-tab__container {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .friends-tab__list-wrapper {
+    max-height: 400px;
+  }
+}
