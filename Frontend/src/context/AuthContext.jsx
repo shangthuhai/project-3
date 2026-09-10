@@ -212,7 +212,16 @@ export function AuthProvider({ children }) {
 
   const handleLoginSubmit = (e) => {
     if (e) e.preventDefault();
-    login(loginForm.username, loginForm.password)
+    if (!loginForm.username?.trim()) {
+      triggerAlert('error', 'Vui lòng nhập Tên đăng nhập.');
+      return;
+    }
+    if (!loginForm.password) {
+      triggerAlert('error', 'Vui lòng nhập Mật khẩu.');
+      return;
+    }
+
+    login(loginForm.username.trim(), loginForm.password)
       .then(res => {
         if (res.requires2Fa) {
           setRequires2Fa(true);
@@ -258,7 +267,12 @@ export function AuthProvider({ children }) {
 
   const handle2FaVerifySubmit = (e) => {
     if (e) e.preventDefault();
-    verify2Fa(twoFaUsername, otpInput)
+    if (!otpInput || otpInput.trim().length !== 6) {
+      triggerAlert('error', 'Vui lòng nhập đủ 6 chữ số mã xác thực OTP.');
+      return;
+    }
+
+    verify2Fa(twoFaUsername, otpInput.trim())
       .then(user => {
         localStorage.setItem('user', JSON.stringify(user));
         setLoggedInUser(user);
@@ -274,29 +288,15 @@ export function AuthProvider({ children }) {
 
   const handleRegisterSubmit = (e) => {
     if (e) e.preventDefault();
-    if (!emailOtpCode || emailOtpCode.trim().length !== 6) {
-      triggerAlert('error', 'Vui lòng nhập mã OTP 6 chữ số từ Email.');
+
+    // Comprehensive Field Validation (Full Name is optional, auto-generated if empty)
+    if (!registerForm.email?.trim()) {
+      triggerAlert('error', 'Vui lòng nhập địa chỉ Email.');
       return;
     }
 
-    if (captchaInput.toLowerCase() !== captchaCode.toLowerCase()) {
-      triggerAlert('error', 'Verification code is incorrect.');
-      generateCaptcha();
-      return;
-    }
-
-    if (registerForm.password !== registerForm.confirmPassword) {
-      triggerAlert('error', 'Passwords do not match.');
-      return;
-    }
-
-    if (usernameValidation.available === false) {
-      triggerAlert('error', 'Username is already taken.');
-      return;
-    }
-
-    if (mobileValidation.available === false) {
-      triggerAlert('error', 'THIS MOBILE NUMBER had been registered already');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(registerForm.email.trim())) {
+      triggerAlert('error', 'Địa chỉ Email không đúng định dạng.');
       return;
     }
 
@@ -305,9 +305,67 @@ export function AuthProvider({ children }) {
       return;
     }
 
+    if (!emailOtpCode || emailOtpCode.trim().length !== 6) {
+      triggerAlert('error', 'Vui lòng nhập đủ 6 chữ số mã OTP đã gửi qua Email.');
+      return;
+    }
+
+    if (!registerForm.mobileNumber?.trim() || registerForm.mobileNumber.length !== 10) {
+      triggerAlert('error', 'Vui lòng nhập đúng 10 chữ số điện thoại.');
+      return;
+    }
+
+    if (mobileValidation.available === false) {
+      triggerAlert('error', 'Số điện thoại này đã được đăng ký.');
+      return;
+    }
+
+    if (!registerForm.username?.trim()) {
+      triggerAlert('error', 'Vui lòng nhập Tên đăng nhập.');
+      return;
+    }
+
+    if (usernameValidation.available === false) {
+      triggerAlert('error', 'Tên đăng nhập này đã được sử dụng.');
+      return;
+    }
+
+    if (!registerForm.password) {
+      triggerAlert('error', 'Vui lòng nhập Mật khẩu.');
+      return;
+    }
+
+    if (!registerForm.confirmPassword) {
+      triggerAlert('error', 'Vui lòng nhập lại Mật khẩu xác nhận.');
+      return;
+    }
+
+    if (registerForm.password !== registerForm.confirmPassword) {
+      triggerAlert('error', 'Mật khẩu xác nhận không trùng khớp với Mật khẩu.');
+      return;
+    }
+
+    if (!captchaInput?.trim()) {
+      triggerAlert('error', 'Vui lòng nhập Mã xác nhận Captcha.');
+      return;
+    }
+
+    if (captchaInput.toLowerCase() !== captchaCode.toLowerCase()) {
+      triggerAlert('error', 'Mã Captcha không chính xác, vui lòng thử lại.');
+      generateCaptcha();
+      return;
+    }
+
+    // Auto-generate random name if name is left blank
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const finalName = registerForm.name?.trim() || `User_${registerForm.username?.trim() || randomSuffix}`;
+
     register({
       ...registerForm,
-      name: registerForm.name || registerForm.username,
+      name: finalName,
+      username: registerForm.username.trim(),
+      email: registerForm.email.trim(),
+      mobileNumber: registerForm.mobileNumber.trim(),
       emailOtpCode: emailOtpCode.trim()
     })
       .then(user => {

@@ -45,6 +45,139 @@ export default function LandingView() {
     handleDemoUserSwitch
   } = useAuth();
 
+  const [submittedRegister, setSubmittedRegister] = useState(false);
+  const [submittedLogin, setSubmittedLogin] = useState(false);
+  const [touched, setTouched] = useState({});
+
+  useEffect(() => {
+    setSubmittedRegister(false);
+    setSubmittedLogin(false);
+    setTouched({});
+  }, [authMode]);
+
+  const touchField = (fieldName) => {
+    setTouched(prev => ({ ...prev, [fieldName]: true }));
+  };
+
+  // Real-time instant field status calculators
+  const getNameStatus = () => {
+    const name = registerForm.name?.trim();
+    if (!name) return { type: 'checking', msg: t('optional_name_hint') };
+    return { type: 'success', msg: t('name_valid') };
+  };
+
+  const getEmailStatus = () => {
+    if (!submittedRegister && !touched.email) return null;
+    const email = registerForm.email?.trim();
+    if (!email) return { type: 'error', msg: t('err_email_required') };
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { type: 'error', msg: t('err_email_invalid') };
+    if (emailValidation.checking) return { type: 'checking', msg: t('checking_availability') };
+    if (emailValidation.available === false) return { type: 'error', msg: t('email_taken') };
+    if (emailValidation.available === true) return { type: 'success', msg: t('email_available') };
+    return null;
+  };
+
+  const getOtpStatus = () => {
+    if (!submittedRegister && !touched.emailOtpCode) return null;
+    const otp = emailOtpCode?.trim();
+    if (!otp) return { type: 'error', msg: t('err_otp_required') };
+    if (otp.length < 6) return { type: 'error', msg: `${t('err_otp_required')} (${otp.length}/6)` };
+    return { type: 'success', msg: t('otp_valid') };
+  };
+
+  const getMobileStatus = () => {
+    if (!submittedRegister && !touched.mobileNumber) return null;
+    const mob = registerForm.mobileNumber?.trim();
+    if (!mob) return { type: 'error', msg: t('err_mobile_required') };
+    if (mob.length < 10) return { type: 'error', msg: `${t('mobile_invalid')} (${mob.length}/10)` };
+    if (mobileValidation.checking) return { type: 'checking', msg: t('checking_availability') };
+    if (mobileValidation.available === false) return { type: 'error', msg: t('mobile_taken') };
+    if (mobileValidation.available === true) return { type: 'success', msg: t('mobile_available') };
+    return null;
+  };
+
+  const getUsernameStatus = () => {
+    if (!submittedRegister && !touched.username) return null;
+    const user = registerForm.username?.trim();
+    if (!user) return { type: 'error', msg: t('err_username_required') };
+    if (user.length < 3) return { type: 'error', msg: language === 'vi' ? 'Tên đăng nhập phải từ 3 ký tự trở lên.' : 'Username must be at least 3 characters.' };
+    if (usernameValidation.checking) return { type: 'checking', msg: t('checking_availability') };
+    if (usernameValidation.available === false) return { type: 'error', msg: t('username_taken') };
+    if (usernameValidation.available === true) return { type: 'success', msg: t('username_available') };
+    return null;
+  };
+
+  const getPasswordStatus = () => {
+    if (!submittedRegister && !touched.password) return null;
+    const pass = registerForm.password;
+    if (!pass) return { type: 'error', msg: t('err_password_required') };
+    if (pass.length < 6) return { type: 'error', msg: language === 'vi' ? `Mật khẩu tối thiểu 6 ký tự (${pass.length}/6).` : `Password must be at least 6 characters (${pass.length}/6).` };
+    return { type: 'success', msg: t('password_valid') };
+  };
+
+  const getConfirmPasswordStatus = () => {
+    if (!submittedRegister && !touched.confirmPassword) return null;
+    const confirm = registerForm.confirmPassword;
+    if (!confirm) return { type: 'error', msg: t('err_confirm_password_required') };
+    if (confirm !== registerForm.password) return { type: 'error', msg: t('err_password_mismatch') };
+    return { type: 'success', msg: t('password_match') };
+  };
+
+  const getCaptchaStatus = () => {
+    if (!submittedRegister && !touched.captchaInput) return null;
+    const code = captchaInput?.trim();
+    if (!code) return { type: 'error', msg: t('err_captcha_required') };
+    if (code.toLowerCase() !== captchaCode.toLowerCase()) return { type: 'error', msg: t('err_captcha_invalid') };
+    return { type: 'success', msg: t('captcha_valid') };
+  };
+
+  const getLoginUsernameStatus = () => {
+    if (!submittedLogin && !touched.loginUsername) return null;
+    if (!loginForm.username?.trim()) return { type: 'error', msg: t('err_username_required') };
+    return null;
+  };
+
+  const getLoginPasswordStatus = () => {
+    if (!submittedLogin && !touched.loginPassword) return null;
+    if (!loginForm.password) return { type: 'error', msg: t('err_password_required') };
+    return null;
+  };
+
+  const renderValidationMessage = (status) => {
+    if (!status || !status.msg) return null;
+    return (
+      <span className={cx('landing__validation', status.type === 'success' ? 'landing__validation--success' : status.type === 'error' ? 'landing__validation--error' : 'landing__validation--checking')}>
+        {status.type === 'success' && <span style={{ marginRight: '4px' }}>✓</span>}
+        {status.type === 'error' && <span style={{ marginRight: '4px' }}>✗</span>}
+        {status.type === 'checking' && <span style={{ marginRight: '4px' }}>⏳</span>}
+        <span>{status.msg}</span>
+      </span>
+    );
+  };
+
+  const onRegisterFormSubmit = (e) => {
+    e.preventDefault();
+    setSubmittedRegister(true);
+    handleRegisterSubmit(e);
+  };
+
+  const onLoginFormSubmit = (e) => {
+    e.preventDefault();
+    setSubmittedLogin(true);
+    handleLoginSubmit(e);
+  };
+
+  const nameStatus = getNameStatus();
+  const emailStatus = getEmailStatus();
+  const otpStatus = getOtpStatus();
+  const mobileStatus = getMobileStatus();
+  const usernameStatus = getUsernameStatus();
+  const passwordStatus = getPasswordStatus();
+  const confirmPasswordStatus = getConfirmPasswordStatus();
+  const captchaStatus = getCaptchaStatus();
+  const loginUserStatus = getLoginUsernameStatus();
+  const loginPassStatus = getLoginPasswordStatus();
+
   return (
     <div className={cx('landing')}>
       {/* Left Column: Website info */}
@@ -87,26 +220,6 @@ export default function LandingView() {
             </div>
           </div>
         </div>
-
-        {/* Quick Demo Swapper widget for easy evaluation */}
-        {/* {users.length > 0 && (
-          <div className={cx('landing__user-switcher')} style={{ width: 'fit-content', marginTop: '30px' }}>
-            <div className={cx('landing__user-switcher-info')}>
-              <span className={cx('landing__user-switcher-label')}>{t('demo_login')}</span>
-              <div style={{ minWidth: '240px' }}>
-                <CustomSelect
-                  options={[
-                    { value: '', label: t('select_preseed') },
-                    ...users.map(u => ({ value: String(u.id), label: `${u.name} (${u.username})` }))
-                  ]}
-                  value=""
-                  onChange={(val) => val && handleDemoUserSwitch(parseInt(val))}
-                  placeholder={t('select_preseed')}
-                />
-              </div>
-            </div>
-          </div>
-        )} */}
       </div>
 
       {/* Right Column: Auth forms */}
@@ -179,7 +292,6 @@ export default function LandingView() {
                 label={t('otp_code')}
                 placeholder="XXXXXX"
                 variant="github"
-                required
                 autoFocus
               />
               <button type="submit" className="btn btn-primary" style={{ padding: '12px' }}>
@@ -201,16 +313,18 @@ export default function LandingView() {
           /* LOGIN CARD */
           <div className={cx('landing__auth-card')}>
             <h2 className={cx('landing__auth-title')}>{t('login')}</h2>
-            <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <form onSubmit={onLoginFormSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }} noValidate>
               <div className="form-group">
                 <label>{t('username')}</label>
                 <input
                   type="text"
                   placeholder="Enter your username"
                   value={loginForm.username}
-                  onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
-                  required
+                  onChange={(e) => { setLoginForm({ ...loginForm, username: e.target.value }); touchField('loginUsername'); }}
+                  onBlur={() => touchField('loginUsername')}
+                  className={loginUserStatus?.type === 'error' ? 'input-error' : loginUserStatus?.type === 'success' ? 'input-success' : ''}
                 />
+                {renderValidationMessage(loginUserStatus)}
               </div>
 
               <div className="form-group">
@@ -219,9 +333,11 @@ export default function LandingView() {
                   type="password"
                   placeholder="Enter your password"
                   value={loginForm.password}
-                  onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-                  required
+                  onChange={(e) => { setLoginForm({ ...loginForm, password: e.target.value }); touchField('loginPassword'); }}
+                  onBlur={() => touchField('loginPassword')}
+                  className={loginPassStatus?.type === 'error' ? 'input-error' : loginPassStatus?.type === 'success' ? 'input-success' : ''}
                 />
+                {renderValidationMessage(loginPassStatus)}
               </div>
 
               <button type="submit" className="btn btn-primary" style={{ marginTop: '10px', padding: '12px' }}>
@@ -246,31 +362,34 @@ export default function LandingView() {
             </button>
             <div className={cx('landing__auth-divider')} style={{ marginBottom: '15px' }}>{t('or_continue_with')}</div>
 
-            <form onSubmit={handleRegisterSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
+            <form onSubmit={onRegisterFormSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0px' }} noValidate>
               <div className={cx('landing__register-fields')}>
                 {/* 1. Họ và tên */}
                 <div className="form-group">
-                  <label>{t('fullname')}</label>
+                  <label>{t('fullname')} <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 400 }}>({language === 'vi' ? 'Không bắt buộc' : 'Optional'})</span></label>
                   <input
                     type="text"
-                    placeholder="e.g. John Doe"
+                    placeholder={language === 'vi' ? 'Ví dụ: Nguyễn Văn A (Không bắt buộc)' : 'e.g. John Doe (Optional)'}
                     value={registerForm.name || ''}
-                    onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
-                    required
+                    onChange={(e) => { setRegisterForm({ ...registerForm, name: e.target.value }); touchField('name'); }}
+                    onBlur={() => touchField('name')}
+                    className={nameStatus?.type === 'success' ? 'input-success' : ''}
                   />
+                  {renderValidationMessage(nameStatus)}
                 </div>
 
                 {/* 2. Email */}
                 <div className="form-group">
-                  <label>{t('email')}</label>
+                  <label>{t('email')} *</label>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     <input
                       type="email"
                       placeholder="e.g. john@example.com"
                       value={registerForm.email}
-                      onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
+                      onChange={(e) => { setRegisterForm({ ...registerForm, email: e.target.value }); touchField('email'); }}
+                      onBlur={() => touchField('email')}
                       style={{ flex: 1, minWidth: 0 }}
-                      required
+                      className={emailStatus?.type === 'error' ? 'input-error' : emailStatus?.type === 'success' ? 'input-success' : ''}
                     />
                     <button
                       type="button"
@@ -282,101 +401,81 @@ export default function LandingView() {
                       {sendingOtp ? '...' : otpTimer > 0 ? `${otpTimer}s` : t('send_otp')}
                     </button>
                   </div>
-                  {emailValidation.message && (
-                    <span className={cx('landing__validation', emailValidation.available === true ? 'landing__validation--success' : emailValidation.available === false ? 'landing__validation--error' : 'landing__validation--checking')}>
-                      {emailValidation.available === true && <span style={{ marginRight: '4px' }}>✓</span>}
-                      {emailValidation.available === false && <span style={{ marginRight: '4px' }}>✗</span>}
-                      <span>{emailValidation.available === true ? t('email_available') : emailValidation.available === false ? t('email_taken') : t('checking_availability')}</span>
-                    </span>
-                  )}
+                  {renderValidationMessage(emailStatus)}
                 </div>
 
-                {/* 2. Mã OTP */}
+                {/* 3. Mã OTP */}
                 <div className="form-group">
                   <OtpInput
                     value={emailOtpCode}
-                    onChange={setEmailOtpCode}
-                    label={t('email_otp_code')}
+                    onChange={(val) => { setEmailOtpCode(val); touchField('emailOtpCode'); }}
+                    label={`${t('email_otp_code')} *`}
                     placeholder="XXXXXX"
                     variant="github"
-                    required
                   />
+                  {renderValidationMessage(otpStatus)}
                 </div>
 
-                {/* 3. Số điện thoại */}
+                {/* 4. Số điện thoại */}
                 <div className="form-group">
-                  <label>{t('mobile_number')}</label>
+                  <label>{t('mobile_number')} *</label>
                   <input
                     type="text"
                     placeholder="e.g. 0912345678"
                     value={registerForm.mobileNumber}
-                    onChange={(e) => setRegisterForm({ ...registerForm, mobileNumber: e.target.value.replace(/\D/g, '').substring(0, 10) })}
+                    onChange={(e) => { setRegisterForm({ ...registerForm, mobileNumber: e.target.value.replace(/\D/g, '').substring(0, 10) }); touchField('mobileNumber'); }}
+                    onBlur={() => touchField('mobileNumber')}
                     maxLength={10}
-                    required
+                    className={mobileStatus?.type === 'error' ? 'input-error' : mobileStatus?.type === 'success' ? 'input-success' : ''}
                   />
-                  {mobileValidation.message && (
-                    <span className={cx('landing__validation', mobileValidation.available === true ? 'landing__validation--success' : mobileValidation.available === false ? 'landing__validation--error' : 'landing__validation--checking')}>
-                      {mobileValidation.available === true && <span style={{ marginRight: '4px' }}>✓</span>}
-                      {mobileValidation.available === false && <span style={{ marginRight: '4px' }}>✗</span>}
-                      <span>
-                        {mobileValidation.message === 'Checking mobile number...' || mobileValidation.message === 'Checking availability...'
-                          ? t('checking_availability')
-                          : mobileValidation.available === true
-                            ? t('mobile_available')
-                            : mobileValidation.available === false
-                              ? t('mobile_taken')
-                              : t('mobile_invalid')}
-                      </span>
-                    </span>
-                  )}
+                  {renderValidationMessage(mobileStatus)}
                 </div>
 
-                {/* 4. Tên đăng nhập */}
+                {/* 5. Tên đăng nhập */}
                 <div className="form-group">
-                  <label>{t('username')}</label>
+                  <label>{t('username')} *</label>
                   <input
                     type="text"
                     placeholder="Create username"
                     value={registerForm.username}
-                    onChange={(e) => setRegisterForm({ ...registerForm, username: e.target.value.toLowerCase().replace(/\s/g, '') })}
-                    required
+                    onChange={(e) => { setRegisterForm({ ...registerForm, username: e.target.value.toLowerCase().replace(/\s/g, '') }); touchField('username'); }}
+                    onBlur={() => touchField('username')}
+                    className={usernameStatus?.type === 'error' ? 'input-error' : usernameStatus?.type === 'success' ? 'input-success' : ''}
                   />
-                  {usernameValidation.message && (
-                    <span className={cx('landing__validation', usernameValidation.available === true ? 'landing__validation--success' : usernameValidation.available === false ? 'landing__validation--error' : 'landing__validation--checking')}>
-                      {usernameValidation.available === true && <span style={{ marginRight: '4px' }}>✓</span>}
-                      {usernameValidation.available === false && <span style={{ marginRight: '4px' }}>✗</span>}
-                      <span>{usernameValidation.message === 'Checking availability...' ? t('checking_availability') : usernameValidation.available === true ? t('username_available') : t('username_taken')}</span>
-                    </span>
-                  )}
+                  {renderValidationMessage(usernameStatus)}
                 </div>
 
-                {/* 5. Mật khẩu */}
+                {/* 6. Mật khẩu */}
                 <div className="form-group">
-                  <label>{t('password')}</label>
+                  <label>{t('password')} *</label>
                   <input
                     type="password"
                     placeholder="Password"
                     value={registerForm.password}
-                    onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
-                    required
+                    onChange={(e) => { setRegisterForm({ ...registerForm, password: e.target.value }); touchField('password'); }}
+                    onBlur={() => touchField('password')}
+                    className={passwordStatus?.type === 'error' ? 'input-error' : passwordStatus?.type === 'success' ? 'input-success' : ''}
                   />
+                  {renderValidationMessage(passwordStatus)}
                 </div>
 
-                {/* 6. Nhập lại mật khẩu */}
+                {/* 7. Nhập lại mật khẩu */}
                 <div className="form-group">
-                  <label>{t('confirm_password')}</label>
+                  <label>{t('confirm_password')} *</label>
                   <input
                     type="password"
                     placeholder="Confirm"
                     value={registerForm.confirmPassword}
-                    onChange={(e) => setRegisterForm({ ...registerForm, confirmPassword: e.target.value })}
-                    required
+                    onChange={(e) => { setRegisterForm({ ...registerForm, confirmPassword: e.target.value }); touchField('confirmPassword'); }}
+                    onBlur={() => touchField('confirmPassword')}
+                    className={confirmPasswordStatus?.type === 'error' ? 'input-error' : confirmPasswordStatus?.type === 'success' ? 'input-success' : ''}
                   />
+                  {renderValidationMessage(confirmPasswordStatus)}
                 </div>
 
-                {/* 7. Mã Captcha */}
+                {/* 8. Mã Captcha */}
                 <div className="form-group">
-                  <label>{t('verification_code')}</label>
+                  <label>{t('verification_code')} *</label>
                   <div className={cx('landing__captcha-container')}>
                     <div className={cx('landing__captcha-image')} style={{ padding: '0 6px', fontSize: '0.85rem' }}>{captchaCode}</div>
                     <button type="button" className={cx('landing__captcha-refresh')} onClick={generateCaptcha} title="Refresh Captcha">
@@ -386,11 +485,13 @@ export default function LandingView() {
                       type="text"
                       placeholder={t('enter_code')}
                       value={captchaInput}
-                      onChange={(e) => setCaptchaInput(e.target.value.trim())}
+                      onChange={(e) => { setCaptchaInput(e.target.value.trim()); touchField('captchaInput'); }}
+                      onBlur={() => touchField('captchaInput')}
                       style={{ flex: 1, padding: '6px' }}
-                      required
+                      className={captchaStatus?.type === 'error' ? 'input-error' : captchaStatus?.type === 'success' ? 'input-success' : ''}
                     />
                   </div>
+                  {renderValidationMessage(captchaStatus)}
                 </div>
 
                 {/* Register Submit Button */}
@@ -398,15 +499,6 @@ export default function LandingView() {
                   type="submit"
                   className="btn btn-primary"
                   style={{ marginTop: '8px', padding: '12px', width: '100%', fontWeight: 600 }}
-                  disabled={
-                    usernameValidation.available !== true ||
-                    mobileValidation.available !== true ||
-                    emailValidation.available === false ||
-                    !emailOtpCode ||
-                    emailOtpCode.length !== 6 ||
-                    !captchaInput ||
-                    registerForm.password !== registerForm.confirmPassword
-                  }
                 >
                   {t('create_account')}
                 </button>

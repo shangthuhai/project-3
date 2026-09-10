@@ -424,6 +424,22 @@ body {
   box-shadow: 0 0 0 2px rgba(36, 129, 204, 0.2);
 }
 
+.form-group input.input-error,
+.form-group select.input-error,
+.form-group textarea.input-error,
+input.input-error {
+  border-color: var(--color-danger) !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25) !important;
+}
+
+.form-group input.input-success,
+.form-group select.input-success,
+.form-group textarea.input-success,
+input.input-success {
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2) !important;
+}
+
 select option {
   background-color: var(--bg-sidebar);
   color: var(--text-main);
