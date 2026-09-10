@@ -1,32 +1,50 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Backend.Data;
 using Backend.Models;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.SignalR;
 
 namespace Backend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class UsersController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly Microsoft.AspNetCore.SignalR.IHubContext<Backend.Hubs.ChatHub> _hubContext;
+        private readonly Backend.Services.IS3StorageService _s3StorageService;
+        private readonly Backend.Services.ICloudinaryService _cloudinaryService;
 
-        public UsersController(AppDbContext context)
+        public UsersController(
+            AppDbContext context, 
+            Microsoft.AspNetCore.SignalR.IHubContext<Backend.Hubs.ChatHub> hubContext,
+            Backend.Services.IS3StorageService s3StorageService,
+            Backend.Services.ICloudinaryService cloudinaryService)
         {
             _context = context;
+            _hubContext = hubContext;
+            _s3StorageService = s3StorageService;
+            _cloudinaryService = cloudinaryService;
         }
+
+        private int AuthenticatedUserId => 
+            int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var id) ? id : 0;
 
         // GET: api/users
         [HttpGet]
+        [AllowAnonymous] // Allowed anonymously for the landing page demo switcher list
         public async Task<ActionResult<IEnumerable<User>>> GetUsers()
         {
-            return await _context.Users.ToListAsync();
+            return await _context.Users.Include(u => u.Profile).ToListAsync();
         }
 
         // GET: api/users/check-username?username=xyz
         [HttpGet("check-username")]
+        [AllowAnonymous] // Allow checking username availability during registration
         public async Task<IActionResult> CheckUsername([FromQuery] string username)
         {
             if (string.IsNullOrWhiteSpace(username)) return BadRequest(new { message = "Username cannot be empty." });
@@ -36,6 +54,7 @@ namespace Backend.Controllers
 
         // GET: api/users/check-mobile?mobile=0987654321
         [HttpGet("check-mobile")]
+        [AllowAnonymous] // Allow checking SĐT during registration
         public async Task<IActionResult> CheckMobile([FromQuery] string mobile)
         {
             if (string.IsNullOrWhiteSpace(mobile)) return BadRequest(new { message = "Mobile number cannot be empty." });
@@ -43,11 +62,22 @@ namespace Backend.Controllers
             return Ok(new { available = !exists });
         }
 
+        // GET: api/users/check-email?email=xyz@example.com
+        [HttpGet("check-email")]
+        [AllowAnonymous] // Allow checking email availability during registration
+        public async Task<IActionResult> CheckEmail([FromQuery] string email)
+        {
+            if (string.IsNullOrWhiteSpace(email)) return BadRequest(new { message = "Email cannot be empty." });
+            var exists = await _context.Users.AnyAsync(u => u.Email.ToLower() == email.Trim().ToLower());
+            return Ok(new { available = !exists });
+        }
+
+
         // GET: api/users/5
         [HttpGet("{id}")]
         public async Task<ActionResult<User>> GetUser(int id)
         {
-            var user = await _context.Users.FindAsync(id);
+            var user = await _context.Users.Include(u => u.Profile).FirstOrDefaultAsync(u => u.UserId == id);
             if (user == null)
             {
                 return NotFound(new { message = "User not found" });
@@ -59,36 +89,98 @@ namespace Backend.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutUser(int id, User user)
         {
-            if (id != user.Id)
+            if (id != user.UserId)
             {
                 return BadRequest(new { message = "ID mismatch" });
             }
 
-            var dbUser = await _context.Users.FindAsync(id);
+            // Secure validation: Only allow user to update their own profile details
+            if (id != AuthenticatedUserId)
+            {
+                return Forbid();
+            }
+
+            var dbUser = await _context.Users.Include(u => u.Profile).FirstOrDefaultAsync(u => u.UserId == id);
             if (dbUser == null)
             {
                 return NotFound(new { message = "User not found" });
             }
 
-            // Update details
-            dbUser.Name = user.Name;
-            dbUser.Gender = user.Gender;
-            dbUser.Dob = user.Dob;
-            dbUser.Address = user.Address;
-            dbUser.MaritalStatus = user.MaritalStatus;
-            dbUser.Hobbies = user.Hobbies;
-            dbUser.Likes = user.Likes;
-            dbUser.Dislikes = user.Dislikes;
-            dbUser.Cuisines = user.Cuisines;
-            dbUser.Sports = user.Sports;
-            dbUser.ProfilePhoto = user.ProfilePhoto;
-            
-            dbUser.Qualification = user.Qualification;
-            dbUser.School = user.School;
-            dbUser.College = user.College;
-            dbUser.WorkStatus = user.WorkStatus;
-            dbUser.Organization = user.Organization;
-            dbUser.Designation = user.Designation;
+            if (dbUser.Profile == null)
+            {
+                dbUser.Profile = new Profile { UserId = dbUser.UserId };
+                _context.Profiles.Add(dbUser.Profile);
+            }
+
+            // Upload photo to Cloudinary (or AWS S3) if it's base64 data
+            if (!string.IsNullOrWhiteSpace(user.ProfilePhoto) && user.ProfilePhoto.StartsWith("data:image/"))
+            {
+                var cloudinaryUrl = await _cloudinaryService.UploadBase64ImageAsync(user.ProfilePhoto, "avatars");
+                if (!string.IsNullOrEmpty(cloudinaryUrl) && (cloudinaryUrl.StartsWith("http://") || cloudinaryUrl.StartsWith("https://")))
+                {
+                    user.ProfilePhoto = cloudinaryUrl;
+                }
+                else
+                {
+                    var s3Url = await _s3StorageService.UploadBase64ImageAsync(user.ProfilePhoto, "avatars");
+                    if (!string.IsNullOrEmpty(s3Url))
+                    {
+                        user.ProfilePhoto = s3Url;
+                    }
+                }
+            }
+
+            // Update MobileNumber if provided and changed
+            if (!string.IsNullOrWhiteSpace(user.MobileNumber) && user.MobileNumber.Trim() != dbUser.MobileNumber)
+            {
+                var newMobile = user.MobileNumber.Trim();
+                if (newMobile.Length != 10 || !System.Text.RegularExpressions.Regex.IsMatch(newMobile, @"^\d{10}$"))
+                {
+                    return BadRequest(new { message = "Số điện thoại phải bao gồm đúng 10 chữ số." });
+                }
+                var mobileExists = await _context.Users.AnyAsync(u => u.MobileNumber == newMobile && u.UserId != id);
+                if (mobileExists)
+                {
+                    return BadRequest(new { message = "Số điện thoại này đã được đăng ký bởi tài khoản khác." });
+                }
+                dbUser.MobileNumber = newMobile;
+            }
+
+            // Update Email if provided and changed
+            if (!string.IsNullOrWhiteSpace(user.Email) && user.Email.Trim().ToLower() != dbUser.Email.ToLower())
+            {
+                var newEmail = user.Email.Trim().ToLower();
+                if (!newEmail.Contains("@") || !newEmail.Contains("."))
+                {
+                    return BadRequest(new { message = "Địa chỉ Email không hợp lệ." });
+                }
+                var emailExists = await _context.Users.AnyAsync(u => u.Email.ToLower() == newEmail && u.UserId != id);
+                if (emailExists)
+                {
+                    return BadRequest(new { message = "Địa chỉ Email này đã được sử dụng bởi tài khoản khác." });
+                }
+                dbUser.Email = newEmail;
+            }
+
+            if (!string.IsNullOrWhiteSpace(user.Name)) dbUser.Profile.FullName = user.Name;
+            if (!string.IsNullOrWhiteSpace(user.Gender)) dbUser.Profile.Gender = user.Gender;
+            dbUser.Profile.Dob = user.Dob;
+            dbUser.Profile.Address = user.Address ?? string.Empty;
+            dbUser.Profile.MaritalStatus = user.MaritalStatus ?? string.Empty;
+            dbUser.Profile.Hobbies = user.Hobbies ?? string.Empty;
+            dbUser.Profile.Likes = user.Likes ?? string.Empty;
+            dbUser.Profile.Dislikes = user.Dislikes ?? string.Empty;
+            dbUser.Profile.Cuisines = user.Cuisines ?? string.Empty;
+            dbUser.Profile.Sports = user.Sports ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(user.ProfilePhoto)) dbUser.Profile.ProfilePhoto = user.ProfilePhoto;
+            dbUser.Profile.Qualification = user.Qualification ?? string.Empty;
+            dbUser.Profile.School = user.School ?? string.Empty;
+            dbUser.Profile.College = user.College ?? string.Empty;
+            dbUser.Profile.WorkStatus = user.WorkStatus ?? string.Empty;
+            dbUser.Profile.Organization = user.Organization ?? string.Empty;
+            dbUser.Profile.Designation = user.Designation ?? string.Empty;
+
+            _context.Entry(dbUser.Profile).State = dbUser.Profile.ProfileId == 0 ? EntityState.Added : EntityState.Modified;
 
             try
             {
@@ -96,14 +188,290 @@ namespace Backend.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!await _context.Users.AnyAsync(e => e.Id == id))
+                if (!await _context.Users.AnyAsync(e => e.UserId == id))
                 {
                     return NotFound();
                 }
                 throw;
             }
 
+            string? bearerToken = HttpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", "").Trim();
+            if (!string.IsNullOrEmpty(bearerToken))
+            {
+                dbUser.Token = bearerToken;
+            }
+
             return Ok(dbUser);
         }
+
+        // POST: api/users/2fa/toggle
+        [HttpPost("2fa/toggle")]
+        public async Task<IActionResult> Toggle2Fa([FromBody] ToggleSettingDto dto)
+        {
+            int userId = AuthenticatedUserId;
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return NotFound(new { message = "User not found." });
+
+            user.TwoFactorEnabled = dto.Enabled;
+            await _context.SaveChangesAsync();
+            return Ok(new { message = $"Two-factor authentication has been {(dto.Enabled ? "enabled" : "disabled")}." });
+        }
+
+        // POST: api/users/privacy/toggle
+        [HttpPost("privacy/toggle")]
+        public async Task<IActionResult> TogglePrivacy([FromBody] ToggleSettingDto dto)
+        {
+            int userId = AuthenticatedUserId;
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return NotFound(new { message = "User not found." });
+
+            user.OnlyReceiveFromFriends = dto.Enabled;
+            await _context.SaveChangesAsync();
+            return Ok(new { message = $"Privacy filter (Only friends) has been {(dto.Enabled ? "enabled" : "disabled")}." });
+        }
+
+        // POST: api/users/change-password
+        [HttpPost("change-password")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
+        {
+            int userId = AuthenticatedUserId;
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return NotFound(new { message = "Người dùng không tồn tại." });
+
+            if (string.IsNullOrWhiteSpace(dto.OldPassword) ||
+                string.IsNullOrWhiteSpace(dto.NewPassword) ||
+                string.IsNullOrWhiteSpace(dto.ConfirmNewPassword))
+            {
+                return BadRequest(new { message = "Vui lòng nhập đầy đủ Mật khẩu hiện tại, Mật khẩu mới và Xác nhận mật khẩu mới." });
+            }
+
+            if (user.PasswordHash != dto.OldPassword)
+            {
+                return BadRequest(new { message = "Mật khẩu hiện tại không chính xác." });
+            }
+
+            if (dto.NewPassword.Length < 6)
+            {
+                return BadRequest(new { message = "Mật khẩu mới phải có ít nhất 6 ký tự." });
+            }
+
+            if (dto.NewPassword != dto.ConfirmNewPassword)
+            {
+                return BadRequest(new { message = "Mật khẩu mới và xác nhận mật khẩu không trùng khớp." });
+            }
+
+            if (dto.OldPassword == dto.NewPassword)
+            {
+                return BadRequest(new { message = "Mật khẩu mới không được giống với mật khẩu hiện tại." });
+            }
+
+            user.PasswordHash = dto.NewPassword;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Cập nhật mật khẩu mới thành công!" });
+        }
+
+
+        // GET: api/users/blocklist
+        [HttpGet("blocklist")]
+        public async Task<ActionResult<IEnumerable<object>>> GetBlocklist()
+        {
+            int userId = AuthenticatedUserId;
+            var blocklist = await _context.Blocklists
+                .Where(b => b.UserId == userId)
+                .ToListAsync();
+
+            var blockedNumbers = blocklist.Select(b => b.BlockedNumber).ToList();
+
+            // 1. Query registered users with their profiles (in memory lookup to avoid client-side GroupBy EF translation issues)
+            var usersList = await _context.Users
+                .Include(u => u.Profile)
+                .Where(u => blockedNumbers.Contains(u.MobileNumber))
+                .ToListAsync();
+
+            var blockedUsersDict = new Dictionary<string, string>();
+            foreach (var u in usersList)
+            {
+                if (!string.IsNullOrEmpty(u.MobileNumber) && !blockedUsersDict.ContainsKey(u.MobileNumber))
+                {
+                    string displayName = !string.IsNullOrEmpty(u.Profile?.FullName)
+                        ? u.Profile.FullName
+                        : u.Username;
+                    blockedUsersDict[u.MobileNumber] = displayName;
+                }
+            }
+
+            // 2. Query contacts of the current user to resolve name fallbacks for non-registered numbers
+            var contactsList = await _context.Contacts
+                .Where(c => c.UserId == userId && blockedNumbers.Contains(c.ContactNumber))
+                .ToListAsync();
+
+            var contactsDict = new Dictionary<string, string>();
+            foreach (var c in contactsList)
+            {
+                if (!string.IsNullOrEmpty(c.ContactNumber) && !contactsDict.ContainsKey(c.ContactNumber))
+                {
+                    string contactName = $"{c.FirstName} {c.LastName}".Trim();
+                    if (!string.IsNullOrEmpty(contactName))
+                    {
+                        contactsDict[c.ContactNumber] = contactName;
+                    }
+                }
+            }
+
+            var result = blocklist.Select(b => {
+                string name = "Người dùng lạ";
+                if (blockedUsersDict.ContainsKey(b.BlockedNumber))
+                {
+                    name = blockedUsersDict[b.BlockedNumber];
+                }
+                else if (contactsDict.ContainsKey(b.BlockedNumber))
+                {
+                    name = contactsDict[b.BlockedNumber];
+                }
+                return new
+                {
+                    Id = b.BlockId,
+                    UserId = b.UserId,
+                    BlockedNumber = b.BlockedNumber,
+                    BlockedName = name
+                };
+            });
+
+            return Ok(result);
+        }
+
+        // POST: api/users/blocklist
+        [HttpPost("blocklist")]
+        public async Task<IActionResult> BlockNumber([FromBody] BlockNumberDto dto)
+        {
+            int userId = AuthenticatedUserId;
+            if (string.IsNullOrWhiteSpace(dto.Number) || dto.Number.Length != 10)
+            {
+                return BadRequest(new { message = "Invalid mobile number. Must be exactly 10 digits." });
+            }
+
+            // Check if already blocked
+            bool exists = await _context.Blocklists.AnyAsync(b => b.UserId == userId && b.BlockedNumber == dto.Number);
+            if (exists) return BadRequest(new { message = "Number is already blocked." });
+
+            var block = new Blocklist
+            {
+                UserId = userId,
+                BlockedNumber = dto.Number
+            };
+
+            _context.Blocklists.Add(block);
+            await _context.SaveChangesAsync();
+
+            // Find name in users first
+            var blockedUser = await _context.Users
+                .Include(u => u.Profile)
+                .FirstOrDefaultAsync(u => u.MobileNumber == dto.Number);
+            
+            var blocker = await _context.Users.FindAsync(userId);
+            if (blockedUser != null && blocker != null)
+            {
+                await _hubContext.Clients.User(blockedUser.UserId.ToString()).SendAsync("ReceiveBlockStatus", new { blockerNumber = blocker.MobileNumber, isBlocked = true });
+            }
+
+            string blockedName = "Người dùng lạ";
+            if (blockedUser != null)
+            {
+                blockedName = !string.IsNullOrEmpty(blockedUser.Profile?.FullName)
+                    ? blockedUser.Profile.FullName
+                    : blockedUser.Username;
+            }
+            else
+            {
+                // Fallback to contacts
+                var contact = await _context.Contacts
+                    .FirstOrDefaultAsync(c => c.UserId == userId && c.ContactNumber == dto.Number);
+                if (contact != null)
+                {
+                    string contactName = $"{contact.FirstName} {contact.LastName}".Trim();
+                    if (!string.IsNullOrEmpty(contactName))
+                    {
+                        blockedName = contactName;
+                    }
+                }
+            }
+
+            return Ok(new 
+            { 
+                message = $"Blocked number {dto.Number} successfully.", 
+                block = new
+                {
+                    Id = block.BlockId,
+                    UserId = block.UserId,
+                    BlockedNumber = block.BlockedNumber,
+                    BlockedName = blockedName
+                }
+            });
+        }
+
+        // DELETE: api/users/blocklist/{id}
+        [HttpDelete("blocklist/{id}")]
+        public async Task<IActionResult> UnblockNumber(int id)
+        {
+            int userId = AuthenticatedUserId;
+            var block = await _context.Blocklists.FindAsync(id);
+            if (block == null) return NotFound(new { message = "Blocked number entry not found." });
+
+            if (block.UserId != userId) return Forbid();
+
+            var blocker = await _context.Users.FindAsync(userId);
+            var blockedUser = await _context.Users.FirstOrDefaultAsync(u => u.MobileNumber == block.BlockedNumber);
+
+            _context.Blocklists.Remove(block);
+            await _context.SaveChangesAsync();
+
+            if (blockedUser != null && blocker != null)
+            {
+                await _hubContext.Clients.User(blockedUser.UserId.ToString()).SendAsync("ReceiveBlockStatus", new { blockerNumber = blocker.MobileNumber, isBlocked = false });
+            }
+
+            return Ok(new { message = "Number unblocked successfully." });
+        }
+
+        // DELETE: api/users/blocklist/by-number/{number}
+        [HttpDelete("blocklist/by-number/{number}")]
+        public async Task<IActionResult> UnblockNumberByPhone(string number)
+        {
+            int userId = AuthenticatedUserId;
+            var block = await _context.Blocklists.FirstOrDefaultAsync(b => b.UserId == userId && b.BlockedNumber == number);
+            if (block == null) return NotFound(new { message = "Blocked number entry not found." });
+
+            var blocker = await _context.Users.FindAsync(userId);
+            var blockedUser = await _context.Users.FirstOrDefaultAsync(u => u.MobileNumber == number);
+
+            _context.Blocklists.Remove(block);
+            await _context.SaveChangesAsync();
+
+            if (blockedUser != null && blocker != null)
+            {
+                await _hubContext.Clients.User(blockedUser.UserId.ToString()).SendAsync("ReceiveBlockStatus", new { blockerNumber = blocker.MobileNumber, isBlocked = false });
+            }
+
+            return Ok(new { message = "Number unblocked successfully." });
+        }
+    }
+
+    public class ToggleSettingDto
+    {
+        public bool Enabled { get; set; }
+    }
+
+    public class BlockNumberDto
+    {
+        public string Number { get; set; } = string.Empty;
+    }
+
+    public class ChangePasswordDto
+    {
+        public string OldPassword { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
+        public string ConfirmNewPassword { get; set; } = string.Empty;
     }
 }
+

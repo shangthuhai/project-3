@@ -1,0 +1,95 @@
+.services__checklist-container {
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 25px;
+  max-width: 600px;
+  margin: 0 auto;
+  box-shadow: var(--shadow-sm);
+}
+
+.services__checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  border-bottom: 1px solid var(--border-light);
+  transition: var(--transition-normal);
+  cursor: pointer;
+}
+
+.services__checklist-item:last-child {
+  border-bottom: none;
+}
+
+.services__checklist-item:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.services__checklist-item--selected {
+  background: rgba(36, 129, 204, 0.04);
+}
+
+.services__checklist-item--subscribed {
+  background: rgba(16, 185, 129, 0.04);
+  border-color: rgba(16, 185, 129, 0.2);
+  cursor: not-allowed;
+}
+
+.services__checklist-checkbox {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.services__checklist-details {
+  flex: 1;
+}
+
+.services__checklist-details h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.services__checklist-details p {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.services__checklist-price {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-primary-hover);
+}
+
+.services__status-tag {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.services__billing-card {
+  background: var(--bg-app);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.services__billing-total h3 {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.services__billing-total p {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}

@@ -1,0 +1,134 @@
+.otpFieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.otpHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.otpLabel {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.otpBadge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: var(--bg-app);
+  color: var(--text-muted);
+  border: 1px solid var(--border-light);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.otpBadgeComplete {
+  background: rgba(40, 167, 69, 0.15);
+  color: #28a745;
+  border-color: rgba(40, 167, 69, 0.4);
+}
+
+.otpDescription {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin: 0 0 4px 0;
+}
+
+.inputWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.githubInput {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  letter-spacing: 8px;
+  text-align: center;
+  color: var(--text-main);
+  background: var(--bg-app);
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-md, 8px);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+
+.githubInput::placeholder {
+  color: var(--text-muted);
+  opacity: 0.35;
+  letter-spacing: 8px;
+}
+
+.githubInput:focus {
+  border-color: var(--color-primary, #2481cc);
+  box-shadow: 0 0 0 3px rgba(36, 129, 204, 0.2);
+}
+
+.githubInputComplete {
+  border-color: #28a745;
+  box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.15);
+}
+
+.githubInputError {
+  border-color: var(--color-danger, #dc3545);
+}
+
+.inputHint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 2px;
+}
+
+.boxesContainer {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 6px 0;
+}
+
+.boxInput {
+  width: 44px;
+  height: 52px;
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  border: 1.5px solid var(--border-light);
+  background: var(--bg-app);
+  color: var(--text-main);
+  border-radius: var(--radius-sm, 6px);
+  outline: none;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.boxInput:focus {
+  border-color: var(--color-primary, #2481cc);
+  box-shadow: 0 0 0 3px rgba(36, 129, 204, 0.2);
+  transform: translateY(-1px);
+}
+
+.boxInputFilled {
+  border-color: var(--color-primary, #2481cc);
+  background: rgba(36, 129, 204, 0.05);
+}
+
+.errorMessage {
+  font-size: 0.78rem;
+  color: var(--color-danger, #dc3545);
+}
